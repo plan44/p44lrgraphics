@@ -19,41 +19,25 @@
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _p44lrgraphics_lifeview_hpp__
-#define _p44lrgraphics_lifeview_hpp__
+#ifndef __p44lrgraphics_lightspotview_hpp__
+#define __p44lrgraphics_lightspotview_hpp__
 
 #include "p44view.hpp"
 
 
 namespace p44 {
 
-  class LifeView : public P44View
+  class LightSpotView : public P44View
   {
     typedef P44View inherited;
 
-    std::vector<uint32_t> cells; ///< internal representation
-
-    int dynamics;
-    int population;
-
-    int staticcount;
-    int maxStatic;
-    int minPopulation;
-    int minStatic;
-
-    MLMicroSeconds generationInterval;
-    MLMicroSeconds lastGeneration;
 
   public :
 
-    LifeView();
-    virtual ~LifeView();
+    LightSpotView();
+    virtual ~LightSpotView();
 
-    /// set generation interval
-    /// @param aInterval time between generations, Never = stopped
-    virtual void setGenerationInterval(MLMicroSeconds aInterval);
-
-    /// clear and resize to new
+    /// clear and resize
     virtual void clear() P44_OVERRIDE;
 
     /// calculate changes on the display, return time of next change
@@ -80,21 +64,12 @@ namespace p44 {
     ///   implementation must check this!
     virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
 
-    bool prepareCells();
-    void nextGeneration();
-    void timeNext();
-    void revive();
-    int cellindex(int aX, int aY, bool aWrap);
-    void calculateGeneration();
-    void createRandomCells(int aMinCells, int aMaxCells);
-    void placePattern(uint16_t aPatternNo, bool aWrap=true, int aCenterX=-1, int aCenterY=-1, int aOrientation=-1);
   };
-  typedef boost::intrusive_ptr<LifeView> LifeViewPtr;
+  typedef boost::intrusive_ptr<LightSpotView> LightSpotViewPtr;
 
 
 
 } // namespace p44
 
 
-
-#endif /* _p44lrgraphics_lifeview_hpp__ */
+#endif /* __p44lrgraphics_lightspotview_hpp__ */

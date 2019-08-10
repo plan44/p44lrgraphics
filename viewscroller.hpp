@@ -1,26 +1,26 @@
 //
-//  Copyright (c) 2018 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2018-2019 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
-//  This file is part of pixelboardd.
+//  This file is part of p44lrgraphics.
 //
-//  pixelboardd is free software: you can redistribute it and/or modify
+//  p44lrgraphics is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, either version 3 of the License, or
 //  (at your option) any later version.
 //
-//  pixelboardd is distributed in the hope that it will be useful,
+//  p44lrgraphics is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //
 //  You should have received a copy of the GNU General Public License
-//  along with pixelboardd. If not, see <http://www.gnu.org/licenses/>.
+//  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef __pixelboardd_viewscroller_hpp__
-#define __pixelboardd_viewscroller_hpp__
+#ifndef _p44lrgraphics_viewscroller_hpp__
+#define _p44lrgraphics_viewscroller_hpp__
 
 #include "p44view.hpp"
 
@@ -177,4 +177,4 @@ namespace p44 {
 
 
 
-#endif /* __pixelboardd_viewscroller_hpp__ */
+#endif /* _p44lrgraphics_viewscroller_hpp__ */
