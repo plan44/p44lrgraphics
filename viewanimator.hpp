@@ -30,7 +30,7 @@ namespace p44 {
   class AnimationStep
   {
   public:
-    ViewPtr view;
+    P44ViewPtr view;
     MLMicroSeconds fadeInTime;
     MLMicroSeconds showTime;
     MLMicroSeconds fadeOutTime;
@@ -48,7 +48,7 @@ namespace p44 {
     bool repeating; ///< set if current animation is repeating
     int currentStep; ///< current step in running animation
     SimpleCB completedCB; ///< called when one animation run is done
-    ViewPtr currentView; ///< current view
+    P44ViewPtr currentView; ///< current view
 
     enum {
       as_begin,
@@ -66,7 +66,7 @@ namespace p44 {
 
     /// add animation step view to list of animation steps
     /// @param aView the view to add
-    void pushStep(ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime=0, MLMicroSeconds aFadeOutTime=0);
+    void pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime=0, MLMicroSeconds aFadeOutTime=0);
 
     /// start animating
     /// @param aRepeat if set, animation will repeat
@@ -103,7 +103,7 @@ namespace p44 {
     /// get view by label
     /// @param aLabel label of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual ViewPtr getView(const string aLabel) P44_OVERRIDE;
+    virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
 
     #endif
 

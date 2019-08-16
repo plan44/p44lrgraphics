@@ -29,11 +29,11 @@
 
 #include "imageview.hpp"
 
+#if ENABLE_IMAGE_SUPPORT
+
 #if ENABLE_VIEWCONFIG
   #include "application.hpp"
 #endif
-
-
 
 using namespace p44;
 
@@ -149,5 +149,7 @@ ErrorPtr ImageView::configureView(JsonObjectPtr aViewConfig)
 }
 
 #endif // ENABLE_VIEWCONFIG
+
+#endif // ENABLE_IMAGE_SUPPORT
 
 

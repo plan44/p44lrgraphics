@@ -25,10 +25,6 @@
 #include "p44utils_common.hpp"
 #include "colorutils.hpp"
 
-#ifndef ENABLE_VIEWCONFIG
-  #define ENABLE_VIEWCONFIG 1
-#endif
-
 #if ENABLE_VIEWCONFIG
   #include "jsonobject.hpp"
 #endif
@@ -141,7 +137,7 @@ namespace p44 {
   /// @}
 
   class P44View;
-  typedef boost::intrusive_ptr<P44View> ViewPtr;
+  typedef boost::intrusive_ptr<P44View> P44ViewPtr;
 
   class P44View : public P44Obj
   {
@@ -195,6 +191,11 @@ namespace p44 {
       clipYmax = 0x80, /// clip content above frame area
       clipY = clipYmin|clipYmax, // clip content vertically
       clipXY = clipX|clipY, // clip content
+      noAdjust = clipXY, // for positioning: do not adjust content rectangle
+      appendLeft = wrapXmin, // for positioning: extend to the left
+      appendRight = wrapXmax, // for positioning: extend to the right
+      appendBottom = wrapYmin, // for positioning: extend towards bottom
+      appendTop = wrapYmax // for positioning: extend towards top
     };
     typedef uint8_t WrapMode;
 
@@ -223,9 +224,7 @@ namespace p44 {
     bool localTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
     MLMicroSeconds maskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
 
-    #if ENABLE_VIEWCONFIG
     string label; ///< label of the view for addressing it
-    #endif
 
     /// change rect and trigger geometry change when actually changed
     void changeGeometryRect(PixelRect &aRect, PixelRect aNewRect);
@@ -290,7 +289,7 @@ namespace p44 {
     PixelRect getContent() { return content; };
 
     /// @param aParentView parent view or NULL if none
-    void setParent(ViewPtr aParentView);
+    void setParent(P44ViewPtr aParentView);
 
     /// set the view's background color
     /// @param aBackgroundColor color of pixels not covered by content
@@ -376,7 +375,7 @@ namespace p44 {
     void moveFrameToContent(bool aResize);
 
     /// child view has changed geometry (frame, content rect)
-    virtual void childGeometryChanged(ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) {};
+    virtual void childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) {};
 
     /// get color at X,Y
     /// @param aPt point to get in frame coordinates
@@ -410,7 +409,7 @@ namespace p44 {
     /// get view by label
     /// @param aLabel label of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual ViewPtr getView(const string aLabel);
+    virtual P44ViewPtr getView(const string aLabel);
 
     #endif
 

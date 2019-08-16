@@ -24,6 +24,8 @@
 
 #include "p44utils_common.hpp"
 
+#if ENABLE_IMAGE_SUPPORT
+
 #include "p44view.hpp"
 
 #include <png.h>
@@ -65,6 +67,6 @@ namespace p44 {
 
 } // namespace p44
 
-
+#endif // ENABLE_IMAGE_SUPPORT
 
 #endif /* _p44lrgraphics_imageview_hpp__ */

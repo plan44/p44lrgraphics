@@ -20,11 +20,23 @@
 //
 
 
-#ifndef __p44lrgraphics__common__
-#define __p44lrgraphics__common__
+#ifndef __p44lrgraphics__config__
+#define __p44lrgraphics__config__
 
-#include "p44lrg_config.hpp"
+// NOTE: This is a default (template) config file only
+//                 ******************
+//       Usually, copy this file into a location where is is found BEFORE this
+//       default file is found, and modify the copied version according to
+//       your needs.
+//       DO NOT MODIFY THE ORIGINAL IN the p44utils directory/git submodule!
 
-#include "p44view.hpp"
+#ifndef ENABLE_VIEWCONFIG
+  #define ENABLE_VIEWCONFIG 0 // not by default because it pulls in JsonObject and Application
+#endif
 
-#endif /* __p44lrgraphics__common__ */
+#ifndef ENABLE_IMAGE_SUPPORT
+  #define ENABLE_IMAGE_SUPPORT 0 // not by default because it has external dependencies
+#endif
+
+
+#endif // __p44lrgraphics__config__

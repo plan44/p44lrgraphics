@@ -176,7 +176,7 @@ void P44View::setFrame(PixelRect aFrame)
 }
 
 
-void P44View::setParent(ViewPtr aParentView)
+void P44View::setParent(P44ViewPtr aParentView)
 {
   parentView = aParentView.get();
 }
@@ -733,12 +733,12 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-ViewPtr P44View::getView(const string aLabel)
+P44ViewPtr P44View::getView(const string aLabel)
 {
   if (aLabel==label) {
-    return ViewPtr(this); // that's me
+    return P44ViewPtr(this); // that's me
   }
-  return ViewPtr(); // not found
+  return P44ViewPtr(); // not found
 }
 
 

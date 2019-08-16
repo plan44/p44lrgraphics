@@ -54,11 +54,11 @@ ViewStack::~ViewStack()
 }
 
 
-void ViewStack::pushView(ViewPtr aView, int aSpacing)
+void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
 {
   geometryChange(true);
-  // clip bits set means we don't want the content rect to get recalculated
-  bool adjust = (positioningMode&clipXY)==0;
+  // clip/noAdjust bits set means we don't want the content rect to get recalculated
+  bool adjust = (positioningMode&noAdjust)==0;
   // auto-positioning?
   if (positioningMode & wrapXY) {
     // wrap bits determine in which direction to position the view relative to those already present
@@ -129,7 +129,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
   ViewsList::iterator pos = viewStack.begin();
   geometryChange(true);
   while (pos!=viewStack.end()) {
-    ViewPtr v = *pos;
+    P44ViewPtr v = *pos;
     if (
       !rectIntersectsRect(r, v->frame) ||
       (aCompletely && !rectContainsRect(r, v->frame))
@@ -171,7 +171,7 @@ void ViewStack::offsetSubviews(PixelCoord aOffset)
 {
   geometryChange(true);
   for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
-    ViewPtr v = *pos;
+    P44ViewPtr v = *pos;
     PixelRect f = v->frame;
     f.x += aOffset.x;
     f.y += aOffset.y;
@@ -194,7 +194,7 @@ void ViewStack::getEnclosingContentRect(PixelRect &aBounds)
   int minY = INT_MAX;
   int maxY = INT_MIN;
   for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
-    ViewPtr v = *pos;
+    P44ViewPtr v = *pos;
     if (v->frame.x<minX) minX = v->frame.x;
     if (v->frame.y<minY) minY = v->frame.y;
     if (v->frame.x+v->frame.dx>maxX) maxX = v->frame.x+v->frame.dx;
@@ -220,7 +220,7 @@ void ViewStack::popView()
 }
 
 
-void ViewStack::removeView(ViewPtr aView)
+void ViewStack::removeView(P44ViewPtr aView)
 {
   geometryChange(true);
   for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
@@ -275,7 +275,7 @@ void ViewStack::updated()
 
 
 
-void ViewStack::childGeometryChanged(ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent)
+void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent)
 {
   if (geometryChanging==0) {
     // only if not already in process of changing
@@ -302,7 +302,7 @@ PixelColor ViewStack::contentColorAt(PixelCoord aPt)
     PixelColor lc;
     uint8_t seethrough = 255; // first layer is directly visible, not yet obscured
     for (ViewsList::reverse_iterator pos = viewStack.rbegin(); pos!=viewStack.rend(); ++pos) {
-      ViewPtr layer = *pos;
+      P44ViewPtr layer = *pos;
       if (layer->alpha==0) continue; // shortcut: skip fully transparent layers
       lc = layer->colorAt(aPt);
       if (lc.a==0) continue; // skip layer with fully transparent pixel
@@ -345,7 +345,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
       for (int i=0; i<o->arrayLength(); ++i) {
         JsonObjectPtr l = o->arrayGet(i);
         JsonObjectPtr o2;
-        ViewPtr layerView;
+        P44ViewPtr layerView;
         if (l->get("view", o2)) {
           err = p44::createViewFromConfig(o2, layerView, this);
           if (Error::isOK(err)) {
@@ -367,11 +367,11 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-ViewPtr ViewStack::getView(const string aLabel)
+P44ViewPtr ViewStack::getView(const string aLabel)
 {
   for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
     if (*pos) {
-      ViewPtr view = (*pos)->getView(aLabel);
+      P44ViewPtr view = (*pos)->getView(aLabel);
       if (view) return view;
     }
   }

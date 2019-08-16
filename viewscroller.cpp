@@ -382,10 +382,10 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-ViewPtr ViewScroller::getView(const string aLabel)
+P44ViewPtr ViewScroller::getView(const string aLabel)
 {
   if (scrolledView) {
-    ViewPtr view = scrolledView->getView(aLabel);
+    P44ViewPtr view = scrolledView->getView(aLabel);
     if (view) return view;
   }
   return inherited::getView(aLabel);

@@ -41,7 +41,7 @@ ViewAnimator::ViewAnimator() :
 ViewAnimator::~ViewAnimator()
 {
   for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
-    ViewPtr v = pos->view;
+    P44ViewPtr v = pos->view;
     if (v) v->setParent(NULL);
   }
   sequence.clear();
@@ -56,7 +56,7 @@ void ViewAnimator::clear()
 }
 
 
-void ViewAnimator::pushStep(ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime, MLMicroSeconds aFadeOutTime)
+void ViewAnimator::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime, MLMicroSeconds aFadeOutTime)
 {
   AnimationStep s;
   s.view = aView;
@@ -209,7 +209,7 @@ ErrorPtr ViewAnimator::configureView(JsonObjectPtr aViewConfig)
       for (int i=0; i<o->arrayLength(); ++i) {
         JsonObjectPtr s = o->arrayGet(i);
         JsonObjectPtr o2;
-        ViewPtr stepView;
+        P44ViewPtr stepView;
         MLMicroSeconds showTime = 500*MilliSecond;
         MLMicroSeconds fadeInTime = 0;
         MLMicroSeconds fadeOutTime = 0;
@@ -244,12 +244,12 @@ ErrorPtr ViewAnimator::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-ViewPtr ViewAnimator::getView(const string aLabel)
+P44ViewPtr ViewAnimator::getView(const string aLabel)
 {
   for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
-    ViewPtr v = pos->view;
+    P44ViewPtr v = pos->view;
     if (v) {
-      ViewPtr view = v->getView(aLabel);
+      P44ViewPtr view = v->getView(aLabel);
       if (view) return view;
     }
   }

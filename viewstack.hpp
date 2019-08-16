@@ -30,7 +30,7 @@ namespace p44 {
   {
     typedef P44View inherited;
 
-    typedef std::list<ViewPtr> ViewsList;
+    typedef std::list<P44ViewPtr> ViewsList;
 
     ViewsList viewStack;
     WrapMode positioningMode; ///< mode for positioning views with pushView, purging with purgeView, and autoresizing on child changes
@@ -56,7 +56,7 @@ namespace p44 {
     /// push view onto top of stack
     /// @param aView the view to push in front of all other views
     /// @param aSpacing extra pixels between appended views
-    void pushView(ViewPtr aView, int aSpacing = 0);
+    void pushView(P44ViewPtr aView, int aSpacing = 0);
 
     /// purge views that are outside the specified content size in the specified direction
     /// @param aKeepDx keep views with frame completely or partially within this new size (measured according to positioning mode)
@@ -71,7 +71,7 @@ namespace p44 {
 
     /// remove specific view
     /// @param aView the view to remove from the stack
-    void removeView(ViewPtr aView);
+    void removeView(P44ViewPtr aView);
 
     /// offset all subviews
     /// @param aOffset will be added to all subview frame's x/y
@@ -99,7 +99,7 @@ namespace p44 {
     virtual void updated() P44_OVERRIDE;
 
     /// child view has changed geometry (frame, content rect)
-    virtual void childGeometryChanged(ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
+    virtual void childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
 
     #if ENABLE_VIEWCONFIG
@@ -113,7 +113,7 @@ namespace p44 {
     /// get view by label
     /// @param aLabel label of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual ViewPtr getView(const string aLabel) P44_OVERRIDE;
+    virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
 
     #endif
 

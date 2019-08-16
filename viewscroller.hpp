@@ -38,7 +38,7 @@ namespace p44 {
 
   private:
 
-    ViewPtr scrolledView;
+    P44ViewPtr scrolledView;
 
     // current scroll offsets
     long scrollOffsetX_milli; ///< in millipixel, X distance from this view's content origin to the scrolled view's origin
@@ -72,10 +72,10 @@ namespace p44 {
 
     /// set the to be scrolled view
     /// @param aScrolledView the view of which a part should be shown in this view.
-    void setScrolledView(ViewPtr aScrolledView) { scrolledView = aScrolledView; if (aScrolledView) aScrolledView->setParent(this); makeDirty(); }
+    void setScrolledView(P44ViewPtr aScrolledView) { scrolledView = aScrolledView; if (aScrolledView) aScrolledView->setParent(this); makeDirty(); }
 
     /// @return the view being scrolled
-    ViewPtr getScrolledView() { return scrolledView; }
+    P44ViewPtr getScrolledView() { return scrolledView; }
 
     /// set scroll offsets
     /// @param aOffsetX X direction scroll offset, subpixel distances allowed
@@ -166,7 +166,7 @@ namespace p44 {
     /// get view by label
     /// @param aLabel label of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual ViewPtr getView(const string aLabel) P44_OVERRIDE;
+    virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
 
     #endif
 

@@ -23,7 +23,9 @@
 
 #if ENABLE_VIEWCONFIG
 
+#if ENABLE_IMAGE_SUPPORT
 #include "imageview.hpp"
+#endif
 #include "textview.hpp"
 #include "viewanimator.hpp"
 #include "viewstack.hpp"
@@ -34,31 +36,33 @@ using namespace p44;
 
 // MARK: ===== View factory function
 
-ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, ViewPtr &aNewView, ViewPtr aParentView)
+ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView)
 {
   JsonObjectPtr o;
   if (aViewConfig->get("type", o)) {
     string vt = o->stringValue();
     if (vt=="text") {
-      aNewView = ViewPtr(new TextView);
+      aNewView = P44ViewPtr(new TextView);
     }
+    #if ENABLE_IMAGE_SUPPORT
     else if (vt=="image") {
-      aNewView = ViewPtr(new ImageView);
+      aNewView = P44ViewPtr(new ImageView);
     }
+    #endif
     else if (vt=="animator") {
-      aNewView = ViewPtr(new ViewAnimator);
+      aNewView = P44ViewPtr(new ViewAnimator);
     }
     else if (vt=="stack") {
-      aNewView = ViewPtr(new ViewStack);
+      aNewView = P44ViewPtr(new ViewStack);
     }
     else if (vt=="scroller") {
-      aNewView = ViewPtr(new ViewScroller);
+      aNewView = P44ViewPtr(new ViewScroller);
     }
     else if (vt=="life") {
-      aNewView = ViewPtr(new LifeView);
+      aNewView = P44ViewPtr(new LifeView);
     }
     else if (vt=="plain") {
-      aNewView = ViewPtr(new P44View);
+      aNewView = P44ViewPtr(new P44View);
     }
     else {
       return TextError::err("unknown view type '%s'", vt.c_str());
