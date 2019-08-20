@@ -127,11 +127,12 @@ namespace p44 {
   /// @return web color in RRGGBB style or AARRGGBB when alpha is not fully opaque (==255)
   string pixelToWebColor(const PixelColor aPixelColor);
 
-  /// get RGB from HSB
+  /// get RGB pixel from HSB
   /// @param aHue hue, 0..360 degrees
-  /// @param aSaturation saturation, 0..255
-  /// @param aBrightness brightness, 0..255
-  PixelColor hsbToPixel(int aHue, uint8_t aSaturation = 255, uint8_t aBrightness = 255);
+  /// @param aSaturation saturation, 0..1
+  /// @param aBrightness brightness, 0..1
+  /// @param aBrightnessAsAlpha if set, brightness is returned in alpha, while RGB will be set for full brightness
+  PixelColor hsbToPixel(double aHue, double aSaturation = 1.0, double aBrightness = 1.0, bool aBrightnessAsAlpha = false);
 
 
   /// @}

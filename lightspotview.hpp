@@ -27,15 +27,83 @@
 
 namespace p44 {
 
+  typedef enum {
+    gradient_none = 0,
+    // curves
+    gradient_curve_mask = 0x0F,
+    gradient_curve_square = 0x01,
+    gradient_curve_lin = 0x02,
+    gradient_curve_log = 0x03,
+    gradient_curve_sin = 0x04,
+    // modes
+    gradient_repeat_mask = 0xF0,
+    gradient_repeat_none = 0x00,
+    gradient_repeat_cyclic = 0x10,
+    gradient_repeat_oscillating = 0x20,
+    gradient_unlimited = 0x30,
+  } GradientModeEnum;
+  typedef uint8_t GradientMode;
+
+
   class LightSpotView : public P44View
   {
     typedef P44View inherited;
 
+    /// parameters
+    PixelCoord center; ///< center coordinate
+    PixelCoord extent; ///< extent of main light field, depends on effects how far it actually goes
+    double rotation; ///< rotation of main light field in degree CCW
+
+    /// derived values
+    double rotSin;
+    double rotCos;
+
+    /// gradients
+    bool radial; ///< if set, gradient is applied radially from the center, otherwise along the x axis
+    double briGradient;
+    double hueGradient;
+    double satGradient;
+    GradientMode briMode;
+    GradientMode hueMode;
+    GradientMode satMode;
+
+    typedef std::vector<PixelColor> PixelVector;
+    PixelVector gradientPixels; ///< precalculated gradient pixels
 
   public :
 
     LightSpotView();
     virtual ~LightSpotView();
+
+
+    /// set center + extent combined as the size of the right upper quadrant of the light field
+    void setQuadrant(PixelRect aQuadrant);
+
+    /// set center
+    /// @param aExtent the center of the light
+    void setCenter(PixelCoord aCenter);
+
+    /// set extent (how many pixels the light field reaches out around the center)
+    /// @param aExtent the extent radii of the light in x and y direction
+    /// @note extent(0,0) means single pixel at the center
+    void setExtent(PixelCoord aExtent);
+
+    /// set rotation
+    /// @param aRotation rotation in degrees CCW
+    void setRotation(double aRotation);
+
+    /// set center color
+    void setCenterColor(PixelColor aColor);
+
+    /// set coloring parameters
+    /// @note gradient value determines the change of the base value over the extent range
+    void setColoringParameters(
+      PixelColor aBaseColor,
+      double aBri, GradientMode aBriMode,
+      double aHue, GradientMode aHueMode,
+      double aSat, GradientMode aSatMode,
+      bool aRadial
+    );
 
     /// clear and resize
     virtual void clear() P44_OVERRIDE;
@@ -63,6 +131,11 @@ namespace p44 {
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
     virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+
+  private:
+
+    void recalculateContentRect();
+    void recalculateGradients();
 
   };
   typedef boost::intrusive_ptr<LightSpotView> LightSpotViewPtr;

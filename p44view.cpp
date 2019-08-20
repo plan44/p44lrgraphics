@@ -469,6 +469,7 @@ uint8_t p44::dimVal(uint8_t aVal, uint16_t aDim)
 
 void p44::dimPixel(PixelColor &aPix, uint16_t aDim)
 {
+  if (aDim==255) return; // 100% -> NOP
   aPix.r = dimVal(aPix.r, aDim);
   aPix.g = dimVal(aPix.g, aDim);
   aPix.b = dimVal(aPix.b, aDim);
@@ -637,18 +638,17 @@ string p44::pixelToWebColor(const PixelColor aPixelColor)
 
 
 
-PixelColor p44::hsbToPixel(int aHue, uint8_t aSaturation, uint8_t aBrightness)
+PixelColor p44::hsbToPixel(double aHue, double aSaturation, double aBrightness, bool aBrightnessAsAlpha)
 {
   PixelColor p;
-  Row3 RGB, HSV = { (double)aHue, (double)aSaturation/255, (double)aBrightness/255 };
+  Row3 RGB, HSV = { aHue, aSaturation, aBrightnessAsAlpha ? 1.0 : aBrightness };
   HSVtoRGB(HSV, RGB);
   p.r = RGB[0]*255;
   p.g = RGB[1]*255;
   p.b = RGB[2]*255;
-  p.a = 255;
+  p.a = aBrightnessAsAlpha ? aBrightness*255: 255;
   return p;
 }
-
 
 
 
