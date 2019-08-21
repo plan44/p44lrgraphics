@@ -50,7 +50,6 @@ namespace p44 {
     typedef P44View inherited;
 
     /// parameters
-    PixelCoord center; ///< center coordinate
     PixelCoord extent; ///< extent of main light field, depends on effects how far it actually goes
     double rotation; ///< rotation of main light field in degree CCW
 
@@ -75,12 +74,8 @@ namespace p44 {
     LightSpotView();
     virtual ~LightSpotView();
 
-
-    /// set center + extent combined as the size of the right upper quadrant of the light field
-    void setQuadrant(PixelRect aQuadrant);
-
     /// set center
-    /// @param aExtent the center of the light
+    /// @param aExtent the center of the light relative to the content origin
     void setCenter(PixelCoord aCenter);
 
     /// set extent (how many pixels the light field reaches out around the center)

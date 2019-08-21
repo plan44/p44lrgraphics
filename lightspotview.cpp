@@ -29,8 +29,6 @@ using namespace p44;
 
 
 LightSpotView::LightSpotView() :
-  center({0, 0}),
-  extent({5, 5}),
   radial(true),
   briGradient(0),
   hueGradient(0),
@@ -55,38 +53,19 @@ void LightSpotView::clear()
 
 
 
-void LightSpotView::recalculateContentRect()
-{
-  PixelRect c;
-  c.x = center.x;
-  c.y = center.y;
-  c.dx = extent.x*2+1;
-  c.dy = extent.y*2+1;
-  setContent(c);
-}
-
-
-void LightSpotView::setQuadrant(PixelRect aQuadrant)
-{
-  center.x = aQuadrant.x;
-  center.y = aQuadrant.y;
-  extent.x = aQuadrant.dx;
-  extent.y = aQuadrant.dy;
-  recalculateContentRect();
-}
-
-
 void LightSpotView::setCenter(PixelCoord aCenter)
 {
-  center = aCenter;
-  recalculateContentRect();
+  PixelRect f = getContent();
+  f.x = aCenter.x;
+  f.y = aCenter.y;
+  setContent(f);
 }
 
 
 void LightSpotView::setExtent(PixelCoord aExtent)
 {
   extent = aExtent;
-  recalculateContentRect();
+  makeDirty();
 }
 
 
