@@ -33,8 +33,7 @@ namespace p44 {
     gradient_curve_mask = 0x0F,
     gradient_curve_square = 0x01,
     gradient_curve_lin = 0x02,
-    gradient_curve_log = 0x03,
-    gradient_curve_sin = 0x04,
+    gradient_curve_sin = 0x03,
     // modes
     gradient_repeat_mask = 0xF0,
     gradient_repeat_none = 0x00,
