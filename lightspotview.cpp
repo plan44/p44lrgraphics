@@ -40,6 +40,9 @@ LightSpotView::LightSpotView() :
   rotCos(1.0),
   rotSin(0.0)
 {
+  // make sure we start dark!
+  setForegroundColor(black);
+  setBackgroundColor(black);
 }
 
 LightSpotView::~LightSpotView()
