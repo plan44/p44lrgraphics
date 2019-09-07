@@ -22,11 +22,9 @@
 #ifndef _p44lrgraphics_imageview_hpp__
 #define _p44lrgraphics_imageview_hpp__
 
-#include "p44utils_common.hpp"
+#include "p44lrg_common.hpp"
 
 #if ENABLE_IMAGE_SUPPORT
-
-#include "p44view.hpp"
 
 #include <png.h>
 

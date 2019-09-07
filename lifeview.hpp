@@ -22,7 +22,7 @@
 #ifndef _p44lrgraphics_lifeview_hpp__
 #define _p44lrgraphics_lifeview_hpp__
 
-#include "p44view.hpp"
+#include "p44lrg_common.hpp"
 
 
 namespace p44 {

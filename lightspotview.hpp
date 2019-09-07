@@ -22,7 +22,7 @@
 #ifndef __p44lrgraphics_lightspotview_hpp__
 #define __p44lrgraphics_lightspotview_hpp__
 
-#include "p44view.hpp"
+#include "p44lrg_common.hpp"
 
 
 namespace p44 {

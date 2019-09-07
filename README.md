@@ -25,6 +25,8 @@ the [pixelboard](https://github.com/plan44/pixelboard-hardware), the [ETH digita
 Usage
 -----
 *p44lrgraphics* sources meant to be included as .cpp and .hpp files into a project (usually as a git submodule) and compiled together with the project's other sources.
+A configuration header file *p44lrg_config.hpp* needs to be present in the project, and allows customizing some aspects of *p44lrgraphics*.
+To get started, just copy the *p44lrg_config_TEMPLATE.hpp* to a location in your include path and name it *p44lrg_config.hpp*.
 
 License
 -------

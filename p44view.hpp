@@ -22,7 +22,7 @@
 #ifndef _p44lrgraphics_view_hpp__
 #define _p44lrgraphics_view_hpp__
 
-#include "p44utils_common.hpp"
+#include "p44lrg_common.hpp"
 #include "colorutils.hpp"
 
 #if ENABLE_VIEWCONFIG

@@ -76,7 +76,7 @@ ErrorPtr ImageView::loadPNG(const string aPNGFileName)
     return TextError::err("could not open PNG file %s", aPNGFileName.c_str());
   }
   else {
-    // We only need the luminance
+    // We want full RGBA
     pngImage.format = PNG_FORMAT_RGBA;
     // Now allocate enough memory to hold the image in this format; the
     // PNG_IMAGE_SIZE macro uses the information about the image (width,
