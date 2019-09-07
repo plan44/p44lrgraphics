@@ -27,10 +27,16 @@
 #if ENABLE_VIEWCONFIG
 
 #include "jsonobject.hpp"
+#include "expressions.hpp"
 
 namespace p44 {
 
   ErrorPtr createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView);
+
+  #if EXPRESSION_SCRIPT_SUPPORT
+  bool evaluateViewFunctions(EvaluationContext* aEvalContext, const string &aFunc, const FunctionArguments &aArgs, ExpressionValue &aResult, P44ViewPtr aRootView, ValueLookupCB aSubstitutionValueLookupCB);
+  #endif
+
 
 } // namespace p44
 
