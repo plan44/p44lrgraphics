@@ -31,6 +31,7 @@
 #include "viewstack.hpp"
 #include "viewscroller.hpp"
 #include "lifeview.hpp"
+#include "lightspotview.hpp"
 
 using namespace p44;
 
@@ -60,6 +61,9 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
     }
     else if (vt=="life") {
       aNewView = P44ViewPtr(new LifeView);
+    }
+    else if (vt=="lightspot") {
+      aNewView = P44ViewPtr(new LightSpotView);
     }
     else if (vt=="plain") {
       aNewView = P44ViewPtr(new P44View);

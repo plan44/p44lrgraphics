@@ -86,9 +86,6 @@ namespace p44 {
     /// @param aRotation rotation in degrees CCW
     void setRotation(double aRotation);
 
-    /// set center color
-    void setCenterColor(PixelColor aColor);
-
     /// set coloring parameters
     /// @note gradient value determines the change of the base value over the extent range
     void setColoringParameters(

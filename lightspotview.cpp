@@ -242,9 +242,53 @@ ErrorPtr LightSpotView::configureView(JsonObjectPtr aViewConfig)
   JsonObjectPtr o;
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
-//    if (aViewConfig->get("apropertry", o)) {
-//      apropertry  = o->doubleValue()*MilliSecond;
-//    }
+    bool gradChanged = false;
+    if (aViewConfig->get("extent_x", o)) {
+      extent.x = o->doubleValue();
+      makeDirty();
+    }
+    if (aViewConfig->get("extent_y", o)) {
+      extent.y = o->doubleValue();
+      makeDirty();
+    }
+    if (aViewConfig->get("rotation", o)) {
+      setRotation(o->doubleValue());
+    }
+    if (aViewConfig->get("color", o)) {
+      // parent handles setting the (base)color, but gradient is also affected
+      gradChanged = true;
+    }
+    if (aViewConfig->get("brightness_gradient", o)) {
+      briGradient = o->doubleValue();
+      gradChanged = true;
+    }
+    if (aViewConfig->get("hue_gradient", o)) {
+      hueGradient = o->doubleValue();
+      gradChanged = true;
+    }
+    if (aViewConfig->get("saturation_gradient", o)) {
+      satGradient = o->doubleValue();
+      gradChanged = true;
+    }
+    if (aViewConfig->get("brightness_mode", o)) {
+      briMode = o->int32Value();
+      gradChanged = true;
+    }
+    if (aViewConfig->get("hue_mode", o)) {
+      hueMode = o->int32Value();
+      gradChanged = true;
+    }
+    if (aViewConfig->get("saturation_mode", o)) {
+      satMode = o->int32Value();
+      gradChanged = true;
+    }
+    if (aViewConfig->get("radial", o)) {
+      radial = o->boolValue();
+      gradChanged = true;
+    }
+    if (gradChanged) {
+      recalculateGradients();
+    }
   }
   return err;
 }
