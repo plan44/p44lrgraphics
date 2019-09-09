@@ -651,6 +651,16 @@ PixelColor p44::hsbToPixel(double aHue, double aSaturation, double aBrightness, 
 }
 
 
+void p44::pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness)
+{
+  Row3 HSV, RGB = { (double)aPixelColor.r/255, (double)aPixelColor.g/255, (double)aPixelColor.b/255 };
+  RGBtoHSV(RGB, HSV);
+  aHue = HSV[0];
+  aSaturation = HSV[1];
+  aBrightness = HSV[2];
+}
+
+
 
 #if ENABLE_VIEWCONFIG
 

@@ -44,6 +44,9 @@ namespace p44 {
     MLMicroSeconds generationInterval;
     MLMicroSeconds lastGeneration;
 
+    double newbornHue;
+    double saturation;
+
   public :
 
     LifeView();
@@ -81,6 +84,7 @@ namespace p44 {
     virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
 
     bool prepareCells();
+    void updateColors();
     void nextGeneration();
     void timeNext();
     void revive();

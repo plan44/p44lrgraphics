@@ -35,6 +35,8 @@ LifeView::LifeView() :
   minStatic(10),
   minPopulation(9)
 {
+  // original coloring scheme was yellow-green for newborn cells
+  setForegroundColor({ 128, 255, 0 });
 }
 
 LifeView::~LifeView()
@@ -88,8 +90,16 @@ MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil)
 }
 
 
+void LifeView::updateColors()
+{
+  double b;
+  pixelToHsb(foregroundColor, newbornHue, saturation, b);
+}
+
+
 void LifeView::nextGeneration()
 {
+  updateColors();
   calculateGeneration();
   if (dynamics==0) {
     staticcount++;
@@ -145,9 +155,9 @@ int LifeView::cellindex(int aX, int aY, bool aWrap)
 
 void LifeView::calculateGeneration()
 {
-  if (!prepareCells()) return;
-  dynamics = 0;
   population = 0;
+  dynamics = 0;
+  if (!prepareCells()) return;
   // cell age 0 : dead for longer
   // cell age 1 : killed in this cycle
   // cell age 2...n : living, with
@@ -304,73 +314,36 @@ PixelColor LifeView::contentColorAt(PixelCoord aPt)
   pix = backgroundColor;
   int age = cells[ci];
   if (age<2) return pix; // dead, background
-  else if (age==2) {
+  // fixed, not dependent on color set
+  if (age==2) {
     // artificially created
     pix.b = 255;
     pix.r = 200;
     pix.g = 220;
+    return pix;
   }
-  else if (age==3) {
-    // grown
-    pix.b = 0;
-    pix.r = 128;
-    pix.g = 255;
+  // dependent on foreground color
+  double cellHue;
+  double cellBrightness;
+  if (age==3) {
+    // just born - leave the color as-is
+    cellHue = newbornHue;
+    cellBrightness = 1.0;
   }
   else {
     age -= 3;
-    if (age<8) {
-      pix.r = 255;
-      pix.g = (7-age)*32; // remove green over first 8 cycles
-    }
-    else if (age<24) {
-      pix.b = (age-8)*12; // add blue over next 16 cycles
-      pix.r = 128+(23-age)*8; // ...and remove half of red already
-    }
-    else if (age<56) {
-      pix.b = 192;
-      pix.r = (55-age)*4; // remove rest of red over next 32 cycles
-    }
-    else {
-      pix.b = 192; // stone age
-    }
+    // start at -45 hue for not newborns, move hue backwards towards red in the next 57 cycles
+    // - similar to original color scheme: starts at hue 90 (green-yellow), goes down to 0==360 (red) and then down to 240 (blue)
+    //   -> total hue range is -330, with a jump at the beginning of -45
+    if (age>60) age = 60; // limit
+    cellHue = newbornHue-45-(5*age);
+    if (cellHue<0) cellHue+=360;
+    cellBrightness = 1-(age/60*0.25); // reduce to 75% brightness over time
   }
-  pix.a = 255; // opaque
+  pix = hsbToPixel(cellHue, saturation, cellBrightness);
   return pix;
 }
 
-
-/*
-bool LifeView::handleKey(int aSide, KeyCodes aNewPressedKeys, KeyCodes aCurrentPressed)
-{
-  if (aNewPressedKeys) {
-    if (aSide==0) {
-      if (aNewPressedKeys & keycode_left)
-        clear();
-      else if (aNewPressedKeys & keycode_middleleft)
-        createRandomCells(3,42);
-      else if (aNewPressedKeys & keycode_middleright)
-        postInfo("quit");
-      else if (aNewPressedKeys & keycode_right)
-        placePattern(5); // diehard
-    }
-    else {
-      if (aNewPressedKeys & keycode_left)
-        placePattern(2); // beacon
-      else if (aNewPressedKeys & keycode_middleleft)
-        placePattern(3, false, 5, 9, 0); // pentadecathlon centered
-      else if (aNewPressedKeys & keycode_middleright)
-        placePattern(7); // glider
-      else if (aNewPressedKeys & keycode_right)
-        placePattern(6); // acorn
-    }
-    timeNext();
-    makeDirty();
-    // reset count of static cycles / autospray trigger
-    staticcount = 0;
-  }
-  return true; // fully handled
-}
-*/
 
 #if ENABLE_VIEWCONFIG
 

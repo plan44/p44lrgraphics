@@ -134,6 +134,13 @@ namespace p44 {
   /// @param aBrightnessAsAlpha if set, brightness is returned in alpha, while RGB will be set for full brightness
   PixelColor hsbToPixel(double aHue, double aSaturation = 1.0, double aBrightness = 1.0, bool aBrightnessAsAlpha = false);
 
+  /// get HSB from pixel
+  /// @param aPixelColor the pixel color
+  /// @param aHue receives hue, 0..360 degrees
+  /// @param aSaturation receives saturation, 0..1
+  /// @param aBrightness receives brightness, 0..1
+  void pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness);
+
 
   /// @}
 
