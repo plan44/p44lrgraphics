@@ -28,17 +28,7 @@ using namespace p44;
 // MARK: ===== Light Spot View
 
 
-LightSpotView::LightSpotView() :
-  radial(true),
-  briGradient(0),
-  hueGradient(0),
-  satGradient(0),
-  briMode(gradient_none),
-  hueMode(gradient_none),
-  satMode(gradient_none),
-  rotation(0),
-  rotCos(1.0),
-  rotSin(0.0)
+LightSpotView::LightSpotView()
 {
   // make sure we start dark!
   setForegroundColor(black);
@@ -50,109 +40,18 @@ LightSpotView::~LightSpotView()
 }
 
 
-void LightSpotView::clear()
+void LightSpotView::setRelativeContentOrigin(double aRelX, double aRelY)
 {
+  // special version, content origin is a center of the relevant area
+  setContentOrigin({
+    (int)(aRelX*max(content.dx,frame.dx)+frame.dx/2),
+    (int)(aRelY*max(content.dy,frame.dy)+frame.dy/2)
+  });
 }
 
 
 
-void LightSpotView::setCenter(PixelCoord aCenter)
-{
-  PixelRect f = getContent();
-  f.x = aCenter.x;
-  f.y = aCenter.y;
-  setContent(f);
-}
-
-
-void LightSpotView::setExtent(PixelCoord aExtent)
-{
-  extent = aExtent;
-  makeDirty();
-}
-
-
-void LightSpotView::setRotation(double aRotation)
-{
-  if (aRotation!=rotation) {
-    rotation = aRotation;
-    double rotPi = rotation*M_PI/180;
-    rotSin = sin(rotPi);
-    rotCos = cos(rotPi);
-    makeDirty();
-  }
-}
-
-
-void LightSpotView::setColoringParameters(
-  PixelColor aBaseColor,
-  double aBri, GradientMode aBriMode,
-  double aHue, GradientMode aHueMode,
-  double aSat, GradientMode aSatMode,
-  bool aRadial
-) {
-  if (
-    aBaseColor.r!=foregroundColor.r || aBaseColor.b!=foregroundColor.g || aBaseColor.g!=foregroundColor.b || aBaseColor.a!=foregroundColor.a ||
-    briGradient!=aBri || hueGradient!=aHue || satGradient!=aSat ||
-    briMode!=aBriMode || hueMode!=aHueMode || satMode!=aSatMode ||
-    aRadial!=radial
-  ) {
-    radial = aRadial;
-    setForegroundColor(aBaseColor);
-    briGradient = aBri; briMode = aBriMode;
-    hueGradient = aHue; hueMode = aHueMode;
-    satGradient = aSat; satMode = aSatMode;
-    recalculateGradients();
-  }
-}
-
-
-static double gradientCycles(double aValue, GradientMode aMode)
-{
-  aMode &= gradient_repeat_mask;
-  switch (aMode) {
-    case gradient_repeat_cyclic:
-      return aValue-floor(aValue);
-    case gradient_repeat_oscillating: {
-      double pr = aValue-floor(aValue);
-      if (((int)aValue & 1)==1) return 1-pr;
-      return pr;
-    }
-    case gradient_unlimited:
-      return aValue; // unlimited
-    default:
-    case gradient_repeat_none:
-      return aValue>1 ? 1 : aValue;
-  }
-}
-
-
-static double gradientCurveLevel(double aProgress, GradientMode aMode)
-{
-  if ((aMode&gradient_curve_mask)==gradient_none) return 0; // no gradient at all
-  bool minus = aProgress<0;
-  double samp = gradientCycles(fabs(aProgress), aMode);
-  switch (aMode&gradient_curve_mask) {
-    case gradient_curve_sin: samp = sin(samp*M_PI/2); break; // sine
-    case gradient_curve_square: samp = samp>0.5 ? 1 : 0; // square
-    default:
-    case gradient_curve_lin: break;
-  }
-  return minus ? -samp : samp;
-}
-
-
-static double gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap)
-{
-  if (aGradient==0 || aMode==gradient_none) return aValue; // no gradient
-  aValue = aValue+gradientCurveLevel(aProgress*aGradient, aMode)*aMax;
-  if (aValue>aMax) return aWrap ? aValue-aMax : aMax;
-  if (aValue<0) return aWrap ? aValue+aMax : 0;
-  return aValue;
-}
-
-
-void LightSpotView::recalculateGradients()
+void LightSpotView::recalculateColoring()
 {
   gradientPixels.clear();
   if (briGradient==0 && hueGradient==0 && satGradient==0) return; // optimized
@@ -178,7 +77,7 @@ void LightSpotView::recalculateGradients()
     PixelColor gpix = hsbToPixel(resHsb[0], resHsb[1], resHsb[2], true);
     gradientPixels.push_back(gpix);
   }
-  makeDirty();
+  inherited::recalculateColoring();
 }
 
 
@@ -201,16 +100,13 @@ PixelColor LightSpotView::contentColorAt(PixelCoord aPt)
 
   // aPt are coordinates from center (already offset by content frame origin)
   int numGPixels = (int)gradientPixels.size();
-  // - rotate
-  double x2 = aPt.x*rotCos-aPt.y*rotSin;
-  double y2 = aPt.x*rotSin+aPt.y*rotCos;
   // - factor relative to the size (0..1)
-  double xf = x2/extent.x;
+  double xf = (double)aPt.x/extent.x;
   int extentPixels;
   double progress;
   if (radial) {
     // radial
-    double yf = y2/extent.y;
+    double yf = (double)aPt.y/extent.y;
     extentPixels = max(extent.x, extent.y);
     progress = sqrt(xf*xf+yf*yf);
   }
@@ -242,7 +138,6 @@ ErrorPtr LightSpotView::configureView(JsonObjectPtr aViewConfig)
   JsonObjectPtr o;
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
-    bool gradChanged = false;
     if (aViewConfig->get("extent_x", o)) {
       extent.x = o->doubleValue();
       makeDirty();
@@ -250,44 +145,6 @@ ErrorPtr LightSpotView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("extent_y", o)) {
       extent.y = o->doubleValue();
       makeDirty();
-    }
-    if (aViewConfig->get("rotation", o)) {
-      setRotation(o->doubleValue());
-    }
-    if (aViewConfig->get("color", o)) {
-      // parent handles setting the (base)color, but gradient is also affected
-      gradChanged = true;
-    }
-    if (aViewConfig->get("brightness_gradient", o)) {
-      briGradient = o->doubleValue();
-      gradChanged = true;
-    }
-    if (aViewConfig->get("hue_gradient", o)) {
-      hueGradient = o->doubleValue();
-      gradChanged = true;
-    }
-    if (aViewConfig->get("saturation_gradient", o)) {
-      satGradient = o->doubleValue();
-      gradChanged = true;
-    }
-    if (aViewConfig->get("brightness_mode", o)) {
-      briMode = o->int32Value();
-      gradChanged = true;
-    }
-    if (aViewConfig->get("hue_mode", o)) {
-      hueMode = o->int32Value();
-      gradChanged = true;
-    }
-    if (aViewConfig->get("saturation_mode", o)) {
-      satMode = o->int32Value();
-      gradChanged = true;
-    }
-    if (aViewConfig->get("radial", o)) {
-      radial = o->boolValue();
-      gradChanged = true;
-    }
-    if (gradChanged) {
-      recalculateGradients();
     }
   }
   return err;

@@ -205,6 +205,25 @@ void P44View::setContentSize(PixelCoord aSize)
 };
 
 
+void P44View::setContentOrigin(PixelCoord aOrigin)
+{
+  geometryChange(true);
+  changeGeometryRect(content, { aOrigin.x, aOrigin.y, content.dx, content.dy });
+  geometryChange(false);
+};
+
+
+void P44View::setRelativeContentOrigin(double aRelX, double aRelY)
+{
+  // standard version, content origin is a corner of the relevant area
+  setContentOrigin({
+    (int)(aRelX*max(content.dx,frame.dx)),
+    (int)(aRelY*max(content.dy,frame.dy))
+  });
+}
+
+
+
 void P44View::setContentRotation(double aRotation)
 {
   if (aRotation!=contentRotation) {

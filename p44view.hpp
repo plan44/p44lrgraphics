@@ -372,6 +372,14 @@ namespace p44 {
     /// set content size (without changing offset)
     void setContentSize(PixelCoord aSize);
 
+    /// set content origin/center (without changing size)
+    void setContentOrigin(PixelCoord aOrigin);
+
+    /// set content origin relative to its own size and frame
+    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
+    /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
+    virtual void setRelativeContentOrigin(double aRelX, double aRelY);
+
     /// @return content size
     PixelCoord getContentSize() const { return { content.dx, content.dy }; }
 

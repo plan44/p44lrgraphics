@@ -23,13 +23,13 @@
 #define _p44lrgraphics_lifeview_hpp__
 
 #include "p44lrg_common.hpp"
-
+#include "coloreffectview.hpp"
 
 namespace p44 {
 
-  class LifeView : public P44View
+  class LifeView : public ColorEffectView
   {
-    typedef P44View inherited;
+    typedef ColorEffectView inherited;
 
     std::vector<uint32_t> cells; ///< internal representation
 
@@ -84,7 +84,7 @@ namespace p44 {
     virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
 
     bool prepareCells();
-    void updateColors();
+    void recalculateColoring();
     void nextGeneration();
     void timeNext();
     void revive();

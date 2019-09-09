@@ -90,16 +90,16 @@ MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil)
 }
 
 
-void LifeView::updateColors()
+void LifeView::recalculateColoring()
 {
   double b;
   pixelToHsb(foregroundColor, newbornHue, saturation, b);
+  inherited::recalculateColoring();
 }
 
 
 void LifeView::nextGeneration()
 {
-  updateColors();
   calculateGeneration();
   if (dynamics==0) {
     staticcount++;
@@ -304,7 +304,6 @@ void LifeView::placePattern(uint16_t aPatternNo, bool aWrap, int aCenterX, int a
 }
 
 
-
 PixelColor LifeView::contentColorAt(PixelCoord aPt)
 {
   PixelColor pix = transparent;
@@ -334,11 +333,11 @@ PixelColor LifeView::contentColorAt(PixelCoord aPt)
     age -= 3;
     // start at -45 hue for not newborns, move hue backwards towards red in the next 57 cycles
     // - similar to original color scheme: starts at hue 90 (green-yellow), goes down to 0==360 (red) and then down to 240 (blue)
-    //   -> total hue range is -330, with a jump at the beginning of -45
-    if (age>60) age = 60; // limit
+    //   -> total hue range is -330, with a jump at the beginning of -45, leaving 285 degrees = 57 steps of 5
+    if (age>57) age = 57; // limit
     cellHue = newbornHue-45-(5*age);
     if (cellHue<0) cellHue+=360;
-    cellBrightness = 1-(age/60*0.25); // reduce to 75% brightness over time
+    cellBrightness = 1-(age/57*0.25); // reduce to 75% brightness over time
   }
   pix = hsbToPixel(cellHue, saturation, cellBrightness);
   return pix;
