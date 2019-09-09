@@ -37,7 +37,10 @@ P44View::P44View() :
   parentView(NULL),
   geometryChanging(0),
   changedGeometry(false),
-  sizeToContent(false)
+  sizeToContent(false),
+  contentRotation(0),
+  rotCos(1.0),
+  rotSin(0.0)
 {
   setFrame(zeroRect);
   // default to normal orientation
@@ -107,7 +110,7 @@ void P44View::geometryChange(bool aStart)
 
 
 
-void P44View::rotateCoord(PixelCoord &aCoord)
+void P44View::orientateCoord(PixelCoord &aCoord)
 {
   if (contentOrientation & xy_swap) {
     swap(aCoord.x, aCoord.y);
@@ -130,7 +133,7 @@ void P44View::flipCoordInFrame(PixelCoord &aCoord)
 void P44View::inFrameToContentCoord(PixelCoord &aCoord)
 {
   flipCoordInFrame(aCoord);
-  rotateCoord(aCoord);
+  orientateCoord(aCoord);
   aCoord.x -= content.x;
   aCoord.y -= content.y;
 }
@@ -140,7 +143,7 @@ void P44View::contentToInFrameCoord(PixelCoord &aCoord)
 {
   aCoord.x += content.x;
   aCoord.y += content.y;
-  rotateCoord(aCoord);
+  orientateCoord(aCoord);
   flipCoordInFrame(aCoord);
 }
 
@@ -202,11 +205,23 @@ void P44View::setContentSize(PixelCoord aSize)
 };
 
 
+void P44View::setContentRotation(double aRotation)
+{
+  if (aRotation!=contentRotation) {
+    contentRotation = aRotation;
+    double rotPi = contentRotation*M_PI/180;
+    rotSin = sin(rotPi);
+    rotCos = cos(rotPi);
+    makeDirty();
+  }
+}
+
+
 void P44View::setFullFrameContent()
 {
   PixelCoord sz = getFrameSize();
   setOrientation(P44View::right);
-  rotateCoord(sz);
+  orientateCoord(sz);
   setContent({ 0, 0, sz.x, sz.y });
 }
 
@@ -256,7 +271,7 @@ void P44View::moveFrameToContent(bool aResize)
 void P44View::sizeFrameToContent()
 {
   PixelCoord sz = { content.dx, content.dy };
-  rotateCoord(sz);
+  orientateCoord(sz);
   PixelRect f = frame;
   f.dx = sz.x;
   f.dy = sz.y;
@@ -269,7 +284,6 @@ void P44View::clear()
 {
   setContentSize({0, 0});
 }
-
 
 
 // MARK: ===== updating
@@ -403,7 +417,18 @@ PixelColor P44View::colorAt(PixelCoord aPt)
       // translate into content coordinates
       inFrameToContentCoord(aPt);
       // now get content pixel in content coordinates
-      pc = contentColorAt(aPt);
+      PixelCoord pt;
+      if (contentRotation==0) {
+        // optimization: no rotation, get pixel
+        pc = contentColorAt(aPt);
+      }
+      else {
+        // - rotate first
+        PixelCoord rpt;
+        rpt.x = aPt.x*rotCos-aPt.y*rotSin;
+        rpt.y = aPt.x*rotSin+aPt.y*rotCos;
+        pc = contentColorAt(rpt);
+      }
       if (contentIsMask) {
         // use only alpha of content, color comes from foregroundColor
         pc.r = foregroundColor.r;
@@ -725,6 +750,9 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   if (aViewConfig->get("orientation", o)) {
     setOrientation(o->int32Value());
+  }
+  if (aViewConfig->get("rotation", o)) {
+    setContentRotation(o->doubleValue());
   }
   if (aViewConfig->get("fullframe", o)) {
     if(o->boolValue()) setFullFrameContent();

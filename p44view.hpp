@@ -231,6 +231,12 @@ namespace p44 {
     bool contentIsMask; ///< if set, only alpha of content is used on foreground color
     bool localTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
     MLMicroSeconds maskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
+    double contentRotation; ///< rotation of content pixels in degree CCW
+    // - derived values
+    double rotSin;
+    double rotCos;
+
+
 
     string label; ///< label of the view for addressing it
 
@@ -241,7 +247,7 @@ namespace p44 {
     void flipCoordInFrame(PixelCoord &aCoord);
 
     /// rotate coordinate between frame and content (both ways)
-    void rotateCoord(PixelCoord &aCoord);
+    void orientateCoord(PixelCoord &aCoord);
 
     /// content rectangle in frame coordinates
     void contentRectAsViewCoord(PixelRect &aRect);
@@ -325,7 +331,6 @@ namespace p44 {
     /// @param aLabel the new label
     void setLabel(const string aLabel) { label = aLabel; }
 
-
     /// set view's alpha
     /// @param aAlpha 0=fully transparent, 255=fully opaque
     void setAlpha(int aAlpha);
@@ -354,8 +359,12 @@ namespace p44 {
     /// @note: completed callback will not be called
     void stopFading();
 
-    /// @param aOrientation the orientation of the content
+    /// @param aOrientation the orientation of the content in the frame
     void setOrientation(Orientation aOrientation) { contentOrientation = aOrientation; makeDirty(); }
+
+    /// set content rotation around content origin
+    /// @param aRotation content rotation in degrees CCW
+    void setContentRotation(double aRotation);
 
     /// set content size and offset (relative to frame origin, but in content coordinates, i.e. possibly orientation translated!)
     void setContent(PixelRect aContent);
