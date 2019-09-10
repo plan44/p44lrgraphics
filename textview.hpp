@@ -23,12 +23,13 @@
 #define _p44lrgraphics_textview_hpp__
 
 #include "p44lrg_common.hpp"
+#include "coloreffectview.hpp"
 
 namespace p44 {
 
-  class TextView : public P44View
+  class TextView : public ColorEffectView
   {
-    typedef P44View inherited;
+    typedef ColorEffectView inherited;
 
     // text rendering
     string text; ///< internal representation of text
@@ -67,6 +68,12 @@ namespace p44 {
     #endif
 
   protected:
+
+    /// color effect params have changed
+    virtual void recalculateColoring() P44_OVERRIDE;
+
+    /// geometry has changed
+    virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
     /// get content color at aPt
     virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;

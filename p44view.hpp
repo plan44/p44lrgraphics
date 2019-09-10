@@ -192,6 +192,7 @@ namespace p44 {
       wrapYmax = 0x08, /// wrap in Y direction for Y>=frame area
       wrapY = wrapYmin|wrapYmax, /// wrap in both Y directions
       wrapXY = wrapX|wrapY, /// wrap in all directions
+      wrapMask = wrapXY, /// mask for wrap bits
       clipXmin = 0x10, /// clip content left of frame area
       clipXmax = 0x20, /// clip content right of frame area
       clipX = clipXmin|clipXmax, // clip content horizontally
@@ -199,6 +200,7 @@ namespace p44 {
       clipYmax = 0x80, /// clip content above frame area
       clipY = clipYmin|clipYmax, // clip content vertically
       clipXY = clipX|clipY, // clip content
+      clipMask = clipXY, // mask for clip bits
       noAdjust = clipXY, // for positioning: do not adjust content rectangle
       appendLeft = wrapXmin, // for positioning: extend to the left
       appendRight = wrapXmax, // for positioning: extend to the right
@@ -229,6 +231,7 @@ namespace p44 {
     Orientation contentOrientation; ///< orientation of content in frame
     WrapMode contentWrapMode; ///< content wrap mode in frame area
     bool contentIsMask; ///< if set, only alpha of content is used on foreground color
+    bool invertAlpha; ///< invert alpha provided by content
     bool localTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
     MLMicroSeconds maskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
     double contentRotation; ///< rotation of content pixels in degree CCW
@@ -401,6 +404,9 @@ namespace p44 {
 
     /// child view has changed geometry (frame, content rect)
     virtual void childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) {};
+
+    /// my own geometry has changed
+    virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) {};
 
     /// get color at X,Y
     /// @param aPt point to get in frame coordinates

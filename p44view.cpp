@@ -53,6 +53,7 @@ P44View::P44View() :
   foregroundColor = { .r=255, .g=255, .b=255, .a=255 }; // fully white foreground...
   alpha = 255; // but content pixels passed trough 1:1
   contentIsMask = false; // content color will be used
+  invertAlpha = false; // inverted mask
   targetAlpha = -1; // not fading
   localTimingPriority = true;
   maskChildDirtyUntil = Never;
@@ -97,6 +98,7 @@ void P44View::geometryChange(bool aStart)
             content.x, content.y, content.dx, content.dy
           );
           makeDirty();
+          geometryChanged(previousFrame, previousContent); // let subclasses know
           if (parentView) {
             // Note: as we are passing in the frames, it is safe when the following calls recursively calls geometryChange again
             //   except that it must not do so unconditionally to prevent endless recursion
@@ -436,7 +438,6 @@ PixelColor P44View::colorAt(PixelCoord aPt)
       // translate into content coordinates
       inFrameToContentCoord(aPt);
       // now get content pixel in content coordinates
-      PixelCoord pt;
       if (contentRotation==0) {
         // optimization: no rotation, get pixel
         pc = contentColorAt(aPt);
@@ -448,8 +449,11 @@ PixelColor P44View::colorAt(PixelCoord aPt)
         rpt.y = aPt.x*rotSin+aPt.y*rotCos;
         pc = contentColorAt(rpt);
       }
+      if (invertAlpha) {
+        pc.a = 255-pc.a;
+      }
       if (contentIsMask) {
-        // use only alpha of content, color comes from foregroundColor
+        // use only (possibly inverted) alpha of content, color comes from foregroundColor
         pc.r = foregroundColor.r;
         pc.g = foregroundColor.g;
         pc.b = foregroundColor.b;
@@ -750,6 +754,11 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   if (aViewConfig->get("mask", o)) {
     contentIsMask = o->boolValue();
+    makeDirty();
+  }
+  if (aViewConfig->get("invertalpha", o)) {
+    invertAlpha = o->boolValue();
+    makeDirty();
   }
   if (aViewConfig->get("content_x", o)) {
     content.x = o->int32Value(); makeDirty();

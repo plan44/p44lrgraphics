@@ -53,31 +53,16 @@ void LightSpotView::setRelativeContentOrigin(double aRelX, double aRelY)
 
 void LightSpotView::recalculateColoring()
 {
-  gradientPixels.clear();
-  if (briGradient==0 && hueGradient==0 && satGradient==0) return; // optimized
-  // initial HSV
-  Row3 rgb = { (double)foregroundColor.r/255, (double)foregroundColor.g/255, (double)foregroundColor.b/255 };
-  Row3 hsb;
-  RGBtoHSV(rgb, hsb);
-  hsb[2] = (double)foregroundColor.a/255;
-  Row3 resHsb;
-  // now create gradient pixels covering larger extent dimension
-  int numGradientPixels = radial ? max(frame.dx, frame.dy) : frame.dx;
-  int extentPixels = radial ? max(extent.x, extent.y) : extent.x;
-  for (int i=0; i<numGradientPixels; i++) {
-    // progress within the extent (0..1)
-    double pr = (double)i/extentPixels;
-    // - brightness
-    resHsb[2] = gradiated(hsb[2], pr, briGradient, briMode, 1, false);
-    // - hue
-    resHsb[0] = gradiated(hsb[0], pr, hueGradient, hueMode, 360, true);
-    // - saturation
-    resHsb[1] = gradiated(hsb[1], pr, satGradient, satMode, 1, false);
-    // store the pixel
-    PixelColor gpix = hsbToPixel(resHsb[0], resHsb[1], resHsb[2], true);
-    gradientPixels.push_back(gpix);
-  }
+  calculateGradient(radial ? max(frame.dx, frame.dy) : frame.dx,  radial ? max(extent.x, extent.y) : extent.x);
   inherited::recalculateColoring();
+}
+
+
+void LightSpotView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
+{
+  // coloring is dependent on geometry
+  recalculateColoring();
+  inherited::geometryChanged(aOldFrame, aOldContent);
 }
 
 
@@ -118,8 +103,7 @@ PixelColor LightSpotView::contentColorAt(PixelCoord aPt)
   if (progress<1 || (contentWrapMode&clipXY)==0) {
     if (numGPixels>0) {
       int i = progress*extentPixels;
-      if (i<0) i = 0; else if (i>=numGPixels) i = numGPixels-1;
-      pix = gradientPixels[i];
+      pix = gradientPixel(i);
     }
     else {
       pix = foregroundColor;

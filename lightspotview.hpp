@@ -33,9 +33,6 @@ namespace p44 {
   {
     typedef ColorEffectView inherited;
 
-    typedef std::vector<PixelColor> PixelVector;
-    PixelVector gradientPixels; ///< precalculated gradient pixels
-
   public :
 
     LightSpotView();
@@ -60,7 +57,7 @@ namespace p44 {
     /// set content origin relative to its own size and frame
     /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
     /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    virtual void setRelativeContentOrigin(double aRelX, double aRelY);
+    virtual void setRelativeContentOrigin(double aRelX, double aRelY) P44_OVERRIDE;
 
 
   protected:
@@ -73,6 +70,9 @@ namespace p44 {
 
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;
+
+    /// geometry has changed
+    virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
   private:
 

@@ -122,6 +122,43 @@ double ColorEffectView::gradiated(double aValue, double aProgress, double aGradi
 }
 
 
+
+void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels)
+{
+  gradientPixels.clear();
+  if (briGradient==0 && hueGradient==0 && satGradient==0) return; // optimized
+  // initial HSV
+  Row3 rgb = { (double)foregroundColor.r/255, (double)foregroundColor.g/255, (double)foregroundColor.b/255 };
+  Row3 hsb;
+  RGBtoHSV(rgb, hsb);
+  hsb[2] = (double)foregroundColor.a/255;
+  Row3 resHsb;
+  // now create gradient pixels covering larger extent dimension
+  for (int i=0; i<aNumGradientPixels; i++) {
+    // progress within the extent (0..1)
+    double pr = (double)i/aExtentPixels;
+    // - brightness
+    resHsb[2] = gradiated(hsb[2], pr, briGradient, briMode, 1, false);
+    // - hue
+    resHsb[0] = gradiated(hsb[0], pr, hueGradient, hueMode, 360, true);
+    // - saturation
+    resHsb[1] = gradiated(hsb[1], pr, satGradient, satMode, 1, false);
+    // store the pixel
+    PixelColor gpix = hsbToPixel(resHsb[0], resHsb[1], resHsb[2], true);
+    gradientPixels.push_back(gpix);
+  }
+}
+
+
+PixelColor ColorEffectView::gradientPixel(int aPixelIndex)
+{
+  int numGPixels = (int)gradientPixels.size();
+  if (aPixelIndex<0) aPixelIndex = 0; else if (aPixelIndex>=numGPixels) aPixelIndex = numGPixels-1;
+  return gradientPixels[aPixelIndex];
+}
+
+
+
 #if ENABLE_VIEWCONFIG
 
 // MARK: ===== view configuration

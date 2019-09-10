@@ -50,6 +50,9 @@ namespace p44 {
 
   protected:
     
+    typedef std::vector<PixelColor> PixelVector;
+    PixelVector gradientPixels; ///< precalculated gradient pixels
+
     /// coloring effect parameters (usually some kind of gradient)
     bool radial; ///< if set, gradient is applied radially from a center, otherwise along an axis
     double briGradient;
@@ -94,9 +97,16 @@ namespace p44 {
     static double gradientCurveLevel(double aProgress, GradientMode aMode);
     static double gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap);
 
+    void calculateGradient(int aNumGradientPixels, int aExtentPixels);
+
   protected:
 
+    /// color params have changed
     virtual void recalculateColoring() { makeDirty(); }
+
+    /// @param aPixelIndex the index into the gradient. Any index can be passed, range is clipped to 0..gradientSize-1
+    /// @return the pixel as specified by aPixelIndex if in range, otherwise first or last gradient pixel, resp
+    PixelColor gradientPixel(int aPixelIndex);
 
   };
   typedef boost::intrusive_ptr<ColorEffectView> ColorEffectViewPtr;

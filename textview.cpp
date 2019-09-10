@@ -865,20 +865,34 @@ void TextView::renderText()
 }
 
 
+void TextView::recalculateColoring()
+{
+  calculateGradient(content.dx, extent.x);
+  inherited::recalculateColoring();
+}
+
+
+void TextView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
+{
+  // coloring is dependent on geometry
+  recalculateColoring();
+  inherited::geometryChanged(aOldFrame, aOldContent);
+}
+
+
 PixelColor TextView::contentColorAt(PixelCoord aPt)
 {
   if (isInContentSize(aPt)) {
     uint8_t col = textPixelCols[aPt.x];
-    if (col & (1<<(rowsPerGlyph-1-aPt.y))) {
+    if (aPt.y<rowsPerGlyph && aPt.y>=0 && (col & (1<<(rowsPerGlyph-1-aPt.y)))) {
+      if (!gradientPixels.empty()) {
+        // horizontally gradiated text
+        return gradientPixel(aPt.x);
+      }
       return foregroundColor;
     }
-    else {
-      return inherited::contentColorAt(aPt);;
-    }
   }
-  else {
-    return inherited::contentColorAt(aPt);
-  }
+  return inherited::contentColorAt(aPt);
 }
 
 
