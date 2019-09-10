@@ -20,6 +20,7 @@
 //
 
 #include "lifeview.hpp"
+#include "utils.hpp"
 
 using namespace p44;
 
@@ -37,6 +38,9 @@ LifeView::LifeView() :
 {
   // original coloring scheme was yellow-green for newborn cells
   setForegroundColor({ 128, 255, 0 });
+  hueGradient = -330.0/360*100;
+  satGradient = 0;
+  briGradient = -25;
 }
 
 LifeView::~LifeView()
@@ -81,19 +85,18 @@ MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (generationInterval!=Never && now>=lastGeneration+generationInterval) {
+  if (alpha>0 && generationInterval!=Never && now>=lastGeneration+generationInterval) {
     lastGeneration = now;
     nextGeneration();
+    updateNextCall(nextCall, now+generationInterval);
   }
-  updateNextCall(nextCall, now+generationInterval);
   return nextCall;
 }
 
 
 void LifeView::recalculateColoring()
 {
-  double b;
-  pixelToHsb(foregroundColor, newbornHue, saturation, b);
+  pixelToHsb(foregroundColor, hue, saturation, brightness);
   inherited::recalculateColoring();
 }
 
@@ -324,22 +327,22 @@ PixelColor LifeView::contentColorAt(PixelCoord aPt)
   // dependent on foreground color
   double cellHue;
   double cellBrightness;
+  double cellSaturation;
   if (age==3) {
     // just born - leave the color as-is
-    cellHue = newbornHue;
+    cellHue = hue;
     cellBrightness = 1.0;
+    cellSaturation = saturation;
   }
   else {
     age -= 3;
-    // start at -45 hue for not newborns, move hue backwards towards red in the next 57 cycles
-    // - similar to original color scheme: starts at hue 90 (green-yellow), goes down to 0==360 (red) and then down to 240 (blue)
-    //   -> total hue range is -330, with a jump at the beginning of -45, leaving 285 degrees = 57 steps of 5
     if (age>57) age = 57; // limit
-    cellHue = newbornHue-45-(5*age);
+    cellHue = cyclic(hue+hueGradient*660/7.3+(hueGradient*660/66*age),0,360);
     if (cellHue<0) cellHue+=360;
-    cellBrightness = 1-(age/57*0.25); // reduce to 75% brightness over time
+    cellBrightness = limited(brightness+(briGradient/10*age),0,1);
+    cellSaturation = limited(saturation+(satGradient/10*age),0,1);
   }
-  pix = hsbToPixel(cellHue, saturation, cellBrightness);
+  pix = hsbToPixel(cellHue, cellSaturation, cellBrightness);
   return pix;
 }
 

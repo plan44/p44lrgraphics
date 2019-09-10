@@ -44,8 +44,9 @@ namespace p44 {
     MLMicroSeconds generationInterval;
     MLMicroSeconds lastGeneration;
 
-    double newbornHue;
+    double hue;
     double saturation;
+    double brightness;
 
   public :
 
