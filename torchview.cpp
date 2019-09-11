@@ -115,6 +115,7 @@ static uint16_t random(uint16_t aMinOrMax, uint16_t aMax = 0)
 
 void TorchView::calculateCycle()
 {
+  if (alpha==0) return; // don't waste cycles
   PixelCoord dotpos;
   // random flame
   for (dotpos.y=0; dotpos.y<flame_height; dotpos.y++) {
@@ -186,6 +187,7 @@ void TorchView::calculateCycle()
   for (TorchDotVector::iterator pos=torchDots.begin(); pos!=torchDots.end(); ++pos) {
     pos->previous = pos->current;
   }
+  makeDirty();
 }
 
 #define NEWCOLORING 1
@@ -197,8 +199,7 @@ static const uint8_t energymap[32] = {0, 64, 96, 112, 128, 144, 152, 160, 168, 1
 PixelColor TorchView::contentColorAt(PixelCoord aPt)
 {
   PixelColor pix = transparent;
-  if (isInContentSize(aPt)) {
-    pix.a = 255; // opaque
+  if (alpha>0 && isInContentSize(aPt)) {
     TorchDot& d = dot(aPt);
     int extraHeat = d.current-hotspark_min;
     if (extraHeat>=0) {
@@ -211,6 +212,7 @@ PixelColor TorchView::contentColorAt(PixelCoord aPt)
         pix = gradientPixel(255-d.current);
         #else
         // energy to brightness is non-linear
+        pix.a = 255; // opaque
         uint8_t eb = energymap[d.current>>3];
         pix = { 10, 0, 0, 255 };
         addToPixel(pix, dimmedPixel(foregroundColor, eb));
