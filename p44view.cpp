@@ -52,6 +52,7 @@ P44View::P44View() :
   backgroundColor = { .r=0, .g=0, .b=0, .a=0 }; // transparent background,
   foregroundColor = { .r=255, .g=255, .b=255, .a=255 }; // fully white foreground...
   alpha = 255; // but content pixels passed trough 1:1
+  z_order = 0; // none in particular
   contentIsMask = false; // content color will be used
   invertAlpha = false; // inverted mask
   targetAlpha = -1; // not fading
@@ -398,6 +399,18 @@ void P44View::fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB)
     fadeCompleteCB = aCompletedCB;
   }
 }
+
+
+void P44View::setZOrder(int aZOrder)
+{
+  geometryChange(true);
+  if (z_order!=aZOrder) {
+    z_order = aZOrder;
+    changedGeometry = true;
+  }
+  geometryChange(false);
+}
+
 
 
 #define SHOW_ORIGIN 0
@@ -749,6 +762,9 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (aViewConfig->get("alpha", o)) {
     setAlpha(o->int32Value());
   }
+  if (aViewConfig->get("z_order", o)) {
+    setZOrder(o->int32Value());
+  }
   if (aViewConfig->get("wrapmode", o)) {
     setWrapMode(o->int32Value());
   }
@@ -776,14 +792,15 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     content.dy = o->int32Value(); makeDirty();
     changedGeometry = true;
   }
-  if (aViewConfig->get("orientation", o)) {
-    setOrientation(o->int32Value());
-  }
   if (aViewConfig->get("rotation", o)) {
     setContentRotation(o->doubleValue());
   }
   if (aViewConfig->get("fullframe", o)) {
     if(o->boolValue()) setFullFrameContent();
+  }
+  if (aViewConfig->get("orientation", o)) {
+    // check this oafer fullframe, because fullframe resets orientation
+    setOrientation(o->int32Value());
   }
   if (aViewConfig->get("timingpriority", o)) {
     localTimingPriority = o->boolValue();

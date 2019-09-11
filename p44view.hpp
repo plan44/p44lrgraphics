@@ -223,8 +223,12 @@ namespace p44 {
     // alpha (opacity)
     uint8_t alpha;
 
+    // colors
     PixelColor backgroundColor; ///< background color
     PixelColor foregroundColor; ///< foreground color
+
+    // z-order
+    int z_order;
 
     // content
     PixelRect content; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation translated!)
@@ -351,6 +355,13 @@ namespace p44 {
     /// set visible (hide or show)
     /// @param aVisible true to show, false to hide
     void setVisible(bool aVisible) { if (aVisible) show(); else hide(); };
+
+    /// @return Z-Order (e.g. in a viewstack, highest is frontmost)
+    int getZOrder() { return z_order; };
+
+    /// @param aZOrder z-order (e.g. in a viewstack, highest is frontmost)
+    void setZOrder(int aZOrder);
+
 
     /// fade alpha
     /// @param aAlpha 0=fully transparent, 255=fully opaque

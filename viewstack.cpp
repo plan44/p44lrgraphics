@@ -95,6 +95,7 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
   if (adjust) {
     recalculateContentArea();
   }
+  sortZOrder();
   aView->setParent(this);
   makeDirty();
   geometryChange(false);
@@ -164,6 +165,17 @@ void ViewStack::recalculateContentArea()
   offsetSubviews({-r.x, -r.y});
   // to avoid content moving seen from the outside, now modify content rectangle
   setContent(r);
+}
+
+
+static bool compare_zorder(P44ViewPtr& aFirst, P44ViewPtr& aSecond)
+{
+  return aFirst->getZOrder() < aSecond->getZOrder();
+}
+
+void ViewStack::sortZOrder()
+{
+  viewStack.sort(compare_zorder);
 }
 
 
@@ -285,6 +297,8 @@ void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame,
       recalculateContentArea();
       moveFrameToContent(true);
     }
+    // re-sort z_order
+    sortZOrder();
   }
 }
 

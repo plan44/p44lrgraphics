@@ -129,6 +129,7 @@ namespace p44 {
   private:
 
     void recalculateContentArea();
+    void sortZOrder();
 
   };
   typedef boost::intrusive_ptr<ViewStack> ViewStackPtr;
