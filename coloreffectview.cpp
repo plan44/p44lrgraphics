@@ -97,19 +97,36 @@ double ColorEffectView::gradientCycles(double aValue, GradientMode aMode)
 }
 
 
+#define CURVE_EXP 4.0
+
 double ColorEffectView::gradientCurveLevel(double aProgress, GradientMode aMode)
 {
   if ((aMode&gradient_curve_mask)==gradient_none) return 0; // no gradient at all
   bool minus = aProgress<0;
   double samp = gradientCycles(fabs(aProgress), aMode);
   switch (aMode&gradient_curve_mask) {
-    case gradient_curve_sin: samp = sin(samp*M_PI/2); break; // sine
     case gradient_curve_square: samp = samp>0.5 ? 1 : 0; // square
+    case gradient_curve_sin: samp = sin(samp*M_PI/2); break; // sine
+    case gradient_curve_cos: samp = 1-cos(samp*M_PI/2); break; // cosine
+    case gradient_curve_log: samp = 1.0/CURVE_EXP*log(samp*(exp(CURVE_EXP)-1)+1); // logarithmic
+    case gradient_curve_exp: samp = (exp(samp*CURVE_EXP)-1)/(exp(CURVE_EXP)-1); // exponential
     default:
-    case gradient_curve_lin: break;
+    case gradient_curve_lin: break; // linear/triangle
   }
   return minus ? -samp : samp;
 }
+
+
+//double LightBehaviour::brightnessToPWM(Brightness aBrightness, double aMaxPWM)
+//{
+//  return aMaxPWM*((exp(aBrightness*dimCurveExp/100)-1)/(exp(dimCurveExp)-1));
+//}
+//
+//
+//Brightness LightBehaviour::PWMToBrightness(double aPWM, double aMaxPWM)
+//{
+//  return 100/dimCurveExp*log(aPWM*(exp(dimCurveExp)-1)/aMaxPWM + 1);
+//}
 
 
 double ColorEffectView::gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap)
@@ -137,12 +154,12 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
     double pr = (double)i/aExtentPixels;
-    // - brightness
-    resHsb[2] = gradiated(hsb[2], pr, briGradient, briMode, 1, false);
     // - hue
     resHsb[0] = gradiated(hsb[0], pr, hueGradient, hueMode, 360, true);
     // - saturation
     resHsb[1] = gradiated(hsb[1], pr, satGradient, satMode, 1, false);
+    // - brightness
+    resHsb[2] = gradiated(hsb[2], pr, briGradient, briMode, 1, false);
     // store the pixel
     PixelColor gpix = hsbToPixel(resHsb[0], resHsb[1], resHsb[2], true);
     gradientPixels.push_back(gpix);
@@ -153,6 +170,7 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
 PixelColor ColorEffectView::gradientPixel(int aPixelIndex)
 {
   int numGPixels = (int)gradientPixels.size();
+  if (numGPixels==0) return foregroundColor;
   if (aPixelIndex<0) aPixelIndex = 0; else if (aPixelIndex>=numGPixels) aPixelIndex = numGPixels-1;
   return gradientPixels[aPixelIndex];
 }
