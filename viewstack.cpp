@@ -312,7 +312,7 @@ PixelColor ViewStack::contentColorAt(PixelCoord aPt)
   }
   else {
     // consult views in stack
-    PixelColor pc = backgroundColor; // start with background color (usually: black or transparent)
+    PixelColor pc = black; // start with black, i.e. no color (NOT background!)
     PixelColor lc;
     uint8_t seethrough = 255; // first layer is directly visible, not yet obscured
     for (ViewsList::reverse_iterator pos = viewStack.rbegin(); pos!=viewStack.rend(); ++pos) {
@@ -332,11 +332,14 @@ PixelColor ViewStack::contentColorAt(PixelCoord aPt)
     if (seethrough>0) {
       // rest is background or overall transparency
       lc.a = dimVal(backgroundColor.a, seethrough);
+      seethrough -= lc.a;
       lc = dimmedPixel(backgroundColor, lc.a);
       addToPixel(pc, lc);
-      seethrough -= lc.a;
     }
-    pc.a = 255-seethrough; // overall transparency is what is left of seethrough
+    if(seethrough>0) {
+      pc.a = 255-seethrough; // overall transparency is what is left of seethrough
+      if (pc.a>0) dimPixel(pc, 65025/pc.a); // but intensity of stack result must be amplified accordingly
+    }
     // factor in alpha of entire viewstack
     if (alpha!=255) {
       pc.a = dimVal(pc.a, alpha);
