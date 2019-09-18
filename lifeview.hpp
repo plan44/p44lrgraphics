@@ -85,7 +85,7 @@ namespace p44 {
     virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
 
     bool prepareCells();
-    void recalculateColoring();
+    void recalculateColoring() P44_OVERRIDE;
     void nextGeneration();
     void timeNext();
     void revive();
