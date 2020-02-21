@@ -31,7 +31,7 @@ To get started, just copy the *p44lrg_config_TEMPLATE.hpp* to a location in your
 License
 -------
 
-p44utils are licensed under the GPLv3 License (see COPYING).
+p44lrgraphics is licensed under the GPLv3 License (see COPYING).
 
 If that's a problem for your particular application, I am open to provide a commercial license, please contact me at [luz@plan44.ch](mailto:luz@plan44.ch).
 
