@@ -70,7 +70,7 @@ ViewScroller::~ViewScroller()
 void ViewScroller::clear()
 {
   // just delegate
-  scrolledView->clear();
+  if (scrolledView) scrolledView->clear();
 }
 
 
