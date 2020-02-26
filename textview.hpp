@@ -76,7 +76,7 @@ namespace p44 {
     virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
     /// get content color at aPt
-    virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
   private:
 

@@ -44,6 +44,11 @@ namespace p44 {
     /// @note this must be called as demanded by return value, and after making changes to the view
     virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
+    /// set content origin relative to its own size and frame
+    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
+    /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
+    virtual void setRelativeContentOrigin(double aRelX, double aRelY) P44_OVERRIDE;
+
     #if ENABLE_VIEWCONFIG
 
     /// configure view from JSON
@@ -52,13 +57,17 @@ namespace p44 {
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
 
-    #endif
+    #endif // ENABLE_VIEWCONFIG
 
-    /// set content origin relative to its own size and frame
-    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
-    /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    virtual void setRelativeContentOrigin(double aRelX, double aRelY) P44_OVERRIDE;
+    #if ENABLE_ANIMATION
 
+    /// get a value animation setter for a given property of the view
+    /// @param aProperty the name of the property to get a setter for
+    /// @param aCurrentValue is assigned the current value of the property
+    /// @return the setter to be used by the animator
+    virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue) P44_OVERRIDE;
+
+    #endif // ENABLE_ANIMATION
 
   protected:
 
@@ -66,7 +75,7 @@ namespace p44 {
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;

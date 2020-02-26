@@ -19,7 +19,7 @@
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "viewanimator.hpp"
+#include "viewsequencer.hpp"
 
 #if ENABLE_VIEWCONFIG
   #include "viewfactory.hpp"
@@ -30,7 +30,7 @@ using namespace p44;
 
 // MARK: ===== ViewAnimator
 
-ViewAnimator::ViewAnimator() :
+ViewSequencer::ViewSequencer() :
   repeating(false),
   currentStep(-1),
   animationState(as_begin)
@@ -38,7 +38,7 @@ ViewAnimator::ViewAnimator() :
 }
 
 
-ViewAnimator::~ViewAnimator()
+ViewSequencer::~ViewSequencer()
 {
   for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
     P44ViewPtr v = pos->view;
@@ -48,15 +48,15 @@ ViewAnimator::~ViewAnimator()
 }
 
 
-void ViewAnimator::clear()
+void ViewSequencer::clear()
 {
-  stopAnimation();
+  stopAnimations();
   sequence.clear();
   inherited::clear();
 }
 
 
-void ViewAnimator::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime, MLMicroSeconds aFadeOutTime)
+void ViewSequencer::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime, MLMicroSeconds aFadeOutTime)
 {
   AnimationStep s;
   s.view = aView;
@@ -68,7 +68,7 @@ void ViewAnimator::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroS
 }
 
 
-MLMicroSeconds ViewAnimator::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
   updateNextCall(nextCall, stepAnimation(), aPriorityUntil); // animation has priority
@@ -79,15 +79,16 @@ MLMicroSeconds ViewAnimator::step(MLMicroSeconds aPriorityUntil)
 }
 
 
-void ViewAnimator::stopAnimation()
+void ViewSequencer::stopAnimations()
 {
-  if (currentView) currentView->stopFading();
+  if (currentView) currentView->stopAnimations();
   animationState = as_begin;
   currentStep = -1;
+  inherited::stopAnimations();
 }
 
 
-MLMicroSeconds ViewAnimator::stepAnimation()
+MLMicroSeconds ViewSequencer::stepAnimation()
 {
   if (currentStep<sequence.size()) {
     MLMicroSeconds now = MainLoop::now();
@@ -100,8 +101,12 @@ MLMicroSeconds ViewAnimator::stepAnimation()
         currentView = as.view;
         makeDirty();
         if (as.fadeInTime>0) {
+          #if ENABLE_ANIMATION
           currentView->setAlpha(0);
-          currentView->fadeTo(255, as.fadeInTime);
+          currentView->animatorFor("alpha")->animate(255, as.fadeInTime);
+          #else
+          currentView->setAlpha(255);
+          #endif
         }
         animationState = as_show;
         lastStateChange = now;
@@ -111,7 +116,11 @@ MLMicroSeconds ViewAnimator::stepAnimation()
         if (sinceLast>as.fadeInTime+as.showTime) {
           // check fadeout
           if (as.fadeOutTime>0) {
-            as.view->fadeTo(255, as.fadeOutTime);
+            #if ENABLE_ANIMATION
+            as.view->animatorFor("alpha")->animate(255, as.fadeOutTime);
+            #else
+            as.view->setAlpha(255);
+            #endif
             animationState = as_fadeout;
           }
           else {
@@ -147,7 +156,7 @@ MLMicroSeconds ViewAnimator::stepAnimation()
             currentStep = 0;
           }
           else {
-            stopAnimation();
+            stopAnimations();
             return Infinite; // no need to call again for this animation
           }
         }
@@ -158,7 +167,7 @@ MLMicroSeconds ViewAnimator::stepAnimation()
 }
 
 
-void ViewAnimator::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
+void ViewSequencer::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
 {
   repeating = aRepeat;
   completedCB = aCompletedCB;
@@ -169,21 +178,21 @@ void ViewAnimator::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
 
 
 
-bool ViewAnimator::isDirty()
+bool ViewSequencer::isDirty()
 {
   if (inherited::isDirty()) return true; // dirty anyway
   return currentView && reportDirtyChilds() ? currentView->isDirty() : false;
 }
 
 
-void ViewAnimator::updated()
+void ViewSequencer::updated()
 {
   inherited::updated();
   if (currentView) currentView->updated();
 }
 
 
-PixelColor ViewAnimator::contentColorAt(PixelCoord aPt)
+PixelColor ViewSequencer::contentColorAt(PixelPoint aPt)
 {
   // default is the animator's background color
   if (alpha==0 || !currentView) {
@@ -200,7 +209,7 @@ PixelColor ViewAnimator::contentColorAt(PixelCoord aPt)
 
 // MARK: ===== view configuration
 
-ErrorPtr ViewAnimator::configureView(JsonObjectPtr aViewConfig)
+ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
 {
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
@@ -244,7 +253,7 @@ ErrorPtr ViewAnimator::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-P44ViewPtr ViewAnimator::getView(const string aLabel)
+P44ViewPtr ViewSequencer::getView(const string aLabel)
 {
   for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
     P44ViewPtr v = pos->view;

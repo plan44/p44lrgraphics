@@ -61,7 +61,7 @@ namespace p44 {
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
   public :
 
@@ -135,7 +135,7 @@ namespace p44 {
 
     /// @return number of pixels in either direction to scroll until current content is exhausted.
     ///   x/y are set to INT_MAX to signal "infinite" (if scrolled view's wrap mode is set in the scroll direction)
-    PixelCoord remainingPixelsToScroll();
+    PixelPoint remainingPixelsToScroll();
 
     /// @return number time until scroll will need more content
     MLMicroSeconds remainingScrollTime();

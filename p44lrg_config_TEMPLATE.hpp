@@ -34,6 +34,10 @@
   #define ENABLE_VIEWCONFIG 0 // not by default because it pulls in JsonObject and Application
 #endif
 
+#ifndef ENABLE_ANIMATION
+  #define ENABLE_ANIMATION 0 // not by default because it pulls in ValueAnimator
+#endif
+
 #ifndef ENABLE_IMAGE_SUPPORT
   #define ENABLE_IMAGE_SUPPORT 0 // not by default because it has external dependencies
 #endif

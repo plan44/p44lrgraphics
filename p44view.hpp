@@ -28,30 +28,36 @@
 #if ENABLE_VIEWCONFIG
   #include "jsonobject.hpp"
 #endif
+#if ENABLE_ANIMATION
+  #include "valueanimator.hpp"
+#endif
+
 
 namespace p44 {
 
+  typedef uint8_t PixelColorComponent;
 
   typedef struct {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a; // alpha
+    PixelColorComponent r;
+    PixelColorComponent g;
+    PixelColorComponent b;
+    PixelColorComponent a; // alpha
   } PixelColor;
 
   const PixelColor transparent = { .r=0, .g=0, .b=0, .a=0 };
   const PixelColor black = { .r=0, .g=0, .b=0, .a=255 };
   const PixelColor white = { .r=255, .g=255, .b=255, .a=255 };
 
+  typedef int PixelCoord;
 
   typedef struct {
-    int x,y; ///< origin, can be positive or negative
-    int dx,dy; ///< size, must always be positive (assumption in all code handling rects)
+    PixelCoord x,y; ///< origin, can be positive or negative
+    PixelCoord dx,dy; ///< size, must always be positive (assumption in all code handling rects)
   } PixelRect;
 
   typedef struct {
-    int x,y;
-  } PixelCoord;
+    PixelCoord x,y;
+  } PixelPoint;
 
 
 
@@ -71,7 +77,7 @@ namespace p44 {
   /// @param aVal 0..255 value to dim up or down
   /// @param aDim 0..255: dim, >255: light up (255=100%)
   /// @return dimmed value, limited to max==255
-  uint8_t dimVal(uint8_t aVal, uint16_t aDim);
+  PixelColorComponent dimVal(PixelColorComponent aVal, uint16_t aDim);
 
   /// dim  r,g,b values of a pixel (alpha unaffected)
   /// @param aPix the pixel
@@ -115,7 +121,7 @@ namespace p44 {
   /// @param aMainPixel the original pixel which will be modified to contain the mix
   /// @param aOutsidePixel the pixel to mix in
   /// @param aAmountOutside 0..255 (= 0..100%) value to determine how much weight the outside pixel should get in the result
-  void mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, uint8_t aAmountOutside);
+  void mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, PixelColorComponent aAmountOutside);
 
   /// convert Web color to pixel color
   /// @param aWebColor web style #ARGB or #AARRGGBB color, alpha (A, AA) is optional, "#" is also optional
@@ -166,6 +172,12 @@ namespace p44 {
     PixelRect previousContent;
 
     void geometryChange(bool aStart);
+
+    #if ENABLE_ANIMATION
+    typedef std::list<ValueAnimatorPtr> AnimationsList;
+    AnimationsList animations; /// the list of currently running animations
+    #endif
+
 
   public:
 
@@ -221,7 +233,7 @@ namespace p44 {
     bool sizeToContent; ///< if set, frame is automatically resized with content
 
     // alpha (opacity)
-    uint8_t alpha;
+    PixelColorComponent alpha;
 
     // colors
     PixelColor backgroundColor; ///< background color
@@ -251,34 +263,40 @@ namespace p44 {
     void changeGeometryRect(PixelRect &aRect, PixelRect aNewRect);
 
     /// apply flip operations within frame
-    void flipCoordInFrame(PixelCoord &aCoord);
+    void flipCoordInFrame(PixelPoint &aCoord);
 
     /// rotate coordinate between frame and content (both ways)
-    void orientateCoord(PixelCoord &aCoord);
+    void orientateCoord(PixelPoint &aCoord);
 
     /// content rectangle in frame coordinates
     void contentRectAsViewCoord(PixelRect &aRect);
 
     /// transform frame to content coordinates
     /// @note transforming from frame to content coords is: flipCoordInFrame() -> rotateCoord() -> subtract content.x/y
-    void inFrameToContentCoord(PixelCoord &aCoord);
+    void inFrameToContentCoord(PixelPoint &aCoord);
 
     /// transform content to frame coordinates
     /// @note transforming from content to frame coords is: add content.x/y -> rotateCoord() -> flipCoordInFrame()
-    void contentToInFrameCoord(PixelCoord &aCoord);
+    void contentToInFrameCoord(PixelPoint &aCoord);
 
 
     /// get content pixel color
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelCoord aPt) { return backgroundColor; }
+    virtual PixelColor contentColorAt(PixelPoint aPt) { return backgroundColor; }
 
     /// helper for implementations: check if aPt within set content size
-    bool isInContentSize(PixelCoord aPt);
+    bool isInContentSize(PixelPoint aPt);
 
-    /// set dirty - to be called by step() implementation when the view needs to be redisplayed
+    /// color effect params have changed
+    virtual void recalculateColoring() { /* NOP in the base class */ };
+
+    /// set dirty - to be called by step() and property setters (config, animation) when the view needs to be redisplayed
     void makeDirty() { dirty = true; };
+
+    /// set color dirty - make dirty and cause coloring update
+    void makeColorDirty() { recalculateColoring();dirty = true; };
 
     /// @return if true, dirty childs should be reported
     bool reportDirtyChilds();
@@ -314,13 +332,13 @@ namespace p44 {
 
     /// set the view's background color
     /// @param aBackgroundColor color of pixels not covered by content
-    void setBackgroundColor(PixelColor aBackgroundColor) { backgroundColor = aBackgroundColor; makeDirty(); };
+    void setBackgroundColor(PixelColor aBackgroundColor) { backgroundColor = aBackgroundColor; makeColorDirty(); };
 
     /// @return current background color
     PixelColor getBackgroundColor() { return backgroundColor; }
 
     /// set foreground color
-    void setForegroundColor(PixelColor aColor) { foregroundColor = aColor; makeDirty(); }
+    void setForegroundColor(PixelColor aColor) { foregroundColor = aColor; makeColorDirty(); }
 
     /// get foreground color
     PixelColor getForegroundColor() const { return foregroundColor; }
@@ -340,11 +358,11 @@ namespace p44 {
 
     /// set view's alpha
     /// @param aAlpha 0=fully transparent, 255=fully opaque
-    void setAlpha(int aAlpha);
+    void setAlpha(PixelColorComponent aAlpha);
 
     /// get current alpha
     /// @return current alpha value 0=fully transparent=invisible, 255=fully opaque
-    uint8_t getAlpha() { return alpha; };
+    PixelColorComponent getAlpha() { return alpha; };
 
     /// hide (set alpha to 0)
     void hide() { setAlpha(0); };
@@ -363,15 +381,15 @@ namespace p44 {
     void setZOrder(int aZOrder);
 
 
-    /// fade alpha
-    /// @param aAlpha 0=fully transparent, 255=fully opaque
-    /// @param aWithIn time from now when specified aAlpha should be reached
-    /// @param aCompletedCB is called when fade is complete
-    void fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB = NULL);
-
-    /// stop ongoing fading
-    /// @note: completed callback will not be called
-    void stopFading();
+//    /// fade alpha
+//    /// @param aAlpha 0=fully transparent, 255=fully opaque
+//    /// @param aWithIn time from now when specified aAlpha should be reached
+//    /// @param aCompletedCB is called when fade is complete
+//    void fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB = NULL);
+//
+//    /// stop ongoing fading
+//    /// @note: completed callback will not be called
+//    void stopFading();
 
     /// @param aOrientation the orientation of the content in the frame
     void setOrientation(Orientation aOrientation) { contentOrientation = aOrientation; makeDirty(); }
@@ -384,10 +402,10 @@ namespace p44 {
     void setContent(PixelRect aContent);
 
     /// set content size (without changing offset)
-    void setContentSize(PixelCoord aSize);
+    void setContentSize(PixelPoint aSize);
 
     /// set content origin/center (without changing size)
-    void setContentOrigin(PixelCoord aOrigin);
+    void setContentOrigin(PixelPoint aOrigin);
 
     /// set content origin relative to its own size and frame
     /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
@@ -395,10 +413,10 @@ namespace p44 {
     virtual void setRelativeContentOrigin(double aRelX, double aRelY);
 
     /// @return content size
-    PixelCoord getContentSize() const { return { content.dx, content.dy }; }
+    PixelPoint getContentSize() const { return { content.dx, content.dy }; }
 
     /// @return frame size
-    PixelCoord getFrameSize() const { return { frame.dx, frame.dy }; }
+    PixelPoint getFrameSize() const { return { frame.dx, frame.dy }; }
 
     /// set content size to full frame content with same origin and orientation
     void setFullFrameContent();
@@ -421,7 +439,7 @@ namespace p44 {
 
     /// get color at X,Y
     /// @param aPt point to get in frame coordinates
-    PixelColor colorAt(PixelCoord aPt);
+    PixelColor colorAt(PixelPoint aPt);
 
     /// clear contents of this view
     /// @note base class just resets content size to zero, subclasses might NOT want to do that
@@ -453,7 +471,51 @@ namespace p44 {
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
     virtual P44ViewPtr getView(const string aLabel);
 
-    #endif
+    #endif // ENABLE_VIEWCONFIG
+
+    #if ENABLE_ANIMATION
+
+  public:
+
+    /// get an animator for a property
+    /// @param aProperty name of the property to animate
+    /// @return an animator
+    /// @note even in case the property is not know, a dummy animator will be returned, which cannot be started
+    ValueAnimatorPtr animatorFor(const string aProperty);
+
+    /// stop all animations
+    virtual void stopAnimations();
+
+    /// get Animator for a property
+    //ValueAnimatorPtr getPropertyAnimator(const string aProperty, )
+
+
+    /// get a value animation setter for a given property of the view
+    /// @param aProperty the name of the property to get a setter for
+    /// @param aCurrentValue is assigned the current value of the property
+    /// @return the setter to be used by the animator
+    virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue);
+
+  protected:
+
+    ValueSetterCB getGeometryPropertySetter(PixelCoord &aPixelCoord, double &aCurrentValue);
+    ValueSetterCB getCoordPropertySetter(PixelCoord &aPixelCoord, double &aCurrentValue);
+    ValueSetterCB getColorComponentSetter(const string aComponent, PixelColor &aPixelColor, double &aCurrentValue);
+
+  private:
+
+    /// generic setter for geometry related values (handles automatic frame resizing etc.)
+    void geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue);
+    /// generic setter for other coordinates that just flag the view dirty
+    void coordPropertySetter(PixelCoord *aPixelCoordP, double aNewValue);
+    /// generic setter for single R,G,B or A component that just flag the view dirty
+    ValueSetterCB getSingleColorComponentSetter(PixelColorComponent &aColorComponent, double &aCurrentValue);
+    void singleColorComponentSetter(PixelColorComponent *aColorComponentP, double aNewValue);
+    /// setter for hue, saturation, brightness that affect all 3 R,G,B channels at once
+    ValueSetterCB getDerivedColorComponentSetter(int aHSBIndex, PixelColor &aPixelColor, double &aCurrentValue);
+    void derivedColorComponentSetter(int aHSBIndex, PixelColor *aPixelColorP, double aNewValue);
+
+    #endif // ENABLE_ANIMATION
 
   };
 

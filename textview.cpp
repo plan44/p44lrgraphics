@@ -880,7 +880,7 @@ void TextView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 }
 
 
-PixelColor TextView::contentColorAt(PixelCoord aPt)
+PixelColor TextView::contentColorAt(PixelPoint aPt)
 {
   if (isInContentSize(aPt)) {
     uint8_t col = textPixelCols[aPt.x];

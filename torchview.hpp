@@ -103,7 +103,7 @@ namespace p44 {
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;
@@ -113,7 +113,7 @@ namespace p44 {
 
   private:
 
-    TorchDot& dot(PixelCoord aPt);
+    TorchDot& dot(PixelPoint aPt);
 
     void calculateCycle();
 

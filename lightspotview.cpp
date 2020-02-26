@@ -79,7 +79,7 @@ MLMicroSeconds LightSpotView::step(MLMicroSeconds aPriorityUntil)
 }
 
 
-PixelColor LightSpotView::contentColorAt(PixelCoord aPt)
+PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
 {
   PixelColor pix = transparent;
 
@@ -136,3 +136,22 @@ ErrorPtr LightSpotView::configureView(JsonObjectPtr aViewConfig)
 
 
 #endif // ENABLE_VIEWCONFIG
+
+
+#if ENABLE_ANIMATION
+
+ValueSetterCB LightSpotView::getPropertySetter(const string aProperty, double& aCurrentValue)
+{
+  if (aProperty=="extent_x") {
+    return getCoordPropertySetter(extent.x, aCurrentValue);
+  }
+  else if (aProperty=="extent_y") {
+    return getCoordPropertySetter(extent.y, aCurrentValue);
+  }
+  // unknown at this level
+  return inherited::getPropertySetter(aProperty, aCurrentValue);
+}
+
+
+
+#endif

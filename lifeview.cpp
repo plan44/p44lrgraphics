@@ -57,7 +57,7 @@ void LifeView::clear()
 
 bool LifeView::prepareCells()
 {
-  PixelCoord csz = getContentSize();
+  PixelPoint csz = getContentSize();
   int numCells = csz.x*csz.y;
   if (numCells<=0) return false;
   if (numCells!=cells.size()) {
@@ -307,7 +307,7 @@ void LifeView::placePattern(uint16_t aPatternNo, bool aWrap, int aCenterX, int a
 }
 
 
-PixelColor LifeView::contentColorAt(PixelCoord aPt)
+PixelColor LifeView::contentColorAt(PixelPoint aPt)
 {
   PixelColor pix = transparent;
   // simplest colorisation: from yellow (young) to red

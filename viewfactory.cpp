@@ -27,7 +27,7 @@
 #include "imageview.hpp"
 #endif
 #include "textview.hpp"
-#include "viewanimator.hpp"
+#include "viewsequencer.hpp"
 #include "viewstack.hpp"
 #include "viewscroller.hpp"
 #include "lightspotview.hpp"
@@ -51,8 +51,8 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
       aNewView = P44ViewPtr(new ImageView);
     }
     #endif
-    else if (vt=="animator") {
-      aNewView = P44ViewPtr(new ViewAnimator);
+    else if (vt=="sequencer" || vt=="animator") { // animator is the legacy name
+      aNewView = P44ViewPtr(new ViewSequencer);
     }
     else if (vt=="stack") {
       aNewView = P44ViewPtr(new ViewStack);

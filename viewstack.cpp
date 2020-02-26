@@ -179,7 +179,7 @@ void ViewStack::sortZOrder()
 }
 
 
-void ViewStack::offsetSubviews(PixelCoord aOffset)
+void ViewStack::offsetSubviews(PixelPoint aOffset)
 {
   geometryChange(true);
   for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
@@ -304,7 +304,7 @@ void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame,
 
 
 
-PixelColor ViewStack::contentColorAt(PixelCoord aPt)
+PixelColor ViewStack::contentColorAt(PixelPoint aPt)
 {
   // default is the viewstack's background color
   if (alpha==0) {

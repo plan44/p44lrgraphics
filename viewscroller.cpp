@@ -118,7 +118,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
         // Note: might need multiple rounds after scrolled view's content size has changed to get back in range
         if (scrolledView) {
           WrapMode wm = scrolledView->getWrapMode();
-          PixelCoord svfsz = scrolledView->getFrameSize();
+          PixelPoint svfsz = scrolledView->getFrameSize();
           if (wm&wrapX) {
             long fsx_milli = svfsz.x*1000;
             while ((wm&wrapXmax) && scrollOffsetX_milli>=fsx_milli && fsx_milli>0)
@@ -165,7 +165,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
       } // while catchup
       if (needContentCB && scrolledView) {
         // check if we need more content (i.e. scrolled view does not cover frame of the scroller any more)
-        PixelCoord rem = remainingPixelsToScroll();
+        PixelPoint rem = remainingPixelsToScroll();
         if (rem.x<0 || rem.y<0) {
           if (FOCUSLOGENABLED) {
             PixelRect sf = scrolledView->getFrame();
@@ -194,11 +194,11 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
 }
 
 
-PixelCoord ViewScroller::remainingPixelsToScroll()
+PixelPoint ViewScroller::remainingPixelsToScroll()
 {
   WrapMode w = scrolledView->getWrapMode();
   PixelRect sf = scrolledView->getFrame();
-  PixelCoord rem = { INT_MAX, INT_MAX }; // assume forever
+  PixelPoint rem = { INT_MAX, INT_MAX }; // assume forever
   if ((w&wrapXmax)==0 && scrollStepX_milli>0) {
     rem.x = (sf.x+sf.dx) - (int)(scrollOffsetX_milli/1000+frame.dx);
   }
@@ -217,7 +217,7 @@ PixelCoord ViewScroller::remainingPixelsToScroll()
 
 MLMicroSeconds ViewScroller::remainingScrollTime()
 {
-  PixelCoord rem = remainingPixelsToScroll();
+  PixelPoint rem = remainingPixelsToScroll();
   if (rem.x==INT_MAX && rem.y==INT_MAX) return Infinite; // no limit
   int steps = INT_MAX;
   if (scrollStepX_milli>0) {
@@ -249,7 +249,7 @@ void ViewScroller::updated()
 }
 
 
-PixelColor ViewScroller::contentColorAt(PixelCoord aPt)
+PixelColor ViewScroller::contentColorAt(PixelPoint aPt)
 {
   if (!scrolledView) return transparent;
   // Note: implementation aims to be efficient at integer scroll offsets in either or both directions
@@ -311,7 +311,7 @@ void ViewScroller::purgeScrolledOut()
 {
   ViewStackPtr vs = boost::dynamic_pointer_cast<ViewStack>(scrolledView);
   if (vs) {
-    PixelCoord rem = remainingPixelsToScroll();
+    PixelPoint rem = remainingPixelsToScroll();
     if (rem.x==INT_MAX) rem.x = 0;
     if (rem.y==INT_MAX) rem.y = 0;
     vs->purgeViews(frame.dx+rem.x, frame.dy+rem.y, false);

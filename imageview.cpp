@@ -110,7 +110,7 @@ ErrorPtr ImageView::loadPNG(const string aPNGFileName)
 }
 
 
-PixelColor ImageView::contentColorAt(PixelCoord aPt)
+PixelColor ImageView::contentColorAt(PixelPoint aPt)
 {
   if (aPt.x<0 || aPt.x>=content.dx || aPt.y<0 || aPt.y>=content.dy) {
     return inherited::contentColorAt(aPt);

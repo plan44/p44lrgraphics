@@ -69,7 +69,7 @@ P44View::~P44View()
 
 // MARK: ===== frame and content
 
-bool P44View::isInContentSize(PixelCoord aPt)
+bool P44View::isInContentSize(PixelPoint aPt)
 {
   return aPt.x>=0 && aPt.y>=0 && aPt.x<content.dx && aPt.y<content.dy;
 }
@@ -113,7 +113,7 @@ void P44View::geometryChange(bool aStart)
 
 
 
-void P44View::orientateCoord(PixelCoord &aCoord)
+void P44View::orientateCoord(PixelPoint &aCoord)
 {
   if (contentOrientation & xy_swap) {
     swap(aCoord.x, aCoord.y);
@@ -121,7 +121,7 @@ void P44View::orientateCoord(PixelCoord &aCoord)
 }
 
 
-void P44View::flipCoordInFrame(PixelCoord &aCoord)
+void P44View::flipCoordInFrame(PixelPoint &aCoord)
 {
   // flip within frame if not zero sized
   if ((contentOrientation & x_flip) && frame.dx>0) {
@@ -133,7 +133,7 @@ void P44View::flipCoordInFrame(PixelCoord &aCoord)
 }
 
 
-void P44View::inFrameToContentCoord(PixelCoord &aCoord)
+void P44View::inFrameToContentCoord(PixelPoint &aCoord)
 {
   flipCoordInFrame(aCoord);
   orientateCoord(aCoord);
@@ -142,7 +142,7 @@ void P44View::inFrameToContentCoord(PixelCoord &aCoord)
 }
 
 
-void P44View::contentToInFrameCoord(PixelCoord &aCoord)
+void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 {
   aCoord.x += content.x;
   aCoord.y += content.y;
@@ -199,7 +199,7 @@ void P44View::setContent(PixelRect aContent)
 };
 
 
-void P44View::setContentSize(PixelCoord aSize)
+void P44View::setContentSize(PixelPoint aSize)
 {
   geometryChange(true);
   changeGeometryRect(content, { content.x, content.y, aSize.x, aSize.y });
@@ -208,7 +208,7 @@ void P44View::setContentSize(PixelCoord aSize)
 };
 
 
-void P44View::setContentOrigin(PixelCoord aOrigin)
+void P44View::setContentOrigin(PixelPoint aOrigin)
 {
   geometryChange(true);
   changeGeometryRect(content, { aOrigin.x, aOrigin.y, content.dx, content.dy });
@@ -241,7 +241,7 @@ void P44View::setContentRotation(double aRotation)
 
 void P44View::setFullFrameContent()
 {
-  PixelCoord sz = getFrameSize();
+  PixelPoint sz = getFrameSize();
   setOrientation(P44View::right);
   orientateCoord(sz);
   setContent({ 0, 0, sz.x, sz.y });
@@ -252,10 +252,10 @@ void P44View::setFullFrameContent()
 void P44View::contentRectAsViewCoord(PixelRect &aRect)
 {
   // get opposite content rect corners
-  PixelCoord c1 = { 0, 0 };
+  PixelPoint c1 = { 0, 0 };
   contentToInFrameCoord(c1);
-  PixelCoord inset = { content.dx>0 ? 1 : 0, content.dy>0 ? 1 : 0 };
-  PixelCoord c2 = { content.dx-inset.x, content.dy-inset.y };
+  PixelPoint inset = { content.dx>0 ? 1 : 0, content.dy>0 ? 1 : 0 };
+  PixelPoint c2 = { content.dx-inset.x, content.dy-inset.y };
   // transform into coords relative to frame origin
   contentToInFrameCoord(c2);
   // make c2 the non-origin corner
@@ -292,7 +292,7 @@ void P44View::moveFrameToContent(bool aResize)
 
 void P44View::sizeFrameToContent()
 {
-  PixelCoord sz = { content.dx, content.dy };
+  PixelPoint sz = { content.dx, content.dy };
   orientateCoord(sz);
   PixelRect f = frame;
   f.dx = sz.x;
@@ -304,6 +304,9 @@ void P44View::sizeFrameToContent()
 
 void P44View::clear()
 {
+  #if ENABLE_ANIMATION
+  stopAnimations();
+  #endif
   setContentSize({0, 0});
 }
 
@@ -339,34 +342,27 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
 {
-  // check fading
-  if (targetAlpha>=0) {
-    MLMicroSeconds now = MainLoop::now();
-    double timeDone = (double)(now-startTime)/fadeTime;
-    if (timeDone<1) {
-      // continue fading
-      int currentAlpha = targetAlpha-(1-timeDone)*fadeDist;
-      setAlpha(currentAlpha);
-      // return recommended call-again-time for smooth fading
-      return now+fadeTime/fadeDist; // single alpha steps
+  // check animations
+  MLMicroSeconds nextCall = Infinite;
+  #if ENABLE_ANIMATION
+  AnimationsList::iterator pos = animations.begin();
+  while (pos != animations.end()) {
+    ValueAnimatorPtr animator = (*pos);
+    MLMicroSeconds nextStep = animator->step();
+    if (nextStep==Never) {
+      // this animation is done, remove it from the list
+      pos = animations.erase(pos);
+      continue;
     }
-    else {
-      // target alpha reached
-      setAlpha(targetAlpha);
-      targetAlpha = -1;
-      // call back
-      if (fadeCompleteCB) {
-        SimpleCB cb = fadeCompleteCB;
-        fadeCompleteCB = NULL;
-        cb();
-      }
-    }
+    updateNextCall(nextCall, nextStep);
+    pos++;
   }
-  return Infinite; // completed
+  #endif // ENABLE_ANIMATION
+  return nextCall;
 }
 
 
-void P44View::setAlpha(int aAlpha)
+void P44View::setAlpha(PixelColorComponent aAlpha)
 {
   if (alpha!=aAlpha) {
     alpha = aAlpha;
@@ -375,30 +371,30 @@ void P44View::setAlpha(int aAlpha)
 }
 
 
-void P44View::stopFading()
-{
-  targetAlpha = -1;
-  fadeCompleteCB = NULL; // did not run to end
-}
-
-
-void P44View::fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB)
-{
-  fadeDist = aAlpha-alpha;
-  startTime = MainLoop::now();
-  fadeTime = aWithIn;
-  if (fadeTime<=0 || fadeDist==0) {
-    // immediate
-    setAlpha(aAlpha);
-    targetAlpha = -1;
-    if (aCompletedCB) aCompletedCB();
-  }
-  else {
-    // start fading
-    targetAlpha = aAlpha;
-    fadeCompleteCB = aCompletedCB;
-  }
-}
+//void P44View::stopFading()
+//{
+//  targetAlpha = -1;
+//  fadeCompleteCB = NULL; // did not run to end
+//}
+//
+//
+//void P44View::fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB)
+//{
+//  fadeDist = aAlpha-alpha;
+//  startTime = MainLoop::now();
+//  fadeTime = aWithIn;
+//  if (fadeTime<=0 || fadeDist==0) {
+//    // immediate
+//    setAlpha(aAlpha);
+//    targetAlpha = -1;
+//    if (aCompletedCB) aCompletedCB();
+//  }
+//  else {
+//    // start fading
+//    targetAlpha = aAlpha;
+//    fadeCompleteCB = aCompletedCB;
+//  }
+//}
 
 
 void P44View::setZOrder(int aZOrder)
@@ -416,7 +412,7 @@ void P44View::setZOrder(int aZOrder)
 #define SHOW_ORIGIN 0
 
 
-PixelColor P44View::colorAt(PixelCoord aPt)
+PixelColor P44View::colorAt(PixelPoint aPt)
 {
   // default is background color
   PixelColor pc = backgroundColor;
@@ -457,7 +453,7 @@ PixelColor P44View::colorAt(PixelCoord aPt)
       }
       else {
         // - rotate first
-        PixelCoord rpt;
+        PixelPoint rpt;
         rpt.x = aPt.x*rotCos-aPt.y*rotSin;
         rpt.y = aPt.x*rotSin+aPt.y*rotCos;
         pc = contentColorAt(rpt);
@@ -520,7 +516,7 @@ bool p44::rectIntersectsRect(const PixelRect &aRect1, const PixelRect &aRect2)
 
 
 
-uint8_t p44::dimVal(uint8_t aVal, uint16_t aDim)
+PixelColorComponent p44::dimVal(PixelColorComponent aVal, uint16_t aDim)
 {
   uint32_t d = (aDim+1)*aVal;
   if (d>0xFFFF) return 0xFF;
@@ -591,12 +587,12 @@ void p44::overlayPixel(PixelColor &aPixel, PixelColor aOverlay)
 }
 
 
-void p44::mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, uint8_t aAmountOutside)
+void p44::mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, PixelColorComponent aAmountOutside)
 {
   if (aAmountOutside>0) {
     if (aMainPixel.a!=255 || aOutsidePixel.a!=255) {
       // mixed transparency
-      uint8_t alpha = dimVal(aMainPixel.a, pwmToBrightness(255-aAmountOutside)) + dimVal(aOutsidePixel.a, pwmToBrightness(aAmountOutside));
+      PixelColorComponent alpha = dimVal(aMainPixel.a, pwmToBrightness(255-aAmountOutside)) + dimVal(aOutsidePixel.a, pwmToBrightness(aAmountOutside));
       if (alpha>0) {
         // calculation only needed for non-transparent result
         // - alpha boost compensates for energy
@@ -754,10 +750,10 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     changedGeometry = true;
   }
   if (aViewConfig->get("bgcolor", o)) {
-    backgroundColor = webColorToPixel(o->stringValue()); makeDirty();
+    backgroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
   }
   if (aViewConfig->get("color", o)) {
-    foregroundColor = webColorToPixel(o->stringValue()); makeDirty();
+    foregroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
   }
   if (aViewConfig->get("alpha", o)) {
     setAlpha(o->int32Value());
@@ -811,6 +807,34 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (changedGeometry && sizeToContent) {
     moveFrameToContent(true);
   }
+  #if ENABLE_ANIMATION
+  if (aViewConfig->get("animate", o)) {
+    JsonObjectPtr p;
+    ValueAnimatorPtr animator;
+    if (o->get("property", p)) {
+      animator = animatorFor(p->stringValue());
+      if (o->get("to", p)) {
+        double to = p->doubleValue();
+        if (o->get("time", p)) {
+          MLMicroSeconds duration = p->doubleValue()*Second;
+          // optional params
+          bool autoreverse = false;
+          int cycles = 1;
+          MLMicroSeconds minsteptime = 0;
+          double stepsize = 0;
+          animator->function(ValueAnimator::easeInOut)->param(3);
+          if (o->get("minsteptime", p)) minsteptime = p->doubleValue()*Second;
+          if (o->get("stepsize", p)) stepsize = p->doubleValue();
+          if (o->get("autoreverse", p)) autoreverse = p->boolValue();
+          if (o->get("cycles", p)) cycles = p->int32Value();
+          if (o->get("function", p)) animator->function(p->stringValue());
+          if (o->get("param", p)) animator->param(p->doubleValue());
+          animator->repeat(autoreverse, cycles)->animate(to, duration, NULL, minsteptime, stepsize);
+        }
+      }
+    }
+  }
+  #endif
   geometryChange(false);
   return ErrorPtr();
 }
@@ -824,9 +848,183 @@ P44ViewPtr P44View::getView(const string aLabel)
   return P44ViewPtr(); // not found
 }
 
-
-
 #endif // ENABLE_VIEWCONFIG
 
 
+#if ENABLE_ANIMATION
 
+
+void P44View::geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
+{
+  PixelCoord newValue = aNewValue;
+  if (newValue!=*aPixelCoordP) {
+    geometryChange(true);
+    *aPixelCoordP = newValue;
+    changedGeometry = true;
+    if (sizeToContent) moveFrameToContent(true);
+    geometryChange(false);
+  }
+}
+
+ValueSetterCB P44View::getGeometryPropertySetter(PixelCoord &aPixelCoord, double &aCurrentValue)
+{
+  aCurrentValue = aPixelCoord;
+  return boost::bind(&P44View::geometryPropertySetter, this, &aPixelCoord, _1);
+}
+
+
+void P44View::coordPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
+{
+  PixelCoord newValue = aNewValue;
+  if (newValue!=*aPixelCoordP) {
+    *aPixelCoordP = newValue;
+    makeDirty();
+  }
+}
+
+ValueSetterCB P44View::getCoordPropertySetter(PixelCoord &aPixelCoord, double &aCurrentValue)
+{
+  aCurrentValue = aPixelCoord;
+  return boost::bind(&P44View::coordPropertySetter, this, &aPixelCoord, _1);
+}
+
+
+ValueSetterCB P44View::getColorComponentSetter(const string aComponent, PixelColor &aPixelColor, double &aCurrentValue)
+{
+  if (aComponent=="r") {
+    return getSingleColorComponentSetter(aPixelColor.r, aCurrentValue);
+  }
+  else if (aComponent=="g") {
+    return getSingleColorComponentSetter(aPixelColor.g, aCurrentValue);
+  }
+  else if (aComponent=="b") {
+    return getSingleColorComponentSetter(aPixelColor.b, aCurrentValue);
+  }
+  else if (aComponent=="a") {
+    return getSingleColorComponentSetter(aPixelColor.a, aCurrentValue);
+  }
+  else if (aComponent=="hue") {
+    return getDerivedColorComponentSetter(0, aPixelColor, aCurrentValue);
+  }
+  else if (aComponent=="saturation") {
+    return getDerivedColorComponentSetter(1, aPixelColor, aCurrentValue);
+  }
+  else if (aComponent=="brightness") {
+    return getDerivedColorComponentSetter(2, aPixelColor, aCurrentValue);
+  }
+  return NULL;
+}
+
+
+ValueSetterCB P44View::getSingleColorComponentSetter(PixelColorComponent &aColorComponent, double &aCurrentValue)
+{
+  aCurrentValue = aColorComponent;
+  return boost::bind(&P44View::singleColorComponentSetter, this, &aColorComponent, _1);
+}
+
+void P44View::singleColorComponentSetter(PixelColorComponent *aColorComponentP, double aNewValue)
+{
+  PixelColorComponent c = aNewValue;
+  if (*aColorComponentP!=c) {
+    *aColorComponentP = c;
+    makeColorDirty();
+  }
+}
+
+
+ValueSetterCB P44View::getDerivedColorComponentSetter(int aHSBIndex, PixelColor &aPixelColor, double &aCurrentValue)
+{
+  double hsb[3];
+  pixelToHsb(aPixelColor, hsb[0], hsb[1], hsb[2]);
+  aCurrentValue = hsb[aHSBIndex];
+  return boost::bind(&P44View::derivedColorComponentSetter, this, aHSBIndex, &aPixelColor, _1);
+}
+
+
+void P44View::derivedColorComponentSetter(int aHSBIndex, PixelColor *aPixelColorP, double aNewValue)
+{
+  double hsb[3];
+  pixelToHsb(*aPixelColorP, hsb[0], hsb[1], hsb[2]);
+  if (hsb[aHSBIndex]!=aNewValue) {
+    hsb[aHSBIndex] = aNewValue;
+    PixelColor px = hsbToPixel(hsb[0], hsb[1], hsb[2]);
+    aPixelColorP->r = px.r;
+    aPixelColorP->g = px.g;
+    aPixelColorP->b = px.b;
+    makeColorDirty();
+  }
+}
+
+
+ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurrentValue)
+{
+  if (aProperty=="alpha") {
+    aCurrentValue = getAlpha();
+    return boost::bind(&P44View::setAlpha, this, _1);
+  }
+  else if (aProperty=="rotation") {
+    aCurrentValue = contentRotation;
+    return boost::bind(&P44View::setContentRotation, this, _1);
+  }
+  else if (aProperty=="x") {
+    return getGeometryPropertySetter(frame.x, aCurrentValue);
+  }
+  else if (aProperty=="y") {
+    return getGeometryPropertySetter(frame.y, aCurrentValue);
+  }
+  else if (aProperty=="dx") {
+    return getGeometryPropertySetter(frame.dx, aCurrentValue);
+  }
+  else if (aProperty=="dy") {
+    return getGeometryPropertySetter(frame.dy, aCurrentValue);
+  }
+  else if (aProperty=="content_x") {
+    return getGeometryPropertySetter(content.x, aCurrentValue);
+  }
+  else if (aProperty=="content_y") {
+    return getGeometryPropertySetter(content.y, aCurrentValue);
+  }
+  else if (aProperty=="content_dx") {
+    return getGeometryPropertySetter(content.dx, aCurrentValue);
+  }
+  else if (aProperty=="content_dy") {
+    return getGeometryPropertySetter(content.dy, aCurrentValue);
+  }
+  else if (aProperty.substr(0,6)=="color.") {
+    return getColorComponentSetter(aProperty.substr(6), foregroundColor, aCurrentValue);
+  }
+  else if (aProperty.substr(0,8)=="bgcolor.") {
+    return getColorComponentSetter(aProperty.substr(8), backgroundColor, aCurrentValue);
+  }
+  // unknown
+  return NULL;
+}
+
+
+ValueAnimatorPtr P44View::animatorFor(const string aProperty)
+{
+  double startValue;
+  ValueSetterCB valueSetter = getPropertySetter(aProperty, startValue);
+  ValueAnimatorPtr animator = ValueAnimatorPtr(new ValueAnimator(valueSetter, false)); // not self-timed
+  if (animator->valid()) {
+    animations.push_back(animator);
+    makeDirty(); // to make sure, in case start value did not yet cause a change
+  }
+  return animator->from(startValue);
+}
+
+
+
+
+void P44View::stopAnimations()
+{
+  for (AnimationsList::iterator pos = animations.begin(); pos!=animations.end(); ++pos) {
+    (*pos)->stop(false); // stop with no callback
+  }
+  animations.clear();
+}
+
+
+
+
+#endif // ENABLE_ANIMATION

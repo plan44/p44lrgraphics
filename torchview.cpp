@@ -63,7 +63,7 @@ void TorchView::clear()
 }
 
 
-TorchView::TorchDot& TorchView::dot(PixelCoord aPt)
+TorchView::TorchDot& TorchView::dot(PixelPoint aPt)
 {
   int dotIdx = aPt.y*content.dx+aPt.x;
   if (dotIdx>=torchDots.size()) clear(); // safety, resize on access outside range
@@ -116,7 +116,7 @@ static uint16_t random(uint16_t aMinOrMax, uint16_t aMax = 0)
 void TorchView::calculateCycle()
 {
   if (alpha==0) return; // don't waste cycles
-  PixelCoord dotpos;
+  PixelPoint dotpos;
   // random flame
   for (dotpos.y=0; dotpos.y<flame_height; dotpos.y++) {
     for (dotpos.x=0; dotpos.x<content.dx; dotpos.x++) {
@@ -196,7 +196,7 @@ void TorchView::calculateCycle()
 static const uint8_t energymap[32] = {0, 64, 96, 112, 128, 144, 152, 160, 168, 176, 184, 184, 192, 200, 200, 208, 208, 216, 216, 224, 224, 224, 232, 232, 232, 240, 240, 240, 240, 248, 248, 248};
 #endif
 
-PixelColor TorchView::contentColorAt(PixelCoord aPt)
+PixelColor TorchView::contentColorAt(PixelPoint aPt)
 {
   PixelColor pix = transparent;
   if (alpha>0 && isInContentSize(aPt)) {

@@ -75,7 +75,7 @@ namespace p44 {
 
     /// offset all subviews
     /// @param aOffset will be added to all subview frame's x/y
-    void offsetSubviews(PixelCoord aOffset);
+    void offsetSubviews(PixelPoint aOffset);
 
     /// @return number of views in the stack
     size_t numViews() { return viewStack.size(); }
@@ -124,7 +124,7 @@ namespace p44 {
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
   private:
 

@@ -19,8 +19,8 @@
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef _p44lrgraphics_viewanimator_hpp__
-#define _p44lrgraphics_viewanimator_hpp__
+#ifndef _p44lrgraphics_viewsequencer_hpp__
+#define _p44lrgraphics_viewsequencer_hpp__
 
 #include "p44lrg_common.hpp"
 
@@ -38,7 +38,7 @@ namespace p44 {
 
 
   
-  class ViewAnimator : public P44View
+  class ViewSequencer : public P44View
   {
     typedef P44View inherited;
 
@@ -60,9 +60,9 @@ namespace p44 {
   public :
 
     /// create view stack
-    ViewAnimator();
+    ViewSequencer();
 
-    virtual ~ViewAnimator();
+    virtual ~ViewSequencer();
 
     /// add animation step view to list of animation steps
     /// @param aView the view to add
@@ -75,7 +75,7 @@ namespace p44 {
 
     /// stop animation
     /// @note: completed callback will not be called
-    void stopAnimation();
+    virtual void stopAnimations() P44_OVERRIDE;
 
     /// clear all steps
     virtual void clear() P44_OVERRIDE;
@@ -113,17 +113,17 @@ namespace p44 {
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelCoord aPt) P44_OVERRIDE;
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
   private:
 
     MLMicroSeconds stepAnimation();
 
   };
-  typedef boost::intrusive_ptr<ViewAnimator> ViewAnimatorPtr;
+  typedef boost::intrusive_ptr<ViewSequencer> ViewSequencerPtr;
 
 } // namespace p44
 
 
 
-#endif /* _p44lrgraphics_viewanimator_hpp__ */
+#endif /* _p44lrgraphics_viewsequencer_hpp__ */

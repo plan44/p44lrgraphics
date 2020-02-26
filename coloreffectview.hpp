@@ -64,7 +64,7 @@ namespace p44 {
     GradientMode briMode;
     GradientMode hueMode;
     GradientMode satMode;
-    PixelCoord extent; ///< extent of effect in pixels (depends on effect itself what this actually means)
+    PixelPoint extent; ///< extent of effect in pixels (depends on effect itself what this actually means)
 
   public :
 
@@ -83,7 +83,14 @@ namespace p44 {
     /// set extent (how many pixels the light field reaches out around the center)
     /// @param aExtent the extent radii of the light in x and y direction
     /// @note extent(0,0) means single pixel at the center
-    void setExtent(PixelCoord aExtent);
+    void setExtent(PixelPoint aExtent);
+
+    /// gradient utilities
+    static double gradientCycles(double aValue, GradientMode aMode);
+    static double gradientCurveLevel(double aProgress, GradientMode aMode);
+    static double gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap);
+
+    void calculateGradient(int aNumGradientPixels, int aExtentPixels);
 
     #if ENABLE_VIEWCONFIG
 
@@ -95,17 +102,23 @@ namespace p44 {
 
     #endif
 
-    /// gradient utilities
-    static double gradientCycles(double aValue, GradientMode aMode);
-    static double gradientCurveLevel(double aProgress, GradientMode aMode);
-    static double gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap);
+    #if ENABLE_ANIMATION
 
-    void calculateGradient(int aNumGradientPixels, int aExtentPixels);
+    /// get a value animation setter for a given property of the view
+    /// @param aProperty the name of the property to get a setter for
+    /// @param aCurrentValue is assigned the current value of the property
+    /// @return the setter to be used by the animator
+    virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue) P44_OVERRIDE;
+
+  private:
+
+    // generic coloring param (e.g. gradient) setter
+    void coloringPropertySetter(double &aColoringParam, double aNewValue);
+
+    #endif // ENABLE_ANIMATION
+
 
   protected:
-
-    /// color params have changed
-    virtual void recalculateColoring() { makeDirty(); }
 
     /// @param aPixelIndex the index into the gradient. Any index can be passed, range is clipped to 0..gradientSize-1
     /// @return the pixel as specified by aPixelIndex if in range, otherwise first or last gradient pixel, resp

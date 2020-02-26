@@ -65,12 +65,12 @@ void ColorEffectView::setColoringParameters(
     briGradient = aBri; briMode = aBriMode;
     hueGradient = aHue; hueMode = aHueMode;
     satGradient = aSat; satMode = aSatMode;
-    recalculateColoring();
+    makeColorDirty();
   }
 }
 
 
-void ColorEffectView::setExtent(PixelCoord aExtent)
+void ColorEffectView::setExtent(PixelPoint aExtent)
 {
   extent = aExtent;
   makeDirty();
@@ -187,10 +187,6 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     bool colsChanged = false;
-    if (aViewConfig->get("color", o)) {
-      // parent handles setting the (base)color, but this is a coloring param change
-      colsChanged = true;
-    }
     if (aViewConfig->get("brightness_gradient", o)) {
       briGradient = o->doubleValue();
       colsChanged = true;
@@ -220,11 +216,44 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
       colsChanged = true;
     }
     if (colsChanged) {
-      recalculateColoring();
+      makeColorDirty();
     }
   }
   return err;
 }
 
-
 #endif // ENABLE_VIEWCONFIG
+
+
+#if ENABLE_ANIMATION
+
+void ColorEffectView::coloringPropertySetter(double &aColoringParam, double aNewValue)
+{
+  if (aNewValue!=aColoringParam) {
+    aColoringParam = aNewValue;
+    makeColorDirty();
+  }
+}
+
+
+ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double& aCurrentValue)
+{
+  if (aProperty=="hue_gradient") {
+    aCurrentValue = hueGradient;
+    return boost::bind(&ColorEffectView::coloringPropertySetter, this, hueGradient, _1);
+  }
+  else if (aProperty=="brightness_gradient") {
+    aCurrentValue = hueGradient;
+    return boost::bind(&ColorEffectView::coloringPropertySetter, this, briGradient, _1);
+  }
+  else if (aProperty=="saturation_gradient") {
+    aCurrentValue = satGradient;
+    return boost::bind(&ColorEffectView::coloringPropertySetter, this, satGradient, _1);
+  }
+  // unknown at this level
+  return inherited::getPropertySetter(aProperty, aCurrentValue);
+}
+
+
+
+#endif // ENABLE_ANIMATION
