@@ -851,6 +851,18 @@ P44ViewPtr P44View::getView(const string aLabel)
   return P44ViewPtr(); // not found
 }
 
+
+ErrorPtr P44View::configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix)
+{
+  ErrorPtr err;
+  JsonObjectPtr cfg = Application::jsonObjOrResource(aResourceOrObj, &err, aResourcePrefix);
+  if (Error::isOK(err)) {
+    err = configureView(cfg);
+  }
+  return err;
+}
+
+
 #endif // ENABLE_VIEWCONFIG
 
 

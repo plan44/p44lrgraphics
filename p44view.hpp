@@ -27,6 +27,7 @@
 
 #if ENABLE_VIEWCONFIG
   #include "jsonobject.hpp"
+  #include "application.hpp"
 #endif
 #if ENABLE_ANIMATION
   #include "valueanimator.hpp"
@@ -465,6 +466,12 @@ namespace p44 {
     /// @return ok or error in case of real errors (image not found etc., but minor
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig);
+
+    /// configure view from file or JSON
+    /// @param aResourceOrObj if this is a single JSON string ending on ".json", it is treated as a resource file name
+    ///    which is loaded and returned. All other JSON is used as view config as-is
+    /// @param aResourcePrefix will be prepended to aResourceOrObj when it is a filename
+    ErrorPtr configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix = "");
 
     /// get view by label
     /// @param aLabel label of view to find
