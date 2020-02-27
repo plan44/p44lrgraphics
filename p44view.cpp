@@ -807,6 +807,9 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (changedGeometry && sizeToContent) {
     moveFrameToContent(true);
   }
+  if (aViewConfig->get("stopanimations", o)) {
+    if(o->boolValue()) stopAnimations();
+  }
   #if ENABLE_ANIMATION
   if (aViewConfig->get("animate", o)) {
     JsonObjectPtr p;
