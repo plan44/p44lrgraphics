@@ -51,7 +51,7 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
       aNewView = P44ViewPtr(new ImageView);
     }
     #endif
-    else if (vt=="sequencer" || vt=="animator") { // animator is the legacy name
+    else if (vt=="sequencer") {
       aNewView = P44ViewPtr(new ViewSequencer);
     }
     else if (vt=="stack") {

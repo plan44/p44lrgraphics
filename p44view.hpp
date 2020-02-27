@@ -159,12 +159,6 @@ namespace p44 {
     friend class ViewStack;
 
     bool dirty;
-    /// fading
-    int targetAlpha; ///< alpha to reach at end of fading, -1 = not fading
-    int fadeDist; ///< amount to fade
-    MLMicroSeconds startTime; ///< time when fading has started
-    MLMicroSeconds fadeTime; ///< how long fading takes
-    SimpleCB fadeCompleteCB; ///< fade complete
     bool stepRequested; ///< set when needStepCB has been called, reset at step()
     TimerCB needStepCB; ///< called when changes need step earlier than what last step() call said
 
@@ -384,17 +378,6 @@ namespace p44 {
 
     /// @param aZOrder z-order (e.g. in a viewstack, highest is frontmost)
     void setZOrder(int aZOrder);
-
-
-//    /// fade alpha
-//    /// @param aAlpha 0=fully transparent, 255=fully opaque
-//    /// @param aWithIn time from now when specified aAlpha should be reached
-//    /// @param aCompletedCB is called when fade is complete
-//    void fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB = NULL);
-//
-//    /// stop ongoing fading
-//    /// @note: completed callback will not be called
-//    void stopFading();
 
     /// @param aOrientation the orientation of the content in the frame
     void setOrientation(Orientation aOrientation) { contentOrientation = aOrientation; makeDirty(); }

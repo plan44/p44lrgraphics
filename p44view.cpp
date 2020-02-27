@@ -403,32 +403,6 @@ void P44View::setAlpha(PixelColorComponent aAlpha)
 }
 
 
-//void P44View::stopFading()
-//{
-//  targetAlpha = -1;
-//  fadeCompleteCB = NULL; // did not run to end
-//}
-//
-//
-//void P44View::fadeTo(int aAlpha, MLMicroSeconds aWithIn, SimpleCB aCompletedCB)
-//{
-//  fadeDist = aAlpha-alpha;
-//  startTime = MainLoop::now();
-//  fadeTime = aWithIn;
-//  if (fadeTime<=0 || fadeDist==0) {
-//    // immediate
-//    setAlpha(aAlpha);
-//    targetAlpha = -1;
-//    if (aCompletedCB) aCompletedCB();
-//  }
-//  else {
-//    // start fading
-//    targetAlpha = aAlpha;
-//    fadeCompleteCB = aCompletedCB;
-//  }
-//}
-
-
 void P44View::setZOrder(int aZOrder)
 {
   geometryChange(true);
