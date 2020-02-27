@@ -226,13 +226,13 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
           err = p44::createViewFromConfig(o2, stepView, this);
           if (Error::isOK(err)) {
             if (s->get("showtime", o2)) {
-              showTime = o2->int32Value()*MilliSecond;
+              showTime = o2->doubleValue()*Second;
             }
             if (s->get("fadeintime", o2)) {
-              fadeInTime = o2->int32Value()*MilliSecond;
+              fadeInTime = o2->doubleValue()*Second;
             }
             if (s->get("fadeouttime", o2)) {
-              fadeOutTime = o2->int32Value()*MilliSecond;
+              fadeOutTime = o2->doubleValue()*Second;
             }
             pushStep(stepView, showTime, fadeInTime, fadeOutTime);
           }

@@ -361,7 +361,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       doStart = true;
     }
     if (aViewConfig->get("interval", o)) {
-      interval = o->int32Value()*MilliSecond;
+      interval = o->doubleValue()*Second;
       doStart = true;
     }
     if (aViewConfig->get("steps", o)) {

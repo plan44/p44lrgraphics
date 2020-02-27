@@ -281,7 +281,7 @@ ErrorPtr TorchView::configureView(JsonObjectPtr aViewConfig)
     }
     // timing parameter
     if (aViewConfig->get("cycletime", o)) {
-      cycleTime  = o->doubleValue()*MilliSecond;
+      cycleTime  = o->doubleValue()*Second;
     }
   }
   return err;

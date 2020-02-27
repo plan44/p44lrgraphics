@@ -357,16 +357,16 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     if (aViewConfig->get("generationinterval", o)) {
-      generationInterval  = o->doubleValue()*MilliSecond;
+      generationInterval  = o->doubleValue()*Second;
     }
     if (aViewConfig->get("maxstatic", o)) {
-      maxStatic  = o->doubleValue()*MilliSecond;
+      maxStatic  = o->doubleValue()*Second;
     }
     if (aViewConfig->get("minstatic", o)) {
-      minStatic  = o->doubleValue()*MilliSecond;
+      minStatic  = o->doubleValue()*Second;
     }
     if (aViewConfig->get("minpopulation", o)) {
-      minPopulation  = o->doubleValue()*MilliSecond;
+      minPopulation  = o->doubleValue()*Second;
     }
     if (aViewConfig->get("addrandom", o)) {
       int c = o->int32Value();
