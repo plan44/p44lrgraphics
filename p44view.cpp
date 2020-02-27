@@ -35,6 +35,8 @@ using namespace p44;
 
 P44View::P44View() :
   parentView(NULL),
+  dirty(false),
+  stepRequested(false),
   geometryChanging(0),
   changedGeometry(false),
   sizeToContent(false),
@@ -55,7 +57,6 @@ P44View::P44View() :
   z_order = 0; // none in particular
   contentIsMask = false; // content color will be used
   invertAlpha = false; // inverted mask
-  targetAlpha = -1; // not fading
   localTimingPriority = true;
   maskChildDirtyUntil = Never;
 }
@@ -313,6 +314,36 @@ void P44View::clear()
 
 // MARK: ===== updating
 
+void P44View::makeDirtyAndStep()
+{
+  // make dirty locally
+  makeDirty();
+  // request a step at the root view level
+  P44View *p = this;
+  while (p->parentView) {
+    p = p->parentView;
+  }
+  if (!p->stepRequested && p->needStepCB) {
+    stepRequested = true; // only request once
+    // there is a needstep callback here
+    // DO NOT call it directly, but from mainloop, so receiver can safely call step without causing recursions
+    MainLoop::currentMainLoop().executeNow(p->needStepCB);
+  }
+}
+
+
+void P44View::makeDirty()
+{
+  dirty = true;
+}
+
+
+void P44View::makeColorDirty()
+{
+  recalculateColoring();
+  makeDirty();
+}
+
 
 bool P44View::reportDirtyChilds()
 {
@@ -342,6 +373,7 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
 {
+  stepRequested = false; // no step request pending any more
   // check animations
   MLMicroSeconds nextCall = Infinite;
   #if ENABLE_ANIMATION
@@ -960,9 +992,11 @@ void P44View::derivedColorComponentSetter(int aHSBIndex, PixelColor *aPixelColor
 {
   double hsb[3];
   pixelToHsb(*aPixelColorP, hsb[0], hsb[1], hsb[2]);
+  //LOG(LOG_DEBUG, "--> Pixel = %3d, %3d, %3d -> HSB = %3.2f, %1.3f, %1.3f", aPixelColorP->r, aPixelColorP->g, aPixelColorP->b, hsb[0], hsb[1], hsb[2]);
   if (hsb[aHSBIndex]!=aNewValue) {
     hsb[aHSBIndex] = aNewValue;
     PixelColor px = hsbToPixel(hsb[0], hsb[1], hsb[2]);
+    //LOG(LOG_DEBUG, "<-- Pixel = %3d, %3d, %3d <- HSB = %3.2f, %1.3f, %1.3f", px.r, px.g, px.b, hsb[0], hsb[1], hsb[2]);
     aPixelColorP->r = px.r;
     aPixelColorP->g = px.g;
     aPixelColorP->b = px.b;
@@ -1023,7 +1057,7 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
   ValueAnimatorPtr animator = ValueAnimatorPtr(new ValueAnimator(valueSetter, false)); // not self-timed
   if (animator->valid()) {
     animations.push_back(animator);
-    makeDirty(); // to make sure, in case start value did not yet cause a change
+    makeDirtyAndStep(); // to make sure animation sequence starts
   }
   return animator->from(startValue);
 }

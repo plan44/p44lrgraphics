@@ -159,13 +159,14 @@ namespace p44 {
     friend class ViewStack;
 
     bool dirty;
-
     /// fading
     int targetAlpha; ///< alpha to reach at end of fading, -1 = not fading
     int fadeDist; ///< amount to fade
     MLMicroSeconds startTime; ///< time when fading has started
     MLMicroSeconds fadeTime; ///< how long fading takes
     SimpleCB fadeCompleteCB; ///< fade complete
+    bool stepRequested; ///< set when needStepCB has been called, reset at step()
+    TimerCB needStepCB; ///< called when changes need step earlier than what last step() call said
 
     int geometryChanging;
     bool changedGeometry;
@@ -293,11 +294,14 @@ namespace p44 {
     /// color effect params have changed
     virtual void recalculateColoring() { /* NOP in the base class */ };
 
+    /// set dirty, additionally request a step ASAP
+    void makeDirtyAndStep();
+
     /// set dirty - to be called by step() and property setters (config, animation) when the view needs to be redisplayed
-    void makeDirty() { dirty = true; };
+    void makeDirty();
 
     /// set color dirty - make dirty and cause coloring update
-    void makeColorDirty() { recalculateColoring();dirty = true; };
+    void makeColorDirty();
 
     /// @return if true, dirty childs should be reported
     bool reportDirtyChilds();
@@ -458,6 +462,10 @@ namespace p44 {
 
     /// call when display is updated
     virtual void updated() { dirty = false; };
+
+    /// register a callback for when the view (supposedly a root view) and its hierarchy needs a step ASAP
+    /// @param aNeedStepCB this is called from mainloop, so it's safe to call view methods from it, including step().
+    void setNeedStepCB(TimerCB aNeedStepCB) { needStepCB = aNeedStepCB; };
 
     #if ENABLE_VIEWCONFIG
 
