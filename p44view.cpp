@@ -36,7 +36,7 @@ using namespace p44;
 P44View::P44View() :
   parentView(NULL),
   dirty(false),
-  stepRequested(false),
+  updateRequested(false),
   geometryChanging(0),
   changedGeometry(false),
   sizeToContent(false),
@@ -314,22 +314,36 @@ void P44View::clear()
 
 // MARK: ===== updating
 
-void P44View::makeDirtyAndStep()
+void P44View::makeDirtyAndUpdate()
 {
   // make dirty locally
   makeDirty();
   // request a step at the root view level
+  requestUpdate();
+}
+
+
+void P44View::requestUpdate()
+{
   P44View *p = this;
   while (p->parentView) {
     p = p->parentView;
   }
-  if (!p->stepRequested && p->needStepCB) {
-    stepRequested = true; // only request once
-    // there is a needstep callback here
-    // DO NOT call it directly, but from mainloop, so receiver can safely call step without causing recursions
-    MainLoop::currentMainLoop().executeNow(p->needStepCB);
+  if (!p->updateRequested && p->needUpdateCB) {
+    updateRequested = true; // only request once
+    // there is a needUpdate callback here
+    // DO NOT call it directly, but from mainloop, so receiver can safely call
+    // back into any view object method without causing recursions
+    MainLoop::currentMainLoop().executeNow(p->needUpdateCB);
   }
 }
+
+void P44View::updated()
+{
+  dirty = false;
+  updateRequested = false;
+}
+
 
 
 void P44View::makeDirty()
@@ -373,7 +387,7 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
 {
-  stepRequested = false; // no step request pending any more
+  updateRequested = false; // no step request pending any more
   // check animations
   MLMicroSeconds nextCall = Infinite;
   #if ENABLE_ANIMATION
@@ -381,7 +395,7 @@ MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
   while (pos != animations.end()) {
     ValueAnimatorPtr animator = (*pos);
     MLMicroSeconds nextStep = animator->step();
-    if (nextStep==Never) {
+    if (nextStep==Infinite) {
       // this animation is done, remove it from the list
       pos = animations.erase(pos);
       continue;
@@ -488,7 +502,7 @@ PixelColor P44View::colorAt(PixelPoint aPt)
         // background is where content is fully transparent
         pc = backgroundColor;
         // Note: view background does NOT shine through semi-transparent content pixels!
-        //   But non-transparent content pixels directly are view pixels!
+        //   Rather, non-fully-transparent content pixels directly are view pixels!
       }
       // factor in layer alpha
       if (alpha!=255) {
@@ -1031,7 +1045,7 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
   ValueAnimatorPtr animator = ValueAnimatorPtr(new ValueAnimator(valueSetter, false)); // not self-timed
   if (animator->valid()) {
     animations.push_back(animator);
-    makeDirtyAndStep(); // to make sure animation sequence starts
+    makeDirtyAndUpdate(); // to make sure animation sequence starts
   }
   return animator->from(startValue);
 }

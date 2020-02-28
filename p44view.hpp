@@ -159,8 +159,8 @@ namespace p44 {
     friend class ViewStack;
 
     bool dirty;
-    bool stepRequested; ///< set when needStepCB has been called, reset at step()
-    TimerCB needStepCB; ///< called when changes need step earlier than what last step() call said
+    bool updateRequested; ///< set when needUpdateCB has been called, reset at step() or update()
+    TimerCB needUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
 
     int geometryChanging;
     bool changedGeometry;
@@ -289,7 +289,7 @@ namespace p44 {
     virtual void recalculateColoring() { /* NOP in the base class */ };
 
     /// set dirty, additionally request a step ASAP
-    void makeDirtyAndStep();
+    void makeDirtyAndUpdate();
 
     /// set dirty - to be called by step() and property setters (config, animation) when the view needs to be redisplayed
     void makeDirty();
@@ -443,12 +443,15 @@ namespace p44 {
     /// return if anything changed on the display since last call
     virtual bool isDirty()  { return dirty; };
 
-    /// call when display is updated
-    virtual void updated() { dirty = false; };
+    /// call to request an update (in case the display does not update itself with a fixed frame rate)
+    virtual void requestUpdate();
 
-    /// register a callback for when the view (supposedly a root view) and its hierarchy needs a step ASAP
-    /// @param aNeedStepCB this is called from mainloop, so it's safe to call view methods from it, including step().
-    void setNeedStepCB(TimerCB aNeedStepCB) { needStepCB = aNeedStepCB; };
+    /// call when display is updated
+    virtual void updated();
+
+    /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needs a step() ASAP
+    /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
+    void setNeedUpdateCB(TimerCB aNeedUpdateCB) { needUpdateCB = aNeedUpdateCB; };
 
     #if ENABLE_VIEWCONFIG
 
