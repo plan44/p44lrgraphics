@@ -76,6 +76,15 @@ bool P44View::isInContentSize(PixelPoint aPt)
 }
 
 
+PixelColor P44View::contentColorAt(PixelPoint aPt)
+{
+  if (isInContentSize(aPt))
+    return foregroundColor;
+  else
+    return backgroundColor;
+}
+
+
 void P44View::geometryChange(bool aStart)
 {
   if (aStart){
@@ -219,13 +228,28 @@ void P44View::setContentOrigin(PixelPoint aOrigin)
 
 void P44View::setRelativeContentOrigin(double aRelX, double aRelY)
 {
-  // standard version, content origin is a corner of the relevant area
-  setContentOrigin({
-    (int)(aRelX*max(content.dx,frame.dx)),
-    (int)(aRelY*max(content.dy,frame.dy))
-  });
+  geometryChange(true);
+  setRelativeContentOriginX(aRelX);
+  setRelativeContentOriginX(aRelY);
+  geometryChange(false);
 }
 
+void P44View::setRelativeContentOriginX(double aRelX)
+{
+  // standard version, content origin is a corner of the relevant area
+  geometryChange(true);
+  changeGeometryRect(content, { (int)(aRelX*max(content.dx,frame.dx)), content.y, content.dx, content.dy });
+  geometryChange(false);
+}
+
+
+void P44View::setRelativeContentOriginY(double aRelY)
+{
+  // standard version, content origin is a corner of the relevant area
+  geometryChange(true);
+  changeGeometryRect(content, { content.x, (int)(aRelY*max(content.dy,frame.dy)), content.dx, content.dy });
+  geometryChange(false);
+}
 
 
 void P44View::setContentRotation(double aRotation)
@@ -792,6 +816,11 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     invertAlpha = o->boolValue();
     makeDirty();
   }
+  // frame rect should be defined here (unless we'll use sizetocontent below), so we can check the content related propes now
+  if (aViewConfig->get("fullframe", o)) {
+    if(o->boolValue()) setFullFrameContent();
+  }
+  // modification of content rect
   if (aViewConfig->get("content_x", o)) {
     content.x = o->int32Value(); makeDirty();
     changedGeometry = true;
@@ -808,14 +837,17 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     content.dy = o->int32Value(); makeDirty();
     changedGeometry = true;
   }
+  if (aViewConfig->get("rel_content_x", o)) {
+    setRelativeContentOriginX(o->doubleValue());
+  }
+  if (aViewConfig->get("rel_content_y", o)) {
+    setRelativeContentOriginY(o->doubleValue());
+  }
   if (aViewConfig->get("rotation", o)) {
     setContentRotation(o->doubleValue());
   }
-  if (aViewConfig->get("fullframe", o)) {
-    if(o->boolValue()) setFullFrameContent();
-  }
   if (aViewConfig->get("orientation", o)) {
-    // check this oafer fullframe, because fullframe resets orientation
+    // check this after fullframe, because fullframe resets orientation
     setOrientation(o->int32Value());
   }
   if (aViewConfig->get("timingpriority", o)) {
@@ -839,32 +871,32 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     }
     for (int i=0; i<a->arrayLength(); i++) {
       o = a->arrayGet(i);
-    JsonObjectPtr p;
-    ValueAnimatorPtr animator;
-    if (o->get("property", p)) {
-      animator = animatorFor(p->stringValue());
-      if (o->get("to", p)) {
-        double to = p->doubleValue();
-        if (o->get("time", p)) {
-          MLMicroSeconds duration = p->doubleValue()*Second;
-          // optional params
-          bool autoreverse = false;
-          int cycles = 1;
-          MLMicroSeconds minsteptime = 0;
-          double stepsize = 0;
-          animator->function(ValueAnimator::easeInOut)->param(3);
-          if (o->get("minsteptime", p)) minsteptime = p->doubleValue()*Second;
-          if (o->get("stepsize", p)) stepsize = p->doubleValue();
-          if (o->get("autoreverse", p)) autoreverse = p->boolValue();
-          if (o->get("cycles", p)) cycles = p->int32Value();
+      JsonObjectPtr p;
+      ValueAnimatorPtr animator;
+      if (o->get("property", p)) {
+        animator = animatorFor(p->stringValue());
+        if (o->get("to", p)) {
+          double to = p->doubleValue();
+          if (o->get("time", p)) {
+            MLMicroSeconds duration = p->doubleValue()*Second;
+            // optional params
+            bool autoreverse = false;
+            int cycles = 1;
+            MLMicroSeconds minsteptime = 0;
+            double stepsize = 0;
+            animator->function(ValueAnimator::easeInOut)->param(3);
+            if (o->get("minsteptime", p)) minsteptime = p->doubleValue()*Second;
+            if (o->get("stepsize", p)) stepsize = p->doubleValue();
+            if (o->get("autoreverse", p)) autoreverse = p->boolValue();
+            if (o->get("cycles", p)) cycles = p->int32Value();
             if (o->get("from", p)) animator->from(p->doubleValue());
-          if (o->get("function", p)) animator->function(p->stringValue());
-          if (o->get("param", p)) animator->param(p->doubleValue());
-          animator->repeat(autoreverse, cycles)->animate(to, duration, NULL, minsteptime, stepsize);
+            if (o->get("function", p)) animator->function(p->stringValue());
+            if (o->get("param", p)) animator->param(p->doubleValue());
+            animator->repeat(autoreverse, cycles)->animate(to, duration, NULL, minsteptime, stepsize);
+          }
         }
       }
     }
-  }
   }
   #endif
   geometryChange(false);
@@ -1029,6 +1061,14 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
   }
   else if (aProperty=="content_y") {
     return getGeometryPropertySetter(content.y, aCurrentValue);
+  }
+  else if (aProperty=="rel_content_x") {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&P44View::setRelativeContentOriginX, this, _1);
+  }
+  else if (aProperty=="rel_content_y") {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&P44View::setRelativeContentOriginY, this, _1);
   }
   else if (aProperty=="content_dx") {
     return getGeometryPropertySetter(content.dx, aCurrentValue);

@@ -40,6 +40,8 @@ ColorEffectView::ColorEffectView() :
   // make sure we start dark!
   setForegroundColor(black);
   setBackgroundColor(transparent);
+  extent.x = 10;
+  extent.y = 10;
 }
 
 ColorEffectView::~ColorEffectView()

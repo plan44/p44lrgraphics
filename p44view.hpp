@@ -167,8 +167,6 @@ namespace p44 {
     PixelRect previousFrame;
     PixelRect previousContent;
 
-    void geometryChange(bool aStart);
-
     #if ENABLE_ANIMATION
     typedef std::list<ValueAnimatorPtr> AnimationsList;
     AnimationsList animations; /// the list of currently running animations
@@ -255,6 +253,9 @@ namespace p44 {
 
     string label; ///< label of the view for addressing it
 
+    /// announce/finish geometry change
+    void geometryChange(bool aStart);
+
     /// change rect and trigger geometry change when actually changed
     void changeGeometryRect(PixelRect &aRect, PixelRect aNewRect);
 
@@ -280,7 +281,8 @@ namespace p44 {
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
-    virtual PixelColor contentColorAt(PixelPoint aPt) { return backgroundColor; }
+    /// @note this default base class implementation shows the foreground color on all pixels within contentSize, background otherwise
+    virtual PixelColor contentColorAt(PixelPoint aPt);
 
     /// helper for implementations: check if aPt within set content size
     bool isInContentSize(PixelPoint aPt);
@@ -398,7 +400,14 @@ namespace p44 {
     /// set content origin relative to its own size and frame
     /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
     /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    virtual void setRelativeContentOrigin(double aRelX, double aRelY);
+    void setRelativeContentOrigin(double aRelX, double aRelY);
+
+    /// set content origin X relative to its own size and frame
+    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
+    virtual void setRelativeContentOriginX(double aRelX);
+    /// set content origin Y relative to its own size and frame
+    /// @param aRelY relative Y position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
+    virtual void setRelativeContentOriginY(double aRelY);
 
     /// @return content size
     PixelPoint getContentSize() const { return { content.dx, content.dy }; }

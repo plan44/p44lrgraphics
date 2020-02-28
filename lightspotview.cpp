@@ -40,15 +40,20 @@ LightSpotView::~LightSpotView()
 }
 
 
-void LightSpotView::setRelativeContentOrigin(double aRelX, double aRelY)
+void LightSpotView::setRelativeContentOriginX(double aRelX)
 {
-  // special version, content origin is a center of the relevant area
-  setContentOrigin({
-    (int)(aRelX*max(content.dx,frame.dx)+frame.dx/2),
-    (int)(aRelY*max(content.dy,frame.dy)+frame.dy/2)
-  });
+  geometryChange(true);
+  changeGeometryRect(content, { (int)(aRelX*max(content.dx,frame.dx)+frame.dx/2), content.y, content.dx, content.dy });
+  geometryChange(false);
 }
 
+
+void LightSpotView::setRelativeContentOriginY(double aRelY)
+{
+  geometryChange(true);
+  changeGeometryRect(content, { content.x, (int)(aRelY*max(content.dy,frame.dy)+frame.dy/2), content.dx, content.dy });
+  geometryChange(false);
+}
 
 
 void LightSpotView::recalculateColoring()
@@ -66,17 +71,16 @@ void LightSpotView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 }
 
 
-
-MLMicroSeconds LightSpotView::step(MLMicroSeconds aPriorityUntil)
-{
-  MLMicroSeconds now = MainLoop::now();
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  // do stuff
-  MLMicroSeconds nextstepin = 100*MilliSecond;
-
-  updateNextCall(nextCall, now+nextstepin);
-  return nextCall;
-}
+//MLMicroSeconds LightSpotView::step(MLMicroSeconds aPriorityUntil)
+//{
+//  MLMicroSeconds now = MainLoop::now();
+//  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
+//  // do stuff
+//  MLMicroSeconds nextstepin = 100*MilliSecond;
+//
+//  updateNextCall(nextCall, now+nextstepin);
+//  return nextCall;
+//}
 
 
 PixelColor LightSpotView::contentColorAt(PixelPoint aPt)

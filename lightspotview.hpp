@@ -42,12 +42,14 @@ namespace p44 {
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
     /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
     /// @note this must be called as demanded by return value, and after making changes to the view
-    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
+    //virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
-    /// set content origin relative to its own size and frame
+    /// set content origin X relative to its own size and frame
     /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
-    /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    virtual void setRelativeContentOrigin(double aRelX, double aRelY) P44_OVERRIDE;
+    virtual void setRelativeContentOriginX(double aRelX) P44_OVERRIDE;
+    /// set content origin Y relative to its own size and frame
+    /// @param aRelY relative Y position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
+    virtual void setRelativeContentOriginY(double aRelY) P44_OVERRIDE;
 
     #if ENABLE_VIEWCONFIG
 
