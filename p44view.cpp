@@ -832,6 +832,13 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   #if ENABLE_ANIMATION
   if (aViewConfig->get("animate", o)) {
+    JsonObjectPtr a = o;
+    if (!a->isType(json_type_array)) {
+      a = JsonObject::newArray();
+      a->arrayAppend(o);
+    }
+    for (int i=0; i<a->arrayLength(); i++) {
+      o = a->arrayGet(i);
     JsonObjectPtr p;
     ValueAnimatorPtr animator;
     if (o->get("property", p)) {
@@ -850,12 +857,14 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
           if (o->get("stepsize", p)) stepsize = p->doubleValue();
           if (o->get("autoreverse", p)) autoreverse = p->boolValue();
           if (o->get("cycles", p)) cycles = p->int32Value();
+            if (o->get("from", p)) animator->from(p->doubleValue());
           if (o->get("function", p)) animator->function(p->stringValue());
           if (o->get("param", p)) animator->param(p->doubleValue());
           animator->repeat(autoreverse, cycles)->animate(to, duration, NULL, minsteptime, stepsize);
         }
       }
     }
+  }
   }
   #endif
   geometryChange(false);
