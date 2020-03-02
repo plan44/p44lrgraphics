@@ -41,7 +41,7 @@ using namespace p44;
 
 ViewStack::ViewStack()
 {
-  positioningMode = noWrap;
+  positioningMode = noWrap+noAdjust;
 }
 
 
