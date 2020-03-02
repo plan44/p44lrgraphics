@@ -226,28 +226,28 @@ void P44View::setContentOrigin(PixelPoint aOrigin)
 };
 
 
-void P44View::setRelativeContentOrigin(double aRelX, double aRelY)
+void P44View::setRelativeContentOrigin(double aRelX, double aRelY, bool aCentered)
 {
   geometryChange(true);
-  setRelativeContentOriginX(aRelX);
-  setRelativeContentOriginX(aRelY);
+  setRelativeContentOriginX(aRelX, aCentered);
+  setRelativeContentOriginY(aRelY, aCentered);
   geometryChange(false);
 }
 
-void P44View::setRelativeContentOriginX(double aRelX)
+void P44View::setRelativeContentOriginX(double aRelX, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
   geometryChange(true);
-  changeGeometryRect(content, { (int)(aRelX*max(content.dx,frame.dx)), content.y, content.dx, content.dy });
+  changeGeometryRect(content, { (int)(aRelX*max(content.dx,frame.dx)+(aCentered ? frame.dx/2 : 0)), content.y, content.dx, content.dy });
   geometryChange(false);
 }
 
 
-void P44View::setRelativeContentOriginY(double aRelY)
+void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
   geometryChange(true);
-  changeGeometryRect(content, { content.x, (int)(aRelY*max(content.dy,frame.dy)), content.dx, content.dy });
+  changeGeometryRect(content, { content.x, (int)(aRelY*max(content.dy,frame.dy)+(aCentered ? frame.dy/2 : 0)), content.dx, content.dy });
   geometryChange(false);
 }
 
@@ -752,13 +752,16 @@ PixelColor p44::hsbToPixel(double aHue, double aSaturation, double aBrightness, 
 }
 
 
-void p44::pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness)
+void p44::pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness, bool aIncludeAlphaIntoBrightness)
 {
   Row3 HSV, RGB = { (double)aPixelColor.r/255, (double)aPixelColor.g/255, (double)aPixelColor.b/255 };
   RGBtoHSV(RGB, HSV);
   aHue = HSV[0];
   aSaturation = HSV[1];
-  aBrightness = HSV[2];
+  if (aIncludeAlphaIntoBrightness)
+    aBrightness = HSV[2]*aPixelColor.a/255;
+  else
+    aBrightness = HSV[2];
 }
 
 
@@ -838,10 +841,16 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     changedGeometry = true;
   }
   if (aViewConfig->get("rel_content_x", o)) {
-    setRelativeContentOriginX(o->doubleValue());
+    setRelativeContentOriginX(o->doubleValue(), false);
   }
   if (aViewConfig->get("rel_content_y", o)) {
-    setRelativeContentOriginY(o->doubleValue());
+    setRelativeContentOriginY(o->doubleValue(), false);
+  }
+  if (aViewConfig->get("rel_center_x", o)) {
+    setRelativeContentOriginX(o->doubleValue(), true);
+  }
+  if (aViewConfig->get("rel_center_y", o)) {
+    setRelativeContentOriginY(o->doubleValue(), true);
   }
   if (aViewConfig->get("rotation", o)) {
     setContentRotation(o->doubleValue());
@@ -1064,11 +1073,19 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
   }
   else if (aProperty=="rel_content_x") {
     aCurrentValue = 0; // dummy
-    return boost::bind(&P44View::setRelativeContentOriginX, this, _1);
+    return boost::bind(&P44View::setRelativeContentOriginX, this, _1, false);
   }
   else if (aProperty=="rel_content_y") {
     aCurrentValue = 0; // dummy
-    return boost::bind(&P44View::setRelativeContentOriginY, this, _1);
+    return boost::bind(&P44View::setRelativeContentOriginY, this, _1, false);
+  }
+  else if (aProperty=="rel_center_x") {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&P44View::setRelativeContentOriginX, this, _1, true);
+  }
+  else if (aProperty=="rel_center_y") {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&P44View::setRelativeContentOriginY, this, _1, true);
   }
   else if (aProperty=="content_dx") {
     return getGeometryPropertySetter(content.dx, aCurrentValue);

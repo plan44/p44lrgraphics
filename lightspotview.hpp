@@ -38,39 +38,6 @@ namespace p44 {
     LightSpotView();
     virtual ~LightSpotView();
 
-    /// calculate changes on the display, return time of next change
-    /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
-    /// @note this must be called as demanded by return value, and after making changes to the view
-    //virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
-
-    /// set content origin X relative to its own size and frame
-    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
-    virtual void setRelativeContentOriginX(double aRelX) P44_OVERRIDE;
-    /// set content origin Y relative to its own size and frame
-    /// @param aRelY relative Y position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    virtual void setRelativeContentOriginY(double aRelY) P44_OVERRIDE;
-
-    #if ENABLE_VIEWCONFIG
-
-    /// configure view from JSON
-    /// @param aViewConfig JSON for configuring view and subviews
-    /// @return ok or error in case of real errors (image not found etc., but minor
-    ///   issues like unknown properties usually don't cause error)
-    virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
-
-    #endif // ENABLE_VIEWCONFIG
-
-    #if ENABLE_ANIMATION
-
-    /// get a value animation setter for a given property of the view
-    /// @param aProperty the name of the property to get a setter for
-    /// @param aCurrentValue is assigned the current value of the property
-    /// @return the setter to be used by the animator
-    virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue) P44_OVERRIDE;
-
-    #endif // ENABLE_ANIMATION
-
   protected:
 
     /// get content pixel color

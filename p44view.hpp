@@ -146,7 +146,8 @@ namespace p44 {
   /// @param aHue receives hue, 0..360 degrees
   /// @param aSaturation receives saturation, 0..1
   /// @param aBrightness receives brightness, 0..1
-  void pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness);
+  /// @param aIncludeAlphaIntoBrightness if set, alpha is included in aBrightness returned
+  void pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness, bool aIncludeAlphaIntoBrightness = false);
 
 
   /// @}
@@ -398,16 +399,28 @@ namespace p44 {
     void setContentOrigin(PixelPoint aOrigin);
 
     /// set content origin relative to its own size and frame
-    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
-    /// @param aRelY relative X position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    void setRelativeContentOrigin(double aRelX, double aRelY);
+    /// @param aRelX relative X position
+    /// @param aRelY relative Y position
+    /// @param aCentered if set, content origin 0,0 means center of the frame, otherwise the "normal" bottom left of the frame
+    /// - centered: 0 = center, -1 = max(framedx,contentdx) to the left/bottom, +1 to the right/top of the center
+    /// - not centered: 0 = left/bottom, -1 = max(framesize,contentsize) to the left/bottom, +1 to the right/top
+    /// @note for clipped content, -1 or 1 means at least "out of the frame"
+    void setRelativeContentOrigin(double aRelX, double aRelY, bool aCentered = true);
 
     /// set content origin X relative to its own size and frame
-    /// @param aRelX relative X position, 0 = center, -1 = max(framedx,contentdx) to the left, +1 to the right
-    virtual void setRelativeContentOriginX(double aRelX);
+    /// @param aRelX relative X position
+    /// @param aCentered if set, content origin 0 means center of the frame, otherwise the "normal" left of the frame
+    /// - centered: 0 = center, -1 = max(framedx,contentdx) to the left/bottom, +1 to the right/top of the center
+    /// - not centered: 0 = left, -1 = max(framedx,contentdx) to the left, +1 to the right
+    /// @note for clipped content, -1 or 1 means at least "out of the frame"
+    void setRelativeContentOriginX(double aRelX, bool aCentered = true);
     /// set content origin Y relative to its own size and frame
-    /// @param aRelY relative Y position, 0 = center, -1 = max(framedy,contentdy) down, +1 up
-    virtual void setRelativeContentOriginY(double aRelY);
+    /// @param aRelY relative Y position
+    /// @param aCentered if set, content origin 0 means center of the frame, otherwise the "normal" bottom of the frame
+    /// - centered: 0 = center, -1 = max(framedy,contentdy) to the bottom, +1 to the top of the center
+    /// - not centered: 0 = bottom, -1 = max(framedy,contentdy) to the bottom, +1 to the top
+    /// @note for clipped content, -1 or 1 means at least "out of the frame"
+    void setRelativeContentOriginY(double aRelY, bool aCentered = true);
 
     /// @return content size
     PixelPoint getContentSize() const { return { content.dx, content.dy }; }

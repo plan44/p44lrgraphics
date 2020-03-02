@@ -63,7 +63,7 @@ void ColorEffectView::setColoringParameters(
     aRadial!=radial
   ) {
     radial = aRadial;
-    setForegroundColor(aBaseColor);
+    foregroundColor = aBaseColor;
     briGradient = aBri; briMode = aBriMode;
     hueGradient = aHue; hueMode = aHueMode;
     satGradient = aSat; satMode = aSatMode;
@@ -77,6 +77,15 @@ void ColorEffectView::setExtent(PixelPoint aExtent)
   extent = aExtent;
   makeDirty();
 }
+
+
+void ColorEffectView::setRelativeExtent(double aRelativeExtent)
+{
+  extent.x = aRelativeExtent*content.dx/2;
+  extent.y = aRelativeExtent*content.dy/2;
+}
+
+
 
 
 double ColorEffectView::gradientCycles(double aValue, GradientMode aMode)
@@ -119,18 +128,6 @@ double ColorEffectView::gradientCurveLevel(double aProgress, GradientMode aMode)
 }
 
 
-//double LightBehaviour::brightnessToPWM(Brightness aBrightness, double aMaxPWM)
-//{
-//  return aMaxPWM*((exp(aBrightness*dimCurveExp/100)-1)/(exp(dimCurveExp)-1));
-//}
-//
-//
-//Brightness LightBehaviour::PWMToBrightness(double aPWM, double aMaxPWM)
-//{
-//  return 100/dimCurveExp*log(aPWM*(exp(dimCurveExp)-1)/aMaxPWM + 1);
-//}
-
-
 double ColorEffectView::gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap)
 {
   if (aGradient==0 || aMode==gradient_none) return aValue; // no gradient
@@ -147,23 +144,21 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   gradientPixels.clear();
   if (briGradient==0 && hueGradient==0 && satGradient==0) return; // optimized
   // initial HSV
-  Row3 rgb = { (double)foregroundColor.r/255, (double)foregroundColor.g/255, (double)foregroundColor.b/255 };
-  Row3 hsb;
-  RGBtoHSV(rgb, hsb);
-  hsb[2] = (double)foregroundColor.a/255;
-  Row3 resHsb;
+  double base_h,base_s,base_b;
+  pixelToHsb(foregroundColor, base_h, base_s, base_b, true);
+  double h,s,b;
   // now create gradient pixels covering larger extent dimension
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
     double pr = (double)i/aExtentPixels;
     // - hue
-    resHsb[0] = gradiated(hsb[0], pr, hueGradient, hueMode, 360, true);
+    h = gradiated(base_h, pr, hueGradient, hueMode, 360, true);
     // - saturation
-    resHsb[1] = gradiated(hsb[1], pr, satGradient, satMode, 1, false);
+    s = gradiated(base_s, pr, satGradient, satMode, 1, false);
     // - brightness
-    resHsb[2] = gradiated(hsb[2], pr, briGradient, briMode, 1, false);
+    b = gradiated(base_b, pr, briGradient, briMode, 1, false);
     // store the pixel
-    PixelColor gpix = hsbToPixel(resHsb[0], resHsb[1], resHsb[2], true);
+    PixelColor gpix = hsbToPixel(h,s,b, true);
     gradientPixels.push_back(gpix);
   }
 }
@@ -220,6 +215,17 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
     if (colsChanged) {
       makeColorDirty();
     }
+    if (aViewConfig->get("extent_x", o)) {
+      extent.x = o->doubleValue();
+      makeDirty();
+    }
+    if (aViewConfig->get("extent_y", o)) {
+      extent.y = o->doubleValue();
+      makeDirty();
+    }
+    if (aViewConfig->get("rel_extent", o)) {
+      setRelativeExtent(o->doubleValue());
+    }
   }
   return err;
 }
@@ -252,6 +258,17 @@ ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double&
     aCurrentValue = satGradient;
     return boost::bind(&ColorEffectView::coloringPropertySetter, this, satGradient, _1);
   }
+  else if (aProperty=="extent_x") {
+    return getCoordPropertySetter(extent.x, aCurrentValue);
+  }
+  else if (aProperty=="extent_y") {
+    return getCoordPropertySetter(extent.y, aCurrentValue);
+  }
+  if (aProperty=="rel_extent") {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&ColorEffectView::setRelativeExtent, this, _1);
+  }
+
   // unknown at this level
   return inherited::getPropertySetter(aProperty, aCurrentValue);
 }

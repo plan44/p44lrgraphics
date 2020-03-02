@@ -85,6 +85,10 @@ namespace p44 {
     /// @note extent(0,0) means single pixel at the center
     void setExtent(PixelPoint aExtent);
 
+    /// set extent relative to the content size
+    /// @param aRelativeExtent 0 = single pixel, 1 = half the content size in both x/y direction
+    void setRelativeExtent(double aRelativeExtent);
+
     /// gradient utilities
     static double gradientCycles(double aValue, GradientMode aMode);
     static double gradientCurveLevel(double aProgress, GradientMode aMode);

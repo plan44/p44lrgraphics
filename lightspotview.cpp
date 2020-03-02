@@ -40,22 +40,6 @@ LightSpotView::~LightSpotView()
 }
 
 
-void LightSpotView::setRelativeContentOriginX(double aRelX)
-{
-  geometryChange(true);
-  changeGeometryRect(content, { (int)(aRelX*max(content.dx,frame.dx)+frame.dx/2), content.y, content.dx, content.dy });
-  geometryChange(false);
-}
-
-
-void LightSpotView::setRelativeContentOriginY(double aRelY)
-{
-  geometryChange(true);
-  changeGeometryRect(content, { content.x, (int)(aRelY*max(content.dy,frame.dy)+frame.dy/2), content.dx, content.dy });
-  geometryChange(false);
-}
-
-
 void LightSpotView::recalculateColoring()
 {
   calculateGradient(radial ? max(frame.dx, frame.dy) : frame.dx,  radial ? max(extent.x, extent.y) : extent.x);
@@ -69,18 +53,6 @@ void LightSpotView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
   recalculateColoring();
   inherited::geometryChanged(aOldFrame, aOldContent);
 }
-
-
-//MLMicroSeconds LightSpotView::step(MLMicroSeconds aPriorityUntil)
-//{
-//  MLMicroSeconds now = MainLoop::now();
-//  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-//  // do stuff
-//  MLMicroSeconds nextstepin = 100*MilliSecond;
-//
-//  updateNextCall(nextCall, now+nextstepin);
-//  return nextCall;
-//}
 
 
 PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
@@ -116,46 +88,3 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
   return pix;
 }
 
-
-#if ENABLE_VIEWCONFIG
-
-// MARK: ===== view configuration
-
-ErrorPtr LightSpotView::configureView(JsonObjectPtr aViewConfig)
-{
-  JsonObjectPtr o;
-  ErrorPtr err = inherited::configureView(aViewConfig);
-  if (Error::isOK(err)) {
-    if (aViewConfig->get("extent_x", o)) {
-      extent.x = o->doubleValue();
-      makeDirty();
-    }
-    if (aViewConfig->get("extent_y", o)) {
-      extent.y = o->doubleValue();
-      makeDirty();
-    }
-  }
-  return err;
-}
-
-
-#endif // ENABLE_VIEWCONFIG
-
-
-#if ENABLE_ANIMATION
-
-ValueSetterCB LightSpotView::getPropertySetter(const string aProperty, double& aCurrentValue)
-{
-  if (aProperty=="extent_x") {
-    return getCoordPropertySetter(extent.x, aCurrentValue);
-  }
-  else if (aProperty=="extent_y") {
-    return getCoordPropertySetter(extent.y, aCurrentValue);
-  }
-  // unknown at this level
-  return inherited::getPropertySetter(aProperty, aCurrentValue);
-}
-
-
-
-#endif
