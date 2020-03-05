@@ -104,13 +104,45 @@ bool p44::evaluateViewFunctions(EvaluationContext* aEvalContext, const string &a
       viewName = aArgs[ai].stringValue();
       ai++;
     }
-    // next param is the json string
+    // next param is the json configuration
     if (aArgs[ai].notValue()) return aEvalContext->errorInArg(aArgs[ai], aResult); // return error/null from argument
-    string viewConfig = aArgs[ai++].stringValue();
-    if (aArgs.size()>ai) {
-      // optional subsitute flag
-      if (aArgs[ai].notValue()) return aEvalContext->errorInArg(aArgs[ai], aResult); // return error/null from argument
-      substitute = aArgs[ai++].boolValue();
+    JsonObjectPtr viewCfgJSON;
+    ErrorPtr err;
+    #if EXPRESSION_JSON_SUPPORT
+    if (aArgs[ai].isJson()) {
+      // is already a JSON value, use it as-is
+      viewCfgJSON = aArgs[ai].jsonValue();
+    }
+    else
+    #endif
+    {
+      // JSON from string or file, possibly with substitution
+      string viewConfig = aArgs[ai++].stringValue();
+      if (aArgs.size()>ai) {
+        // optional subsitute flag
+        if (aArgs[ai].notValue()) return aEvalContext->errorInArg(aArgs[ai], aResult); // return error/null from argument
+        substitute = aArgs[ai++].boolValue();
+      }
+      // get the string
+      if (viewConfig.c_str()[0]!='{') {
+        // must be a file name, try to load it
+        string fpath = Application::sharedApplication()->resourcePath(viewConfig);
+        FILE* f = fopen(fpath.c_str(), "r");
+        if (f==NULL) {
+          ErrorPtr err = SysError::errNo();
+          err->prefixMessage("cannot open JSON view config file '%s': ", fpath.c_str());
+          return aEvalContext->throwError(err);
+        }
+        string_fgetfile(f, viewConfig);
+        fclose(f);
+      }
+      // substitute placeholders in the JSON
+      if (substitute) {
+        substituteExpressionPlaceholders(viewConfig, aSubstitutionValueLookupCB, NULL);
+      }
+      // parse JSON
+      viewCfgJSON = JsonObject::objFromText(viewConfig.c_str(), -1, &err);
+      if (!viewCfgJSON) return aEvalContext->throwError(err);
     }
     // get the subview by name, if specified
     if (!viewName.empty()) {
@@ -119,27 +151,6 @@ bool p44::evaluateViewFunctions(EvaluationContext* aEvalContext, const string &a
         return aEvalContext->throwError(ExpressionError::NotFound, "View with label '%s' not found", viewName.c_str());
       }
     }
-    // get the string
-    if (viewConfig.c_str()[0]!='{') {
-      // must be a file name, try to load it
-      string fpath = Application::sharedApplication()->resourcePath(viewConfig);
-      FILE* f = fopen(fpath.c_str(), "r");
-      if (f==NULL) {
-        ErrorPtr err = SysError::errNo();
-        err->prefixMessage("cannot open JSON view config file '%s': ", fpath.c_str());
-        return aEvalContext->throwError(err);
-      }
-      string_fgetfile(f, viewConfig);
-      fclose(f);
-    }
-    // substitute placeholders in the JSON
-    if (substitute) {
-      substituteExpressionPlaceholders(viewConfig, aSubstitutionValueLookupCB, NULL);
-    }
-    // parse JSON
-    ErrorPtr err;
-    JsonObjectPtr viewCfgJSON = JsonObject::objFromText(viewConfig.c_str(), -1, &err);
-    if (!viewCfgJSON) return aEvalContext->throwError(err);
     // actually configure the view now
     err = aRootView->configureView(viewCfgJSON);
     if (Error::notOK(err)) return aEvalContext->throwError(err);
