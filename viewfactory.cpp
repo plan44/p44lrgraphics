@@ -23,6 +23,8 @@
 
 #if ENABLE_VIEWCONFIG
 
+#include "extutils.hpp"
+
 #if ENABLE_IMAGE_SUPPORT
 #include "imageview.hpp"
 #endif
@@ -93,7 +95,21 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
 
 bool p44::evaluateViewFunctions(EvaluationContext* aEvalContext, const string &aFunc, const FunctionArguments &aArgs, ExpressionValue &aResult, P44ViewPtr aRootView, ValueLookupCB aSubstitutionValueLookupCB)
 {
-  if (aFunc=="configureview") {
+  if (aFunc=="hsv" && aArgs.size()>=1 && aArgs.size()<=4) {
+    // hsv(hue, sat, bri) // convert to webcolor string
+    double h = aArgs[0].numValue();
+    double s = 1.0;
+    double b = 1.0;
+    if (aArgs.size()>1) {
+      s = aArgs[1].numValue();
+      if (aArgs.size()>2) {
+        b = aArgs[2].numValue();
+      }
+    }
+    PixelColor p = hsbToPixel(h, s, b);
+    aResult.setString(pixelToWebColor(p));
+  }
+  else if (aFunc=="configureview") {
     // configureview([viewname,]jsonconfig/filename[,substitute])
     string viewName;
     bool substitute = true;
@@ -127,17 +143,11 @@ bool p44::evaluateViewFunctions(EvaluationContext* aEvalContext, const string &a
       if (viewConfig.c_str()[0]!='{') {
         // must be a file name, try to load it
         string fpath = Application::sharedApplication()->resourcePath(viewConfig);
-        FILE* f = fopen(fpath.c_str(), "r");
-        if (f==NULL) {
-          ErrorPtr err = SysError::errNo();
-          err->prefixMessage("cannot open JSON view config file '%s': ", fpath.c_str());
-          return aEvalContext->throwError(err);
-        }
-        string_fgetfile(f, viewConfig);
-        fclose(f);
+        ErrorPtr err = string_fromfile(fpath, viewConfig);
+        if (Error::notOK(err)) return aEvalContext->throwError(err);
       }
       // substitute placeholders in the JSON
-      if (substitute) {
+      if (substitute && aSubstitutionValueLookupCB) {
         substituteExpressionPlaceholders(viewConfig, aSubstitutionValueLookupCB, NULL);
       }
       // parse JSON
@@ -154,11 +164,11 @@ bool p44::evaluateViewFunctions(EvaluationContext* aEvalContext, const string &a
     // actually configure the view now
     err = aRootView->configureView(viewCfgJSON);
     if (Error::notOK(err)) return aEvalContext->throwError(err);
-    return true;
   }
   else {
     return false; // unknown function
   }
+  return true;
 }
 
 #endif // EXPRESSION_SCRIPT_SUPPORT
