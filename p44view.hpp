@@ -475,6 +475,9 @@ namespace p44 {
     /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
     void setNeedUpdateCB(TimerCB aNeedUpdateCB) { needUpdateCB = aNeedUpdateCB; };
 
+    /// stop all animations
+    virtual void stopAnimations();
+
     #if ENABLE_VIEWCONFIG
 
     /// configure view from JSON
@@ -483,16 +486,20 @@ namespace p44 {
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig);
 
+    /// get view by label
+    /// @param aLabel label of view to find
+    /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
+    virtual P44ViewPtr getView(const string aLabel);
+
+    #if ENABLE_JSON_APPLICATION
+
     /// configure view from file or JSON
     /// @param aResourceOrObj if this is a single JSON string ending on ".json", it is treated as a resource file name
     ///    which is loaded and returned. All other JSON is used as view config as-is
     /// @param aResourcePrefix will be prepended to aResourceOrObj when it is a filename
     ErrorPtr configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix = "");
 
-    /// get view by label
-    /// @param aLabel label of view to find
-    /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual P44ViewPtr getView(const string aLabel);
+    #endif // ENABLE_JSON_APPLICATION
 
     #endif // ENABLE_VIEWCONFIG
 
@@ -505,13 +512,6 @@ namespace p44 {
     /// @return an animator
     /// @note even in case the property is not know, a dummy animator will be returned, which cannot be started
     ValueAnimatorPtr animatorFor(const string aProperty);
-
-    /// stop all animations
-    virtual void stopAnimations();
-
-    /// get Animator for a property
-    //ValueAnimatorPtr getPropertyAnimator(const string aProperty, )
-
 
     /// get a value animation setter for a given property of the view
     /// @param aProperty the name of the property to get a setter for

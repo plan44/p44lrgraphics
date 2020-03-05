@@ -924,6 +924,8 @@ P44ViewPtr P44View::getView(const string aLabel)
 }
 
 
+#if ENABLE_JSON_APPLICATION
+
 ErrorPtr P44View::configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix)
 {
   ErrorPtr err;
@@ -934,6 +936,7 @@ ErrorPtr P44View::configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const
   return err;
 }
 
+#endif // ENABLE_JSON_APPLICATION
 
 #endif // ENABLE_VIEWCONFIG
 
@@ -1119,17 +1122,16 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
 }
 
 
+#endif // ENABLE_ANIMATION
 
 
 void P44View::stopAnimations()
 {
+  // always available as base implementation for other animations (such as in viewseqencer)
+  #if ENABLE_ANIMATION
   for (AnimationsList::iterator pos = animations.begin(); pos!=animations.end(); ++pos) {
     (*pos)->stop(false); // stop with no callback
   }
   animations.clear();
+  #endif
 }
-
-
-
-
-#endif // ENABLE_ANIMATION
