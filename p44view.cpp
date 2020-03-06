@@ -29,6 +29,8 @@
 #include "p44view.hpp"
 #include "ledchaincomm.hpp" // for brightnessToPwm and pwmToBrightness
 
+#include <math.h>
+
 using namespace p44;
 
 // MARK: ===== View
