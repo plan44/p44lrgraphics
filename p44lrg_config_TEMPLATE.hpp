@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2016-2019 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2016-2020 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -25,10 +25,9 @@
 
 // NOTE: This is a default (template) config file only
 //                 ******************
-//       Usually, copy this file into a location where is is found BEFORE this
-//       default file is found, and modify the copied version according to
+//       Usually, copy this file into a location outside p44lrgraphics in your project,
+//       rename it to p44lrg_config.hpp and modify it according to
 //       your needs.
-//       DO NOT MODIFY THE ORIGINAL IN the p44utils directory/git submodule!
 
 #ifndef ENABLE_VIEWCONFIG
   #define ENABLE_VIEWCONFIG 0 // not by default because it pulls in JsonObject and Application
