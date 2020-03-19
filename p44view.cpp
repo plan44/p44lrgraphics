@@ -421,7 +421,7 @@ MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
   while (pos != animations.end()) {
     ValueAnimatorPtr animator = (*pos);
     MLMicroSeconds nextStep = animator->step();
-    if (nextStep==Infinite) {
+    if (!animator->inProgress()) {
       // this animation is done, remove it from the list
       pos = animations.erase(pos);
       continue;
@@ -880,6 +880,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
       a = JsonObject::newArray();
       a->arrayAppend(o);
     }
+    ValueAnimatorPtr referenceAnimation;
     for (int i=0; i<a->arrayLength(); i++) {
       o = a->arrayGet(i);
       JsonObjectPtr p;
@@ -903,6 +904,9 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
             if (o->get("from", p)) animator->from(p->doubleValue());
             if (o->get("function", p)) animator->function(p->stringValue());
             if (o->get("param", p)) animator->param(p->doubleValue());
+            if (o->get("delay", p)) animator->startDelay(p->doubleValue()*Second);
+            if (o->get("afteranchor", p) && p->boolValue()) animator->runAfter(referenceAnimation);
+            if (o->get("makeanchor", p) && p->boolValue()) referenceAnimation = animator;
             animator->repeat(autoreverse, cycles)->animate(to, duration, NULL, minsteptime, stepsize);
           }
         }
