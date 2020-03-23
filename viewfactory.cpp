@@ -42,6 +42,7 @@ using namespace p44;
 
 ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView)
 {
+  LOG(LOG_DEBUG, "createViewFromConfig: %s", aViewConfig->c_strValue());
   JsonObjectPtr o;
   if (aViewConfig->get("type", o)) {
     string vt = o->stringValue();

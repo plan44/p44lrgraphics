@@ -65,15 +65,21 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
     // - wrapXmin = to the left, wrapXmax = to the right etc.
     PixelRect r;
     getEnclosingContentRect(r);
-    // X auto positioning
-    if (positioningMode&wrapXmax) {
+    // X auto positioning/sizing
+    if ((positioningMode&fillX)==fillX) {
+      aView->frame.dx = frame.dx;
+    }
+    else if (positioningMode&wrapXmax) {
       aView->frame.x = r.x+r.dx+aSpacing;
     }
     else if (positioningMode&wrapXmin) {
       aView->frame.x = r.x-aView->frame.dx-aSpacing;
     }
-    // Y auto positioning
-    if (positioningMode&wrapYmax) {
+    // Y auto positioning/sizing
+    if ((positioningMode&fillY)==fillY) {
+      aView->frame.dy = frame.dy;
+    }
+    else if (positioningMode&wrapYmax) {
       aView->frame.y = r.y+r.dy+aSpacing;
     }
     else if (positioningMode&wrapYmin) {
@@ -359,7 +365,12 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
   if (Error::isOK(err)) {
     JsonObjectPtr o;
     if (aViewConfig->get("positioningmode", o)) {
-      setPositioningMode((WrapMode)o->int32Value());
+      if (o->isType(json_type_string)) {
+        setPositioningMode(textToWrapMode(o->c_strValue()));
+      }
+      else {
+        setPositioningMode((WrapMode)o->int32Value());
+      }
     }
     if (aViewConfig->get("layers", o)) {
       for (int i=0; i<o->arrayLength(); ++i) {
@@ -369,6 +380,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
         if (l->get("view", o2)) {
           err = p44::createViewFromConfig(o2, layerView, this);
           if (Error::isOK(err)) {
+            bool fullframe = o2->get("fullframe", o2) && o2->boolValue();
             int spacing = 0;
             if (l->get("positioning", o2)) {
               LOG(LOG_WARNING, "Warning: legacy 'positioning' in stack subview -> use stack-global 'positioningmode' instead");
@@ -378,6 +390,13 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
               spacing = o2->int32Value();
             }
             pushView(layerView, spacing);
+            // re-apply fullframe in case frame was adjusted during push
+            if (
+              fullframe &&
+              ((positioningMode&fillX)==fillX || (positioningMode&fillY)==fillY)
+            ) {
+              layerView->setFullFrameContent();
+            }
           }
         }
       }
