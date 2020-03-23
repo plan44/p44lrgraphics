@@ -702,6 +702,38 @@ void p44::addToPixel(PixelColor &aPixel, PixelColor aPixelToAdd)
 }
 
 
+PixelColor p44::hsbToPixel(double aHue, double aSaturation, double aBrightness, bool aBrightnessAsAlpha)
+{
+  PixelColor p;
+  Row3 RGB, HSV = { aHue, aSaturation, aBrightnessAsAlpha ? 1.0 : aBrightness };
+  HSVtoRGB(HSV, RGB);
+  p.r = RGB[0]*255;
+  p.g = RGB[1]*255;
+  p.b = RGB[2]*255;
+  p.a = aBrightnessAsAlpha ? aBrightness*255: 255;
+  return p;
+}
+
+
+void p44::pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness, bool aIncludeAlphaIntoBrightness)
+{
+  Row3 HSV, RGB = { (double)aPixelColor.r/255, (double)aPixelColor.g/255, (double)aPixelColor.b/255 };
+  RGBtoHSV(RGB, HSV);
+  aHue = HSV[0];
+  aSaturation = HSV[1];
+  if (aIncludeAlphaIntoBrightness)
+    aBrightness = HSV[2]*aPixelColor.a/255;
+  else
+    aBrightness = HSV[2];
+}
+
+
+
+#if ENABLE_VIEWCONFIG
+
+// MARK: ===== config utilities
+
+
 PixelColor p44::webColorToPixel(const string aWebColor)
 {
   PixelColor res = transparent;
@@ -740,35 +772,98 @@ string p44::pixelToWebColor(const PixelColor aPixelColor)
 }
 
 
+typedef struct {
+  P44View::Orientation orientation;
+  const char *name;
+} OrientationDesc;
+static const OrientationDesc orientationDescs[] = {
+  { P44View::xy_swap, "xy_swap" }, //  swap x and y
+  { P44View::x_flip, "x_flip" }, //  flip x
+  { P44View::y_flip, "y_flip" }, //  flip y
+  { P44View::right, "right" }, //  untransformed X goes left to right, Y goes up
+  { P44View::down, "down" }, //  X goes down, Y goes right
+  { P44View::left, "left" }, //  X goes left, Y goes down
+  { P44View::up, "up" }, //  X goes down, Y goes right
+  { 0, NULL }
+};
 
-PixelColor p44::hsbToPixel(double aHue, double aSaturation, double aBrightness, bool aBrightnessAsAlpha)
+
+
+P44View::WrapMode P44View::textToOrientation(const char *aOrientationText)
 {
-  PixelColor p;
-  Row3 RGB, HSV = { aHue, aSaturation, aBrightnessAsAlpha ? 1.0 : aBrightness };
-  HSVtoRGB(HSV, RGB);
-  p.r = RGB[0]*255;
-  p.g = RGB[1]*255;
-  p.b = RGB[2]*255;
-  p.a = aBrightnessAsAlpha ? aBrightness*255: 255;
-  return p;
+  Orientation o = P44View::right;
+  while (aOrientationText) {
+    size_t n = 0;
+    while (aOrientationText[n] && aOrientationText[n]!='|') n++;
+    for (const OrientationDesc *od = orientationDescs; od->name; od++) {
+      if (strucmp(aOrientationText, od->name, n)==0) {
+        o |= od->orientation;
+      }
+    }
+    aOrientationText += n;
+    if (*aOrientationText==0) break;
+    aOrientationText++; // skip |
+  }
+  return o;
 }
 
 
-void p44::pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness, bool aIncludeAlphaIntoBrightness)
+
+typedef struct {
+  P44View::WrapMode mode;
+  const char *name;
+} WrapModeDesc;
+static const WrapModeDesc wrapModeDescs[] = {
+  { P44View::noWrap, "noWrap" }, // do not wrap
+  { P44View::wrapXmin, "wrapXmin" }, //  wrap in X direction for X<frame area
+  { P44View::wrapXmax, "wrapXmax" }, //  wrap in X direction for X>=frame area
+  { P44View::wrapX, "wrapX" }, //  wrap in both X directions
+  { P44View::wrapYmin, "wrapYmin" }, //  wrap in Y direction for Y<frame area
+  { P44View::wrapYmax, "wrapYmax" }, //  wrap in Y direction for Y>=frame area
+  { P44View::wrapY, "wrapY" }, //  wrap in both Y directions
+  { P44View::wrapXY, "wrapXY" }, //  wrap in all directions
+  { P44View::wrapMask, "wrapMask" }, //  mask for wrap bits
+  { P44View::clipXmin, "clipXmin" }, //  clip content left of frame area
+  { P44View::clipXmax, "clipXmax" }, //  clip content right of frame area
+  { P44View::clipX, "clipX" }, //  clip content horizontally
+  { P44View::clipYmin, "clipYmin" }, //  clip content below frame area
+  { P44View::clipYmax, "clipYmax" }, //  clip content above frame area
+  { P44View::clipY, "clipY" }, //  clip content vertically
+  { P44View::clipXY, "clipXY" }, //  clip content
+  { P44View::clipMask, "clipMask" }, //  mask for clip bits
+  { P44View::noAdjust, "noAdjust" }, //  for positioning: do not adjust content rectangle
+  { P44View::appendLeft, "appendLeft" }, //  for positioning: extend to the left
+  { P44View::appendRight, "appendRight" }, //  for positioning: extend to the right
+  { P44View::fillX, "fillX" }, //  for positioning: set frame size fill parent in X direction
+  { P44View::appendBottom, "appendBottom" }, //  for positioning: extend towards bottom
+  { P44View::appendTop, "appendTop" }, //  for positioning: extend towards top
+  { P44View::fillY, "fillY" }, //  for positioning: set frame size fill parent in Y direction
+  { P44View::fillXY, "fillXY" }, //  for positioning: set frame size fill parent frame
+  { 0, NULL }
+};
+
+
+P44View::WrapMode P44View::textToWrapMode(const char *aWrapModeText)
 {
-  Row3 HSV, RGB = { (double)aPixelColor.r/255, (double)aPixelColor.g/255, (double)aPixelColor.b/255 };
-  RGBtoHSV(RGB, HSV);
-  aHue = HSV[0];
-  aSaturation = HSV[1];
-  if (aIncludeAlphaIntoBrightness)
-    aBrightness = HSV[2]*aPixelColor.a/255;
-  else
-    aBrightness = HSV[2];
+  WrapMode m = P44View::noWrap;
+  while (aWrapModeText) {
+    size_t n = 0;
+    while (aWrapModeText[n] && aWrapModeText[n]!='|') n++;
+    for (const WrapModeDesc *wd = wrapModeDescs; wd->name; wd++) {
+      if (strucmp(aWrapModeText, wd->name, n)==0) {
+        m |= wd->mode;
+      }
+    }
+    aWrapModeText += n;
+    if (*aWrapModeText==0) break;
+    aWrapModeText++; // skip |
+  }
+  return m;
 }
 
 
 
-#if ENABLE_VIEWCONFIG
+
 
 // MARK: ===== view configuration
 
@@ -811,7 +906,12 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     setZOrder(o->int32Value());
   }
   if (aViewConfig->get("wrapmode", o)) {
-    setWrapMode(o->int32Value());
+    if (o->isType(json_type_string)) {
+      setWrapMode(textToWrapMode(o->c_strValue()));
+    }
+    else {
+      setWrapMode(o->int32Value());
+    }
   }
   if (aViewConfig->get("mask", o)) {
     contentIsMask = o->boolValue();
@@ -821,7 +921,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     invertAlpha = o->boolValue();
     makeDirty();
   }
-  // frame rect should be defined here (unless we'll use sizetocontent below), so we can check the content related propes now
+  // frame rect should be defined here (unless we'll use sizetocontent below), so we can check the content related props now
   if (aViewConfig->get("fullframe", o)) {
     if(o->boolValue()) setFullFrameContent();
   }
@@ -859,7 +959,12 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   if (aViewConfig->get("orientation", o)) {
     // check this after fullframe, because fullframe resets orientation
-    setOrientation(o->int32Value());
+    if (o->isType(json_type_string)) {
+      setOrientation(textToOrientation(o->c_strValue()));
+    }
+    else {
+      setOrientation(o->int32Value());
+    }
   }
   if (aViewConfig->get("timingpriority", o)) {
     localTimingPriority = o->boolValue();

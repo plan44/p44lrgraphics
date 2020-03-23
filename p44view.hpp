@@ -124,16 +124,6 @@ namespace p44 {
   /// @param aAmountOutside 0..255 (= 0..100%) value to determine how much weight the outside pixel should get in the result
   void mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, PixelColorComponent aAmountOutside);
 
-  /// convert Web color to pixel color
-  /// @param aWebColor web style #ARGB or #AARRGGBB color, alpha (A, AA) is optional, "#" is also optional
-  /// @return pixel color. If Alpha is not specified, it is set to fully opaque = 255.
-  PixelColor webColorToPixel(const string aWebColor);
-
-  /// convert pixel color to web color
-  /// @param aPixelColor pixel color
-  /// @return web color in RRGGBB style or AARRGGBB when alpha is not fully opaque (==255)
-  string pixelToWebColor(const PixelColor aPixelColor);
-
   /// get RGB pixel from HSB
   /// @param aHue hue, 0..360 degrees
   /// @param aSaturation saturation, 0..1
@@ -149,6 +139,19 @@ namespace p44 {
   /// @param aIncludeAlphaIntoBrightness if set, alpha is included in aBrightness returned
   void pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness, bool aIncludeAlphaIntoBrightness = false);
 
+  #if ENABLE_VIEWCONFIG
+
+  /// convert Web color to pixel color
+  /// @param aWebColor web style #ARGB or #AARRGGBB color, alpha (A, AA) is optional, "#" is also optional
+  /// @return pixel color. If Alpha is not specified, it is set to fully opaque = 255.
+  PixelColor webColorToPixel(const string aWebColor);
+
+  /// convert pixel color to web color
+  /// @param aPixelColor pixel color
+  /// @return web color in RRGGBB style or AARRGGBB when alpha is not fully opaque (==255)
+  string pixelToWebColor(const PixelColor aPixelColor);
+
+  #endif // ENABLE_VIEWCONFIG
 
   /// @}
 
@@ -211,8 +214,11 @@ namespace p44 {
       noAdjust = clipXY, // for positioning: do not adjust content rectangle
       appendLeft = wrapXmin, // for positioning: extend to the left
       appendRight = wrapXmax, // for positioning: extend to the right
+      fillX = wrapXmin|wrapXmax, // for positioning: set frame size fill parent in X direction
       appendBottom = wrapYmin, // for positioning: extend towards bottom
-      appendTop = wrapYmax // for positioning: extend towards top
+      appendTop = wrapYmax, // for positioning: extend towards top
+      fillY = wrapYmin|wrapYmax, // for positioning: set frame size fill parent in Y direction
+      fillXY = fillX|fillY, // for positioning: set frame size fill parent frame
     };
     typedef uint8_t WrapMode;
 
@@ -479,6 +485,12 @@ namespace p44 {
     virtual void stopAnimations();
 
     #if ENABLE_VIEWCONFIG
+
+    /// get orientation from text
+    static Orientation textToOrientation(const char *aOrientationText);
+
+    /// get wrap mode from text
+    static WrapMode textToWrapMode(const char *aWrapModeText);
 
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
