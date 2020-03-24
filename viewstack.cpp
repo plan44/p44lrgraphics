@@ -59,6 +59,7 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
   geometryChange(true);
   // clip/noAdjust bits set means we don't want the content rect to get recalculated
   bool adjust = (positioningMode&noAdjust)==0;
+  bool fill = false;
   // auto-positioning?
   if (positioningMode & wrapXY) {
     // wrap bits determine in which direction to position the view relative to those already present
@@ -67,7 +68,8 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
     getEnclosingContentRect(r);
     // X auto positioning/sizing
     if ((positioningMode&fillX)==fillX) {
-      aView->frame.dx = frame.dx;
+      aView->frame.dx = content.dx;
+      fill = true;
     }
     else if (positioningMode&wrapXmax) {
       aView->frame.x = r.x+r.dx+aSpacing;
@@ -77,7 +79,8 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
     }
     // Y auto positioning/sizing
     if ((positioningMode&fillY)==fillY) {
-      aView->frame.dy = frame.dy;
+      aView->frame.dy = content.dy;
+      fill = true;
     }
     else if (positioningMode&wrapYmax) {
       aView->frame.y = r.y+r.dy+aSpacing;
@@ -88,7 +91,7 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
     if ((aView->getWrapMode()&clipXY)==0) {
       LOG(LOG_WARNING, "ViewStack '%s', pushed view '%s' is not clipped, probably will obscure neigbours!", label.c_str(), aView->label.c_str());
     }
-    if (!sizeToContent) {
+    if (!sizeToContent && !fill) {
       LOG(LOG_WARNING, "ViewStack '%s' does not size to content, autopositioned view '%s' might be outside frame and thus invisible!", label.c_str(), aView->label.c_str());
     }
   }
