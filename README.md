@@ -2,7 +2,7 @@
 p44lrgraphics
 =============
 
-[![Flattr this git repo](http://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=luz&url=https://github.com/plan44/p44lrgraphics&title=p44lrgraphics&language=&tags=github&category=software) 
+*[[if you want to support p44lrgraphics development, consider to sponsor plan44]](https://github.com/sponsors/plan44)* 
 
 *p44lrgraphics* is a set of free (opensource, GPLv3) C++ classes and functions building a graphics library specially targeted at **low resolution displays**.
 
