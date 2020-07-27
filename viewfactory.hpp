@@ -27,16 +27,47 @@
 #if ENABLE_VIEWCONFIG
 
 #include "jsonobject.hpp"
-#include "expressions.hpp"
+
+#include "p44script.hpp"
+#include "expressions.hpp" // TODO: legacy, remove it later
 
 namespace p44 {
 
+  /// factory function
   ErrorPtr createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView);
 
-  #if EXPRESSION_SCRIPT_SUPPORT
-  bool evaluateViewFunctions(EvaluationContext* aEvalContext, const string &aFunc, const FunctionArguments &aArgs, ExpressionValue &aResult, P44ViewPtr aRootView, ValueLookupCB aSubstitutionValueLookupCB);
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a view of a P44lrgraphics view hierarchy
+    class P44lrgView : public P44Script::StructuredLookupObject
+    {
+      typedef P44Script::StructuredLookupObject inherited;
+      P44ViewPtr mView;
+    public:
+      P44lrgView(P44ViewPtr aView);
+      virtual string getAnnotation() const P44_OVERRIDE { return "lrgView"; };
+      P44ViewPtr view() { return mView; }
+    };
+
+    /// represents the global objects related to p44lrgraphics
+    class P44lrgLookup : public BuiltInMemberLookup
+    {
+      typedef BuiltInMemberLookup inherited;
+      P44ViewPtr mRootView;
+    public:
+      P44lrgLookup(P44ViewPtr aRootView);
+      P44ViewPtr rootView() { return mRootView; }
+    };
+
+  } // namespace P44Script
   #endif
 
+  #if EXPRESSION_SCRIPT_SUPPORT
+  // TODO: remove legacy EXPRESSION_SCRIPT_SUPPORT later
+  bool evaluateViewFunctions(EvaluationContext* aEvalContext, const string &aFunc, const FunctionArguments &aArgs, ExpressionValue &aResult, P44ViewPtr aRootView, ValueLookupCB aSubstitutionValueLookupCB);
+  #endif
 
 } // namespace p44
 

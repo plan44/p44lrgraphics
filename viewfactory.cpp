@@ -90,6 +90,121 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
 
 // MARK: - script support
 
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+// findview(viewlabel)
+static const BuiltInArgDesc findview_args[] = { { text } };
+static const size_t findview_numargs = sizeof(findview_args)/sizeof(BuiltInArgDesc);
+static void findview_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgView* v = dynamic_cast<P44lrgView*>(f->thisObj().get());
+  assert(v);
+  P44ViewPtr foundView = v->view()->getView(f->arg(0)->stringValue());
+  if (foundView) {
+    f->finish(new P44lrgView(foundView));
+    return;
+  }
+  f->finish();
+}
+
+// configure(jsonconfig/filename))
+static const BuiltInArgDesc configure_args[] = { { text } };
+static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
+static void configure_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgView* v = dynamic_cast<P44lrgView*>(f->thisObj().get());
+  assert(v);
+  JsonObjectPtr viewCfgJSON;
+  ErrorPtr err;
+  #if SCRIPTING_JSON_SUPPORT
+  if (f->arg(0)->hasType(json)) {
+    // is already a JSON value, use it as-is
+    viewCfgJSON = f->arg(0)->jsonValue();
+  }
+  else
+  #endif
+  {
+    // JSON from string or file, possibly with substitution
+    string viewConfig = f->arg(0)->stringValue();
+    // get the string
+    if (viewConfig.c_str()[0]!='{') {
+      // must be a file name, try to load it
+      viewCfgJSON = Application::jsonResource(viewConfig, &err);
+    }
+  }
+  if (Error::isOK(err)) {
+    err = v->view()->configureView(viewCfgJSON);
+  }
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
+    return;
+  }
+}
+
+static const BuiltinMemberDescriptor viewFunctions[] = {
+  { "findview", object, findview_numargs, findview_args, &findview_func },
+  { "configure", null, configure_numargs, configure_args, &configure_func },
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedViewFunctionLookupP = NULL;
+
+P44lrgView::P44lrgView(P44ViewPtr aView) :
+  mView(aView)
+{
+  if (sharedViewFunctionLookupP==NULL) {
+    sharedViewFunctionLookupP = new BuiltInMemberLookup(viewFunctions);
+  }
+  registerMemberLookup(sharedViewFunctionLookupP);
+}
+
+
+// hsv(hue, sat, bri) // convert to webcolor string
+static const BuiltInArgDesc hsv_args[] = { { numeric }, { numeric+optional }, { numeric+optional } };
+static const size_t hsv_numargs = sizeof(hsv_args)/sizeof(BuiltInArgDesc);
+static void hsv_func(BuiltinFunctionContextPtr f)
+{
+  // hsv(hue, sat, bri) // convert to webcolor string
+  double h = f->arg(0)->doubleValue();
+  double s = 1.0;
+  double b = 1.0;
+  if (f->numArgs()>1) {
+    s = f->arg(1)->doubleValue();
+    if (f->numArgs()>2) {
+      b = f->arg(2)->doubleValue();
+    }
+  }
+  PixelColor p = hsbToPixel(h, s, b);
+  f->finish(new StringValue(pixelToWebColor(p)));
+}
+
+
+static ScriptObjPtr lrg_getter(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj)
+{
+  P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
+  return new P44lrgView(l->rootView());
+}
+
+
+static const BuiltinMemberDescriptor lrgGlobals[] = {
+  { "lrg", builtinmember, 0, NULL, .getter=&lrg_getter },
+  { "hsv", text, hsv_numargs, hsv_args, &hsv_func },
+  { NULL } // terminator
+};
+
+
+P44lrgLookup::P44lrgLookup(P44ViewPtr aRootView) :
+  inherited(lrgGlobals),
+  mRootView(aRootView)
+{
+}
+
+#endif // ENABLE_P44SCRIPT
+
+
+// TODO: remove legacy EXPRESSION_SCRIPT_SUPPORT later
 #if EXPRESSION_SCRIPT_SUPPORT
 
 #include "application.hpp"
