@@ -156,6 +156,7 @@ P44lrgView::P44lrgView(P44ViewPtr aView) :
 {
   if (sharedViewFunctionLookupP==NULL) {
     sharedViewFunctionLookupP = new BuiltInMemberLookup(viewFunctions);
+    sharedViewFunctionLookupP->isMemberVariable(); // disable refcounting
   }
   registerMemberLookup(sharedViewFunctionLookupP);
 }
@@ -181,7 +182,7 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 }
 
 
-static ScriptObjPtr lrg_getter(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj)
+static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite)
 {
   P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
   return new P44lrgView(l->rootView());
@@ -189,7 +190,7 @@ static ScriptObjPtr lrg_getter(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr 
 
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
-  { "lrg", builtinmember, 0, NULL, .getter=&lrg_getter },
+  { "lrg", builtinmember, 0, NULL, .accessor = &lrg_accessor },
   { "hsv", text, hsv_numargs, hsv_args, &hsv_func },
   { NULL } // terminator
 };
