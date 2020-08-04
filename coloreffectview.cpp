@@ -150,7 +150,7 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   // now create gradient pixels covering larger extent dimension
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
-    double pr = (double)i/aExtentPixels;
+    double pr = aExtentPixels>0 ? (double)i/aExtentPixels : 0;
     // - hue
     h = gradiated(base_h, pr, hueGradient, hueMode, 360, true);
     // - saturation
