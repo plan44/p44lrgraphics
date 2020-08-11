@@ -190,7 +190,7 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
-  { "lrg", builtinmember, 0, NULL, .accessor = &lrg_accessor },
+  { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
   { "hsv", text, hsv_numargs, hsv_args, &hsv_func },
   { NULL } // terminator
 };
