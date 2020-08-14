@@ -144,8 +144,8 @@ static void configure_func(BuiltinFunctionContextPtr f)
 }
 
 static const BuiltinMemberDescriptor viewFunctions[] = {
-  { "findview", object, findview_numargs, findview_args, &findview_func },
-  { "configure", null, configure_numargs, configure_args, &configure_func },
+  { "findview", executable|object, findview_numargs, findview_args, &findview_func },
+  { "configure", executable|null, configure_numargs, configure_args, &configure_func },
   { NULL } // terminator
 };
 
@@ -191,7 +191,7 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
   { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
-  { "hsv", text, hsv_numargs, hsv_args, &hsv_func },
+  { "hsv", executable|text, hsv_numargs, hsv_args, &hsv_func },
   { NULL } // terminator
 };
 
