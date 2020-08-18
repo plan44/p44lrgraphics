@@ -163,7 +163,7 @@ P44lrgView::P44lrgView(P44ViewPtr aView) :
 
 
 // hsv(hue, sat, bri) // convert to webcolor string
-static const BuiltInArgDesc hsv_args[] = { { numeric }, { numeric+optional }, { numeric+optional } };
+static const BuiltInArgDesc hsv_args[] = { { numeric }, { numeric+optionalarg }, { numeric+optionalarg } };
 static const size_t hsv_numargs = sizeof(hsv_args)/sizeof(BuiltInArgDesc);
 static void hsv_func(BuiltinFunctionContextPtr f)
 {
