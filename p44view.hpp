@@ -471,9 +471,6 @@ namespace p44 {
     /// return if anything changed on the display since last call
     virtual bool isDirty()  { return dirty; };
 
-    /// call to request an update (in case the display does not update itself with a fixed frame rate)
-    virtual void requestUpdate();
-
     /// call when display is updated
     virtual void updated();
 
@@ -518,6 +515,9 @@ namespace p44 {
     #if ENABLE_ANIMATION
 
   public:
+
+    /// call to request an update (in case the display does not update itself with a fixed frame rate)
+    virtual void requestUpdate();
 
     /// get an animator for a property
     /// @param aProperty name of the property to animate

@@ -41,12 +41,12 @@ namespace p44 {
   namespace P44Script {
 
     /// represents a view of a P44lrgraphics view hierarchy
-    class P44lrgView : public P44Script::StructuredLookupObject
+    class P44lrgViewObj : public P44Script::StructuredLookupObject
     {
       typedef P44Script::StructuredLookupObject inherited;
       P44ViewPtr mView;
     public:
-      P44lrgView(P44ViewPtr aView);
+      P44lrgViewObj(P44ViewPtr aView);
       virtual string getAnnotation() const P44_OVERRIDE { return "lrgView"; };
       P44ViewPtr view() { return mView; }
     };

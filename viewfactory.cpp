@@ -99,22 +99,22 @@ static const BuiltInArgDesc findview_args[] = { { text } };
 static const size_t findview_numargs = sizeof(findview_args)/sizeof(BuiltInArgDesc);
 static void findview_func(BuiltinFunctionContextPtr f)
 {
-  P44lrgView* v = dynamic_cast<P44lrgView*>(f->thisObj().get());
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   P44ViewPtr foundView = v->view()->getView(f->arg(0)->stringValue());
   if (foundView) {
-    f->finish(new P44lrgView(foundView));
+    f->finish(new P44lrgViewObj(foundView));
     return;
   }
   f->finish();
 }
 
-// configure(jsonconfig/filename))
-static const BuiltInArgDesc configure_args[] = { { text } };
+// configure(jsonconfig/filename)
+static const BuiltInArgDesc configure_args[] = { { text|json|object } };
 static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
 static void configure_func(BuiltinFunctionContextPtr f)
 {
-  P44lrgView* v = dynamic_cast<P44lrgView*>(f->thisObj().get());
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   JsonObjectPtr viewCfgJSON;
   ErrorPtr err;
@@ -126,7 +126,7 @@ static void configure_func(BuiltinFunctionContextPtr f)
   else
   #endif
   {
-    // JSON from string or file, possibly with substitution
+    // JSON from string or file
     string viewConfig = f->arg(0)->stringValue();
     // get the string
     if (viewConfig.c_str()[0]!='{') {
@@ -136,22 +136,86 @@ static void configure_func(BuiltinFunctionContextPtr f)
   }
   if (Error::isOK(err)) {
     err = v->view()->configureView(viewCfgJSON);
+    if (Error::isOK(err)) {
+      v->view()->requestUpdate(); // to make sure changes are applied
+    }
   }
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));
     return;
   }
+  f->finish();
 }
+
+
+// set(propertyname, newvalue)   convenience function to set a single property
+static const BuiltInArgDesc set_args[] = { { text }, { any } };
+static const size_t set_numargs = sizeof(set_args)/sizeof(BuiltInArgDesc);
+static void set_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  JsonObjectPtr viewCfgJSON = JsonObject::newObj();
+  viewCfgJSON->add(f->arg(0)->stringValue().c_str(), f->arg(1)->jsonValue());
+  if (Error::ok(v->view()->configureView(viewCfgJSON))) {
+    v->view()->requestUpdate(); // to make sure changes are applied
+  }
+  f->finish();
+}
+
+
+
+// render()     trigger rendering
+static void stopanimations_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  v->view()->stopAnimations();
+  f->finish();
+}
+
+
+// stopanimations()     stop animations
+static void render_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  v->view()->requestUpdate(); // to make sure changes are applied
+  f->finish();
+}
+
+
+
+#if ENABLE_ANIMATION
+
+// animate(propertyname)
+static const BuiltInArgDesc animator_args[] = { { text } };
+static const size_t animator_numargs = sizeof(animator_args)/sizeof(BuiltInArgDesc);
+static void animator_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  f->finish(new ValueAnimatorObj(v->view()->animatorFor(f->arg(0)->stringValue())));
+}
+
+#endif
+
 
 static const BuiltinMemberDescriptor viewFunctions[] = {
   { "findview", executable|object, findview_numargs, findview_args, &findview_func },
   { "configure", executable|null, configure_numargs, configure_args, &configure_func },
+  { "set", executable|null, set_numargs, set_args, &set_func },
+  { "render", executable|null, 0, NULL, &render_func },
+  #if ENABLE_ANIMATION
+  { "animator", executable|object, animator_numargs, animator_args, &animator_func },
+  { "stopanimations", executable|object, 0, NULL, &stopanimations_func },
+  #endif
   { NULL } // terminator
 };
 
 static BuiltInMemberLookup* sharedViewFunctionLookupP = NULL;
 
-P44lrgView::P44lrgView(P44ViewPtr aView) :
+P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
   mView(aView)
 {
   if (sharedViewFunctionLookupP==NULL) {
@@ -185,7 +249,7 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite)
 {
   P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
-  return new P44lrgView(l->rootView());
+  return new P44lrgViewObj(l->rootView());
 }
 
 
