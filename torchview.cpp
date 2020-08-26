@@ -74,7 +74,9 @@ TorchView::TorchDot& TorchView::dot(PixelPoint aPt)
 
 void TorchView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 {
-  clear(); // clear and resize dots vector
+  if (aOldContent.dx!=content.dx || aOldContent.dy!=content.dy) {
+    clear(); // size changed: clear and resize dots vector
+  }
   inherited::geometryChanged(aOldFrame, aOldContent);
 }
 
