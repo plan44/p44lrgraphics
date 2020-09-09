@@ -257,7 +257,9 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite)
 {
   P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
-  return new P44lrgViewObj(l->rootView());
+  P44ViewPtr rv = l->rootView();
+  if (!rv) return new AnnotatedNullValue("no root view");
+  return new P44lrgViewObj(rv);
 }
 
 
@@ -268,9 +270,9 @@ static const BuiltinMemberDescriptor lrgGlobals[] = {
 };
 
 
-P44lrgLookup::P44lrgLookup(P44ViewPtr aRootView) :
+P44lrgLookup::P44lrgLookup(P44ViewPtr *aRootViewPtrP) :
   inherited(lrgGlobals),
-  mRootView(aRootView)
+  mRootViewPtrP(aRootViewPtrP)
 {
 }
 

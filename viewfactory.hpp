@@ -55,10 +55,10 @@ namespace p44 {
     class P44lrgLookup : public BuiltInMemberLookup
     {
       typedef BuiltInMemberLookup inherited;
-      P44ViewPtr mRootView;
+      P44ViewPtr* mRootViewPtrP;
     public:
-      P44lrgLookup(P44ViewPtr aRootView);
-      P44ViewPtr rootView() { return mRootView; }
+      P44lrgLookup(P44ViewPtr *aRootViewPtrP);
+      P44ViewPtr rootView() { return *mRootViewPtrP; }
     };
 
   } // namespace P44Script
