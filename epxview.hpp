@@ -29,6 +29,10 @@
 
 namespace p44 {
 
+  /// EpxView implements a player for Microsoft Research's "expressive pixel" IoT animation format
+  /// See https://www.microsoft.com/en-us/research/project/microsoft-expressive-pixels/ for general information,
+  /// see https://github.com/microsoft/ExpressivePixels/wiki/Animation-Format for description of the
+  /// animation format, for which EpxView contains a independently developed decoder/player
   class EpxView : public CanvasView
   {
     typedef CanvasView inherited;

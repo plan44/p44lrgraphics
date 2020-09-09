@@ -75,7 +75,7 @@ void EpxView::clearData()
 
 /*
 
- See: https://github.com/microsoft/ExpressivePixels/wiki/Animation-Format
+ Sample JSON as available from Expressive Pixels Windows App via copy&paste:
 
  {
    "Command": "UPLOAD_ANIMATION8",
@@ -90,6 +90,8 @@ void EpxView::clearData()
    "FramesHexLength": 3626,
    "FramesHex": "4901000e0e0e0e0e18aa840984162e0e0e0e0e0e0e0eb352486..."
  }
+
+ Animation format specs: https://github.com/microsoft/ExpressivePixels/wiki/Animation-Format
 
  */
 

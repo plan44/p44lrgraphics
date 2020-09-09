@@ -8,11 +8,11 @@ p44lrgraphics
 
 A *low resolution display* is usually a LED matrix of a few 100 to 1000 LEDs, meaning a *total pixel count in the 1000s* range.
 
-Even the smallest TFT displays start in the 100'000 pixel range, and any computer screen nowadays has millions of pixels. So, clearly, *p44lrgraphics* is **not** meant a generic graphics library (if you are looking for a small one suitable for embedded devices, I can recommend [LittlevGL](https://littlevgl.com)).
+Even the smallest TFT displays start in the 100'000 pixel range, and any computer screen nowadays has millions of pixels. So, clearly, *p44lrgraphics* is **not** meant a generic graphics library (if you are looking for a small one suitable for embedded devices, I can recommend [LittlevGL](https://littlevgl.com)), which is also supported via [*p44utils*](https://github.com/plan44/p44utils).
 
 *p44lrgraphics*'s view structure is similar to other framework's. However the implementation is mostly done following the needs of driving LED chains and matrices, in particular those of the WS281x variety.
 
-There are many details, but one main design decision that only makes sense for a modest number of pixels but quickly changing imagery (light effects) is that *p44lrgraphics* is not focused on drawing things into a image buffers and then flattening those down the view/layer hierarchy to a full screen image, displayed at a fixed frame rate.
+One main design decision that only makes sense for a modest number of pixels but quickly changing imagery (light effects) is that *p44lrgraphics* is not focused on drawing things into image buffers and then flattening those down the view/layer hierarchy to a full screen image, displayed at a fixed frame rate.
 
 Instead, *p44lrgraphics* mostly does exactly the opposite: each of the (relatively few) pixels asks from bottom **up** the view hierarchy for its current color, and the views then calculate the pixels *on demand*. This simplifies the code in many cases, and because of the relatively few pixels involved, it does not need a lot of performance. And it allows asynchronous updating timed to other events than those of a fixed frame rate.
 
@@ -47,6 +47,7 @@ Details tbd. but quick list for now:
 - png image views
 - view stacks
 - view animations
+- Support for [Microsofts *expressive pixels* IoT animation format](https://github.com/microsoft/ExpressivePixels/wiki/Animation-Format) with the "epx" view
 - on the fly reconfiguration via JSON API/config files
 
 (c) 2013-2020 by Lukas Zeller / [plan44.ch](https://www.plan44.ch/opensource.php)
