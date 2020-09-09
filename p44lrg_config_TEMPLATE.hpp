@@ -33,6 +33,10 @@
   #define ENABLE_VIEWCONFIG 0 // not by default because it pulls in JsonObject and Application
 #endif
 
+#ifndef ENABLE_EPX_SUPPORT
+  #define ENABLE_EPX_SUPPORT 0 // not by default because it pulls in JsonObject
+#endif
+
 #ifndef ENABLE_ANIMATION
   #define ENABLE_ANIMATION 0 // not by default because it pulls in ValueAnimator
 #endif

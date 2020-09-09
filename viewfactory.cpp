@@ -25,14 +25,14 @@
 
 #include "extutils.hpp"
 
-#if ENABLE_IMAGE_SUPPORT
 #include "imageview.hpp"
-#endif
+#include "epxview.hpp"
 #include "textview.hpp"
 #include "viewsequencer.hpp"
 #include "viewstack.hpp"
 #include "viewscroller.hpp"
 #include "lightspotview.hpp"
+#include "canvasview.hpp"
 #include "lifeview.hpp"
 #include "torchview.hpp"
 
@@ -54,6 +54,14 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
       aNewView = P44ViewPtr(new ImageView);
     }
     #endif
+    #if ENABLE_EPX_SUPPORT
+    else if (vt=="epx") {
+      aNewView = P44ViewPtr(new EpxView);
+    }
+    #endif
+    else if (vt=="canvas") {
+      aNewView = CanvasViewPtr(new CanvasView);
+    }
     else if (vt=="sequencer") {
       aNewView = P44ViewPtr(new ViewSequencer);
     }

@@ -28,7 +28,7 @@ using namespace p44;
 
 
 TorchView::TorchView() :
-  lastCalculation(Never)
+  nextCalculation(Never)
 {
   flame_min = 100;
   flame_max = 220;
@@ -93,8 +93,8 @@ MLMicroSeconds TorchView::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (cycleTime!=Never && now>=lastCalculation+cycleTime) {
-    lastCalculation = now;
+  if (cycleTime!=Never && now>=nextCalculation) {
+    nextCalculation = now+cycleTime;
     calculateCycle();
   }
   updateNextCall(nextCall, now+cycleTime);

@@ -54,7 +54,7 @@ namespace p44 {
     // timing parameter
     MLMicroSeconds cycleTime; ///< spark update cycle time
 
-    MLMicroSeconds lastCalculation; ///< last time the animation was calculated
+    MLMicroSeconds nextCalculation; ///< next time animation must be calculated
 
     typedef enum {
       torch_passive = 0, // just environment, glow from nearby radiation
