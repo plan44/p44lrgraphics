@@ -33,8 +33,23 @@
 
 namespace p44 {
 
-  /// factory function
+  /// factory function to create a view (but also allows reconfiguration if view already exists)
+  /// @param aViewConfig configuration JSON object, must contain a 'type' field when aNewView is NULL on entry
+  /// @param aNewView will receive the new view, if 'type' is specified (replacing any previous view).
+  ///   Otherwise, it can already contain a view which is then just re-configured by aViewConfig.
+  /// @param aParentView the parent view. This is always applied to aNewView, even if just reconfiguring an existing view
+  /// @return OK or error
   ErrorPtr createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView);
+
+  /// factory function possibly reading from resource
+  /// @param aResourceOrObj if this is a single JSON string ending on ".json", it is treated as a resource file name
+  ///    which is loaded and used as view configuration. All other JSON is used as view config as-is
+  /// @param aResourcePrefix will be prepended to aResourceOrObj when it is a filename
+  /// @param aNewView will receive the new view, if 'type' is specified (replacing any previous view).
+  ///   Otherwise, it can already contain a view which is then just re-configured by aViewConfig.
+  /// @param aParentView the parent view. This is always applied to aNewView, even if just reconfiguring an existing view
+  /// @return OK or error
+  ErrorPtr createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView);
 
   #if ENABLE_P44SCRIPT
 

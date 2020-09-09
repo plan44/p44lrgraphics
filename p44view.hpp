@@ -504,7 +504,7 @@ namespace p44 {
 
     /// configure view from file or JSON
     /// @param aResourceOrObj if this is a single JSON string ending on ".json", it is treated as a resource file name
-    ///    which is loaded and returned. All other JSON is used as view config as-is
+    ///    which is loaded and used as view config. All other JSON is used as view config as-is
     /// @param aResourcePrefix will be prepended to aResourceOrObj when it is a filename
     ErrorPtr configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix = "");
 

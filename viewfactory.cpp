@@ -38,7 +38,18 @@
 
 using namespace p44;
 
-// MARK: ===== View factory function
+// MARK: ===== View factory functions
+
+ErrorPtr p44::createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView)
+{
+  ErrorPtr err;
+  JsonObjectPtr cfg = Application::jsonObjOrResource(aResourceOrObj, &err, aResourcePrefix);
+  if (Error::isOK(err)) {
+    err = createViewFromConfig(cfg, aNewView, aParentView);
+  }
+  return err;
+}
+
 
 ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView)
 {
@@ -87,7 +98,8 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
       return TextError::err("unknown view type '%s'", vt.c_str());
     }
   }
-  else {
+  else if (!aNewView) {
+    // Note: is an error only if no view was passed in
     return TextError::err("missing 'type'");
   }
   aNewView->setParent(aParentView);
