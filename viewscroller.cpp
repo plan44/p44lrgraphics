@@ -391,8 +391,25 @@ P44ViewPtr ViewScroller::getView(const string aLabel)
   return inherited::getView(aLabel);
 }
 
-
 #endif // ENABLE_VIEWCONFIG
 
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr ViewScroller::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  if (scrolledView) status->add("view", scrolledView->viewStatus());
+  status->add("offsetx", JsonObject::newDouble(getOffsetX()));
+  status->add("offsety", JsonObject::newDouble(getOffsetY()));
+  status->add("syncscroll", JsonObject::newBool(syncScroll));
+  status->add("autopurge", JsonObject::newBool(autopurge));
+  status->add("stepx", JsonObject::newDouble(getStepX()));
+  status->add("stepy", JsonObject::newDouble(getStepY()));
+  status->add("interval", JsonObject::newDouble((double)scrollStepInterval/Second));
+  status->add("steps", JsonObject::newInt64(scrollSteps));
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS
 
 

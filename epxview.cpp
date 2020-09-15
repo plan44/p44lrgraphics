@@ -316,6 +316,18 @@ ErrorPtr EpxView::configureView(JsonObjectPtr aViewConfig)
 
 #endif // ENABLE_EPX_SUPPORT
 
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr EpxView::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  status->add("run", JsonObject::newBool(nextRender>0));
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS
+
+
 #endif // ENABLE_IMAGE_SUPPORT
 
 

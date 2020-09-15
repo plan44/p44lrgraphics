@@ -325,6 +325,9 @@ namespace p44 {
 
     virtual ~P44View();
 
+    static const char* staticTypeName() { return "plain"; };
+    virtual const char* viewTypeName() { return staticTypeName(); }
+
     /// set the frame within the parent coordinate system
     /// @param aFrame the new frame for the view
     virtual void setFrame(PixelRect aFrame);
@@ -363,6 +366,10 @@ namespace p44 {
     /// @note this is for referencing views in reconfigure operations
     /// @param aLabel the new label
     void setLabel(const string aLabel) { label = aLabel; }
+
+    /// set default view label (i.e. set label only if the view does have an empty label so far)
+    /// @param aLabel the new label
+    void setDefaultLabel(const string aLabel) { if (label.empty()) label = aLabel; };
 
     /// set view's alpha
     /// @param aAlpha 0=fully transparent, 255=fully opaque
@@ -511,6 +518,11 @@ namespace p44 {
     #endif // ENABLE_JSON_APPLICATION
 
     #endif // ENABLE_VIEWCONFIG
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus();
+    #endif // ENABLE_VIEWSTATUS
 
     #if ENABLE_ANIMATION
 

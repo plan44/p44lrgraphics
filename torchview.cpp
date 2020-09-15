@@ -289,5 +289,31 @@ ErrorPtr TorchView::configureView(JsonObjectPtr aViewConfig)
   return err;
 }
 
-
 #endif // ENABLE_VIEWCONFIG
+
+
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr TorchView::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  status->add("flame_min", JsonObject::newInt32(flame_min));
+  status->add("flame_max", JsonObject::newInt32(flame_max));
+  status->add("flame_height", JsonObject::newInt32(flame_height));
+  status->add("spark_probability", JsonObject::newInt32(spark_probability));
+  status->add("spark_min", JsonObject::newInt32(spark_min));
+  status->add("spark_max", JsonObject::newInt32(spark_max));
+  status->add("spark_tfr", JsonObject::newInt32(spark_tfr));
+  status->add("spark_cap", JsonObject::newInt32(spark_cap));
+  status->add("up_rad", JsonObject::newInt32(up_rad));
+  status->add("side_rad", JsonObject::newInt32(side_rad));
+  status->add("heat_cap", JsonObject::newInt32(heat_cap));
+  status->add("hotspark_min", JsonObject::newInt32(hotspark_min));
+  status->add("hotsparkinc", JsonObject::newString(pixelToWebColor(hotsparkColorInc)));
+  status->add("hotsparkcolor", JsonObject::newString(pixelToWebColor(hotsparkColor)));
+  status->add("cycletime", JsonObject::newDouble((double)cycleTime/Second));
+
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS

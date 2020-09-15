@@ -232,6 +232,25 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
 
 #endif // ENABLE_VIEWCONFIG
 
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr ColorEffectView::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  status->add("brightness_gradient", JsonObject::newDouble(briGradient));
+  status->add("hue_gradient", JsonObject::newDouble(hueGradient));
+  status->add("saturation_gradient", JsonObject::newDouble(satGradient));
+  status->add("brightness_mode", JsonObject::newInt32(briMode));
+  status->add("hu_mode", JsonObject::newInt32(hueMode));
+  status->add("saturation_mode", JsonObject::newInt32(satMode));
+  status->add("radial", JsonObject::newBool(radial));
+  status->add("extent_x", JsonObject::newDouble(extent.x));
+  status->add("extent_y", JsonObject::newDouble(extent.y));
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS
+
 
 #if ENABLE_ANIMATION
 

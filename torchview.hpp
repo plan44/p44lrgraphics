@@ -78,6 +78,9 @@ namespace p44 {
     TorchView();
     virtual ~TorchView();
 
+    static const char* staticTypeName() { return "torch"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
+
     /// clear
     virtual void clear() P44_OVERRIDE;
 
@@ -96,6 +99,11 @@ namespace p44 {
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
 
     #endif
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   protected:
 

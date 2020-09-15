@@ -57,41 +57,41 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
   JsonObjectPtr o;
   if (aViewConfig->get("type", o)) {
     string vt = o->stringValue();
-    if (vt=="text") {
+    if (vt==TextView::staticTypeName()) {
       aNewView = P44ViewPtr(new TextView);
     }
     #if ENABLE_IMAGE_SUPPORT
-    else if (vt=="image") {
+    else if (vt==ImageView::staticTypeName()) {
       aNewView = P44ViewPtr(new ImageView);
     }
     #endif
     #if ENABLE_EPX_SUPPORT
-    else if (vt=="epx") {
+    else if (vt==EpxView::staticTypeName()) {
       aNewView = P44ViewPtr(new EpxView);
     }
     #endif
-    else if (vt=="canvas") {
+    else if (vt==CanvasView::staticTypeName()) {
       aNewView = CanvasViewPtr(new CanvasView);
     }
-    else if (vt=="sequencer") {
+    else if (vt==ViewSequencer::staticTypeName()) {
       aNewView = P44ViewPtr(new ViewSequencer);
     }
-    else if (vt=="stack") {
+    else if (vt==ViewStack::staticTypeName()) {
       aNewView = P44ViewPtr(new ViewStack);
     }
-    else if (vt=="scroller") {
+    else if (vt==ViewScroller::staticTypeName()) {
       aNewView = P44ViewPtr(new ViewScroller);
     }
-    else if (vt=="life") {
+    else if (vt==LifeView::staticTypeName()) {
       aNewView = P44ViewPtr(new LifeView);
     }
-    else if (vt=="torch") {
+    else if (vt==TorchView::staticTypeName()) {
       aNewView = P44ViewPtr(new TorchView);
     }
-    else if (vt=="lightspot") {
+    else if (vt==LightSpotView::staticTypeName()) {
       aNewView = P44ViewPtr(new LightSpotView);
     }
-    else if (vt=="plain") {
+    else if (vt==P44View::staticTypeName()) {
       aNewView = P44ViewPtr(new P44View);
     }
     else {
@@ -168,6 +168,18 @@ static void configure_func(BuiltinFunctionContextPtr f)
 }
 
 
+#if ENABLE_VIEWSTATUS
+
+// status()
+static void status_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  f->finish(new JsonValue(v->view()->viewStatus()));
+}
+
+#endif
+
 // set(propertyname, newvalue)   convenience function to set a single property
 static const BuiltInArgDesc set_args[] = { { text }, { any } };
 static const size_t set_numargs = sizeof(set_args)/sizeof(BuiltInArgDesc);
@@ -229,6 +241,9 @@ static const BuiltinMemberDescriptor viewFunctions[] = {
   #if ENABLE_ANIMATION
   { "animator", executable|object, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|object, 0, NULL, &stopanimations_func },
+  #endif
+  #if ENABLE_VIEWSTATUS
+  { "status", executable|json|object, 0, NULL, &status_func },
   #endif
   { NULL } // terminator
 };

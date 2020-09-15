@@ -53,8 +53,10 @@ namespace p44 {
   public :
 
     EpxView();
-
     virtual ~EpxView();
+
+    static const char* staticTypeName() { return "epx"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// clear the content
     virtual void clear() P44_OVERRIDE;
@@ -75,6 +77,11 @@ namespace p44 {
     /// configure view from JSON
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
     #endif
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   private:
 

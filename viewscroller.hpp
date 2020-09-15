@@ -67,8 +67,10 @@ namespace p44 {
 
     /// create view
     ViewScroller();
-
     virtual ~ViewScroller();
+
+    static const char* staticTypeName() { return "scroller"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// set the to be scrolled view
     /// @param aScrolledView the view of which a part should be shown in this view.
@@ -169,6 +171,11 @@ namespace p44 {
     virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
 
     #endif
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   };
   typedef boost::intrusive_ptr<ViewScroller> ViewScrollerPtr;

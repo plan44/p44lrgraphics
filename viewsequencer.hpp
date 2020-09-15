@@ -61,8 +61,10 @@ namespace p44 {
 
     /// create view stack
     ViewSequencer();
-
     virtual ~ViewSequencer();
+
+    static const char* staticTypeName() { return "sequencer"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// add animation step view to list of animation steps
     /// @param aView the view to add
@@ -106,6 +108,11 @@ namespace p44 {
     virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
 
     #endif
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   protected:
 

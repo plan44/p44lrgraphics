@@ -360,13 +360,13 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
       generationInterval  = o->doubleValue()*Second;
     }
     if (aViewConfig->get("maxstatic", o)) {
-      maxStatic  = o->doubleValue()*Second;
+      maxStatic  = o->int32Value();
     }
     if (aViewConfig->get("minstatic", o)) {
-      minStatic  = o->doubleValue()*Second;
+      minStatic  = o->int32Value();
     }
     if (aViewConfig->get("minpopulation", o)) {
-      minPopulation  = o->doubleValue()*Second;
+      minPopulation  = o->int32Value();
     }
     if (aViewConfig->get("addrandom", o)) {
       int c = o->int32Value();
@@ -380,5 +380,19 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
   return err;
 }
 
-
 #endif // ENABLE_VIEWCONFIG
+
+#if ENABLE_VIEWSTATUS
+
+/// @return the current status of the view, in the same format as accepted by configure()
+JsonObjectPtr LifeView::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  status->add("generationinterval", JsonObject::newDouble((double)generationInterval/Second));
+  status->add("maxstatic", JsonObject::newInt32(maxStatic));
+  status->add("minstatic", JsonObject::newInt32(minStatic));
+  status->add("minpopulation", JsonObject::newInt32(minPopulation));
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS

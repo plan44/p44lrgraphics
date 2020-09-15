@@ -53,6 +53,9 @@ namespace p44 {
     LifeView();
     virtual ~LifeView();
 
+    static const char* staticTypeName() { return "life"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
+
     /// set generation interval
     /// @param aInterval time between generations, Never = stopped
     virtual void setGenerationInterval(MLMicroSeconds aInterval);
@@ -75,6 +78,11 @@ namespace p44 {
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
 
     #endif
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   protected:
 

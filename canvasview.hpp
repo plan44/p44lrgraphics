@@ -37,8 +37,10 @@ namespace p44 {
   public :
 
     CanvasView();
-
     virtual ~CanvasView();
+
+    static const char* staticTypeName() { return "canvas"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// clear the content
     virtual void clear() P44_OVERRIDE;
@@ -47,7 +49,7 @@ namespace p44 {
     void setPixel(PixelColor aColor, PixelCoord aPixelIndex);
     void setPixel(PixelColor aColor, PixelPoint aPixelPoint);
 
-    PixelCoord getNumPixels() { return numPixels; }
+    size_t getNumPixels() { return numPixels; }
 
   protected:
 

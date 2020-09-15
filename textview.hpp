@@ -40,8 +40,10 @@ namespace p44 {
   public :
 
     TextView();
-
     virtual ~TextView();
+
+    static const char* staticTypeName() { return "text"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// set new text
     /// @note: sets the content size of the view according to the text
@@ -66,6 +68,11 @@ namespace p44 {
     /// configure view from JSON
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
     #endif
+
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   protected:
 

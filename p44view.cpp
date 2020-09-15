@@ -1050,6 +1050,40 @@ ErrorPtr P44View::configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const
 #endif // ENABLE_VIEWCONFIG
 
 
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr P44View::viewStatus()
+{
+  JsonObjectPtr status = JsonObject::newObj();
+  status->add("type", JsonObject::newString(viewTypeName()));
+  if (!label.empty()) status->add("label", JsonObject::newString(label));
+  status->add("x", JsonObject::newInt32(frame.x));
+  status->add("y", JsonObject::newInt32(frame.y));
+  status->add("dx", JsonObject::newInt32(frame.dx));
+  status->add("dy", JsonObject::newInt32(frame.dy));
+  status->add("content_x", JsonObject::newInt32(content.x));
+  status->add("content_y", JsonObject::newInt32(content.y));
+  status->add("content_dx", JsonObject::newInt32(content.dx));
+  status->add("content_dy", JsonObject::newInt32(content.dy));
+  status->add("rotation", JsonObject::newDouble(contentRotation));
+  status->add("color", JsonObject::newString(pixelToWebColor(foregroundColor)));
+  status->add("bgcolor", JsonObject::newString(pixelToWebColor(backgroundColor)));
+  status->add("alpha", JsonObject::newInt32(getAlpha()));
+  status->add("z_order", JsonObject::newInt32(getZOrder()));
+  status->add("orientation", JsonObject::newInt32(contentOrientation));
+  status->add("wrapmode", JsonObject::newInt32(getWrapMode()));
+  status->add("mask", JsonObject::newBool(contentIsMask));
+  status->add("invertalpha", JsonObject::newBool(invertAlpha));
+  status->add("timingpriority", JsonObject::newBool(localTimingPriority));
+  #if ENABLE_ANIMATION
+  status->add("animations", JsonObject::newInt64(animations.size()));
+  #endif
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS
+
+
 #if ENABLE_ANIMATION
 
 

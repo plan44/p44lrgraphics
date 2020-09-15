@@ -420,7 +420,22 @@ P44ViewPtr ViewStack::getView(const string aLabel)
   return inherited::getView(aLabel);
 }
 
-
-
 #endif // ENABLE_VIEWCONFIG
 
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr ViewStack::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  JsonObjectPtr layers = JsonObject::newArray();
+  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+    JsonObjectPtr layer = JsonObject::newObj();
+    layer->add("view", (*pos)->viewStatus());
+    layers->arrayAppend(layer);
+  }
+  status->add("layers", layers);
+  status->add("positioningmode", JsonObject::newInt32(getPositioningMode()));
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS

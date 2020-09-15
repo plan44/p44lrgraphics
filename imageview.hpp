@@ -40,8 +40,10 @@ namespace p44 {
   public :
 
     ImageView();
-
     virtual ~ImageView();
+
+    static const char* staticTypeName() { return "image"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// clear image
     virtual void clear() P44_OVERRIDE;

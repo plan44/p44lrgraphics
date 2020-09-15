@@ -921,4 +921,15 @@ ErrorPtr TextView::configureView(JsonObjectPtr aViewConfig)
 #endif // ENABLE_VIEWCONFIG
 
 
+#if ENABLE_VIEWSTATUS
 
+JsonObjectPtr TextView::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  status->add("text", JsonObject::newString(text));
+  status->add("visible", JsonObject::newBool(visible));
+  status->add("spacing", JsonObject::newInt32(textSpacing));
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS

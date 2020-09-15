@@ -269,3 +269,22 @@ P44ViewPtr ViewSequencer::getView(const string aLabel)
 #endif // ENABLE_VIEWCONFIG
 
 
+#if ENABLE_VIEWSTATUS
+
+JsonObjectPtr ViewSequencer::viewStatus()
+{
+  JsonObjectPtr status = inherited::viewStatus();
+  JsonObjectPtr steps = JsonObject::newArray();
+  for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
+    JsonObjectPtr step = JsonObject::newObj();
+    step->add("view", pos->view->viewStatus());
+    step->add("showtime", JsonObject::newDouble((double)pos->showTime/Second));
+    step->add("fadeintime", JsonObject::newDouble((double)pos->fadeInTime/Second));
+    step->add("fadeouttime", JsonObject::newDouble((double)pos->fadeOutTime/Second));
+    steps->arrayAppend(step);
+  }
+  status->add("steps", steps);
+  return status;
+}
+
+#endif // ENABLE_VIEWSTATUS

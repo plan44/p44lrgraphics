@@ -39,8 +39,10 @@ namespace p44 {
 
     /// create view stack
     ViewStack();
-
     virtual ~ViewStack();
+
+    static const char* staticTypeName() { return "stack"; };
+    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// set the positioning, purging and autosizing mode
     /// @param aPositioningMode where to append or purge views. Using wrapMode constants as follows:
@@ -117,6 +119,10 @@ namespace p44 {
 
     #endif
 
+    #if ENABLE_VIEWSTATUS
+    /// @return the current status of the view, in the same format as accepted by configure()
+    virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif // ENABLE_VIEWSTATUS
 
   protected:
 
