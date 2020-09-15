@@ -164,7 +164,7 @@ static void configure_func(BuiltinFunctionContextPtr f)
     f->finish(new ErrorValue(err));
     return;
   }
-  f->finish();
+  f->finish(v); // return view itself to allow chaining
 }
 
 
@@ -192,7 +192,7 @@ static void set_func(BuiltinFunctionContextPtr f)
   if (Error::ok(v->view()->configureView(viewCfgJSON))) {
     v->view()->requestUpdate(); // to make sure changes are applied
   }
-  f->finish();
+  f->finish(v); // return view itself to allow chaining
 }
 
 
@@ -203,7 +203,7 @@ static void stopanimations_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   v->view()->stopAnimations();
-  f->finish();
+  f->finish(v); // return view itself to allow chaining
 }
 
 
@@ -213,14 +213,14 @@ static void render_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   v->view()->requestUpdate(); // to make sure changes are applied
-  f->finish();
+  f->finish(v); // return view itself to allow chaining
 }
 
 
 
 #if ENABLE_ANIMATION
 
-// animate(propertyname)
+// animator(propertyname)
 static const BuiltInArgDesc animator_args[] = { { text } };
 static const size_t animator_numargs = sizeof(animator_args)/sizeof(BuiltInArgDesc);
 static void animator_func(BuiltinFunctionContextPtr f)
