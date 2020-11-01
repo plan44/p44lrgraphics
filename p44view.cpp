@@ -39,6 +39,7 @@ P44View::P44View() :
   parentView(NULL),
   dirty(false),
   updateRequested(false),
+  minUpdateInterval(0),
   geometryChanging(0),
   changedGeometry(false),
   sizeToContent(false),
@@ -370,6 +371,23 @@ void P44View::updated()
   updateRequested = false;
 }
 
+
+void P44View::setNeedUpdateCB(TimerCB aNeedUpdateCB, MLMicroSeconds aMinUpdateInterval)
+{
+  needUpdateCB = aNeedUpdateCB;
+  minUpdateInterval = aMinUpdateInterval;
+}
+
+
+MLMicroSeconds P44View::getMinUpdateInterval()
+{
+  P44View *p = this;
+  do {
+    if (p->minUpdateInterval>0) return p->minUpdateInterval;
+    p = p->parentView;
+  } while (p);
+  return DEFAULT_MIN_UPDATE_INTERVAL;
+}
 
 
 void P44View::makeDirty()
@@ -1256,7 +1274,7 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
 {
   double startValue;
   ValueSetterCB valueSetter = getPropertySetter(aProperty, startValue);
-  ValueAnimatorPtr animator = ValueAnimatorPtr(new ValueAnimator(valueSetter, false)); // not self-timed
+  ValueAnimatorPtr animator = ValueAnimatorPtr(new ValueAnimator(valueSetter, false, getMinUpdateInterval())); // not self-timed
   if (animator->valid()) {
     animations.push_back(animator);
     makeDirtyAndUpdate(); // to make sure animation sequence starts

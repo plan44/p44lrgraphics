@@ -33,6 +33,7 @@
   #include "valueanimator.hpp"
 #endif
 
+#define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
 namespace p44 {
 
@@ -165,6 +166,7 @@ namespace p44 {
     bool dirty;
     bool updateRequested; ///< set when needUpdateCB has been called, reset at step() or update()
     TimerCB needUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
+    MLMicroSeconds minUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
     int geometryChanging;
     bool changedGeometry;
@@ -483,7 +485,11 @@ namespace p44 {
 
     /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needs a step() ASAP
     /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
-    void setNeedUpdateCB(TimerCB aNeedUpdateCB) { needUpdateCB = aNeedUpdateCB; };
+    void setNeedUpdateCB(TimerCB aNeedUpdateCB, MLMicroSeconds aMinUpdateInterval);
+
+    /// get minimal update interval
+    /// @return update interval set in first view towards root, if none set, DEFAULT_MIN_UPDATE_INTERVAL
+    MLMicroSeconds getMinUpdateInterval();
 
     /// stop all animations
     virtual void stopAnimations();
