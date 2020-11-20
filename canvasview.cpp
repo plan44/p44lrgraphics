@@ -109,3 +109,32 @@ void CanvasView::setPixel(PixelColor aColor, PixelPoint aPixelPoint)
 }
 
 
+#if ENABLE_VIEWCONFIG
+
+ErrorPtr CanvasView::configureView(JsonObjectPtr aViewConfig)
+{
+  ErrorPtr err = inherited::configureView(aViewConfig);
+  if (Error::isOK(err)) {
+    JsonObjectPtr o;
+    bool draw = false;
+    PixelPoint p;
+    p.x = 0;
+    p.y = 0;
+    if (aViewConfig->get("setx", o)) {
+      p.x = o->int32Value();
+      draw = true;
+    }
+    if (aViewConfig->get("sety", o)) {
+      p.y = o->int32Value();
+      draw = true;
+    }
+    if (draw) {
+      setPixel(foregroundColor, p);
+    }
+  }
+  return err;
+}
+
+#endif // ENABLE_VIEWCONFIG
+
+
