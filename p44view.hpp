@@ -343,6 +343,25 @@ namespace p44 {
     /// @param aParentView parent view or NULL if none
     void setParent(P44ViewPtr aParentView);
 
+    /// @return get parent
+    /// @note parent views should NOT store this, because it creates a retain cycle
+    P44ViewPtr getParent();
+
+    /// @param aSubView parent view or NULL if none
+    /// @return true if subview could be added
+    /// @note this is a NOP in this baseclass
+    virtual bool addSubView(P44ViewPtr aSubView) { return false; }
+
+    /// remove specific subview from this view
+    /// @param aView the view to remove from the stack
+    /// @return true if view actually was a subview and was removed
+    /// @note this is a NOP in this baseclass
+    virtual bool removeView(P44ViewPtr aView) { return false; }
+
+    /// remove this view from its parent (if any)
+    /// @return true if view actually was removed from a parent view
+    bool removeFromParent();
+
     /// set the view's background color
     /// @param aBackgroundColor color of pixels not covered by content
     void setBackgroundColor(PixelColor aBackgroundColor) { backgroundColor = aBackgroundColor; makeColorDirty(); };
@@ -482,17 +501,6 @@ namespace p44 {
 
     /// call when display is updated
     virtual void updated();
-
-    /// remove this view from its parent (if any)
-    /// @return true if view actually was removed from a parent view
-    bool removeFromParent();
-
-    /// remove specific subview from this view
-    /// @param aView the view to remove from the stack
-    /// @return true if view actually was a subview and was removed
-    /// @note this is a NOP in this baseclass
-    virtual bool removeView(P44ViewPtr aView) { return false; }
-
 
     /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needs a step() ASAP
     /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().

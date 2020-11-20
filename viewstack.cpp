@@ -229,6 +229,15 @@ void ViewStack::getEnclosingContentRect(PixelRect &aBounds)
 }
 
 
+bool ViewStack::addSubView(P44ViewPtr aSubView)
+{
+  // just push w/o spacing
+  pushView(aSubView);
+  return true;
+}
+
+
+
 void ViewStack::popView()
 {
   geometryChange(true);

@@ -201,6 +201,13 @@ void P44View::setParent(P44ViewPtr aParentView)
 }
 
 
+P44ViewPtr P44View::getParent()
+{
+  return P44ViewPtr(parentView);
+}
+
+
+
 void P44View::setContent(PixelRect aContent)
 {
   geometryChange(true);

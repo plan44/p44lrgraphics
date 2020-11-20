@@ -71,6 +71,10 @@ namespace p44 {
     /// remove topmost view
     void popView();
 
+    /// @param aSubView parent view or NULL if none
+    /// @return true if subview could be added
+    virtual bool addSubView(P44ViewPtr aSubView) P44_OVERRIDE;
+
     /// remove specific view
     /// @param aView the view to remove from the stack
     /// @return true if view actually was a subview and was removed

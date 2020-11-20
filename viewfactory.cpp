@@ -129,6 +129,28 @@ static void findview_func(BuiltinFunctionContextPtr f)
   f->finish();
 }
 
+
+// addview(view)
+static const BuiltInArgDesc addview_args[] = { { object } };
+static const size_t addview_numargs = sizeof(addview_args)/sizeof(BuiltInArgDesc);
+static void addview_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(f->arg(0).get());
+  if (!subview) {
+    f->finish(new ErrorValue(ScriptError::Invalid, "argument must be a view"));
+    return;
+  }
+  if (!v->view()->addSubView(subview->view())) {
+    f->finish(new ErrorValue(ScriptError::Invalid, "cannot add subview here"));
+    return;
+  }
+  f->finish(subview);
+}
+
+
+
 // configure(jsonconfig/filename)
 static const BuiltInArgDesc configure_args[] = { { text|json|object } };
 static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
@@ -196,7 +218,7 @@ static void set_func(BuiltinFunctionContextPtr f)
 }
 
 
-// render()     trigger rendering
+// stopanimations()     stop animations
 static void stopanimations_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -217,13 +239,27 @@ static void remove_func(BuiltinFunctionContextPtr f)
 
 
 
-// stopanimations()     stop animations
+// render()     trigger rendering
 static void render_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   v->view()->requestUpdate(); // to make sure changes are applied
   f->finish(v); // return view itself to allow chaining
+}
+
+
+// parent()     return parent view
+static void parent_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  P44ViewPtr parent = v->view()->getParent();
+  if (!parent) {
+    f->finish(new AnnotatedNullValue("no parent view"));
+    return;
+  }
+  f->finish(new P44lrgViewObj(parent));
 }
 
 
@@ -245,10 +281,12 @@ static void animator_func(BuiltinFunctionContextPtr f)
 
 static const BuiltinMemberDescriptor viewFunctions[] = {
   { "findview", executable|object, findview_numargs, findview_args, &findview_func },
-  { "configure", executable|null, configure_numargs, configure_args, &configure_func },
-  { "set", executable|null, set_numargs, set_args, &set_func },
-  { "render", executable|null, 0, NULL, &render_func },
-  { "remove", executable|null, 0, NULL, &remove_func },
+  { "addview", executable|object, addview_numargs, addview_args, &addview_func },
+  { "configure", executable|object, configure_numargs, configure_args, &configure_func },
+  { "set", executable|object, set_numargs, set_args, &set_func },
+  { "render", executable|object, 0, NULL, &render_func },
+  { "remove", executable|numeric, 0, NULL, &remove_func },
+  { "parent", executable|object, 0, NULL, &parent_func },
   #if ENABLE_ANIMATION
   { "animator", executable|object, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|object, 0, NULL, &stopanimations_func },
@@ -292,6 +330,18 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 }
 
 
+// makeview(viewconfig)
+static const BuiltInArgDesc makeview_args[] = { { json|object } };
+static const size_t makeview_numargs = sizeof(makeview_args)/sizeof(BuiltInArgDesc);
+static void makeview_func(BuiltinFunctionContextPtr f)
+{
+  P44ViewPtr newView;
+  ErrorPtr err = createViewFromConfig(f->arg(0)->jsonValue(), newView, P44ViewPtr());
+  f->finish(new P44lrgViewObj(newView));
+}
+
+
+
 static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite)
 {
   P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
@@ -302,6 +352,7 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
+  { "makeview", executable|object, makeview_numargs, makeview_args, &makeview_func },
   { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
   { "hsv", executable|text, hsv_numargs, hsv_args, &hsv_func },
   { NULL } // terminator
