@@ -196,7 +196,6 @@ static void set_func(BuiltinFunctionContextPtr f)
 }
 
 
-
 // render()     trigger rendering
 static void stopanimations_func(BuiltinFunctionContextPtr f)
 {
@@ -205,6 +204,17 @@ static void stopanimations_func(BuiltinFunctionContextPtr f)
   v->view()->stopAnimations();
   f->finish(v); // return view itself to allow chaining
 }
+
+
+// remove()     remove from subview
+static void remove_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  bool removed = v->view()->removeFromParent();
+  f->finish(new NumericValue(removed)); // true if actually removed
+}
+
 
 
 // stopanimations()     stop animations
@@ -238,6 +248,7 @@ static const BuiltinMemberDescriptor viewFunctions[] = {
   { "configure", executable|null, configure_numargs, configure_args, &configure_func },
   { "set", executable|null, set_numargs, set_args, &set_func },
   { "render", executable|null, 0, NULL, &render_func },
+  { "remove", executable|null, 0, NULL, &remove_func },
   #if ENABLE_ANIMATION
   { "animator", executable|object, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|object, 0, NULL, &stopanimations_func },

@@ -483,6 +483,17 @@ namespace p44 {
     /// call when display is updated
     virtual void updated();
 
+    /// remove this view from its parent (if any)
+    /// @return true if view actually was removed from a parent view
+    bool removeFromParent();
+
+    /// remove specific subview from this view
+    /// @param aView the view to remove from the stack
+    /// @return true if view actually was a subview and was removed
+    /// @note this is a NOP in this baseclass
+    virtual bool removeView(P44ViewPtr aView) { return false; }
+
+
     /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needs a step() ASAP
     /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
     void setNeedUpdateCB(TimerCB aNeedUpdateCB, MLMicroSeconds aMinUpdateInterval);

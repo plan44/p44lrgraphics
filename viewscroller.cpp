@@ -407,6 +407,10 @@ JsonObjectPtr ViewScroller::viewStatus()
   status->add("stepy", JsonObject::newDouble(getStepY()));
   status->add("interval", JsonObject::newDouble((double)scrollStepInterval/Second));
   status->add("steps", JsonObject::newInt64(scrollSteps));
+  PixelPoint r = remainingPixelsToScroll();
+  status->add("remainingx", JsonObject::newInt64(r.x));
+  status->add("remainingy", JsonObject::newInt64(r.y));
+  status->add("remainingtime", JsonObject::newDouble((double)remainingScrollTime()/Second));
   return status;
 }
 

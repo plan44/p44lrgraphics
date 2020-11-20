@@ -390,6 +390,15 @@ MLMicroSeconds P44View::getMinUpdateInterval()
 }
 
 
+bool P44View::removeFromParent()
+{
+  if (parentView) {
+    return parentView->removeView(this); // should always return true...
+  }
+  return false;
+}
+
+
 void P44View::makeDirty()
 {
   dirty = true;

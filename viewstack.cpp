@@ -241,18 +241,21 @@ void ViewStack::popView()
 }
 
 
-void ViewStack::removeView(P44ViewPtr aView)
+bool ViewStack::removeView(P44ViewPtr aView)
 {
+  bool removed = false;
   geometryChange(true);
   for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
     if ((*pos)==aView) {
       (*pos)->setParent(NULL);
       viewStack.erase(pos);
       changedGeometry = true;
+      removed = true;
       break;
     }
   }
   geometryChange(false);
+  return removed;
 }
 
 
@@ -403,6 +406,9 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
           }
         }
       }
+    }
+    if (aViewConfig->get("pop", o)) {
+      if(o->boolValue()) popView();
     }
   }
   return err;

@@ -73,7 +73,8 @@ namespace p44 {
 
     /// remove specific view
     /// @param aView the view to remove from the stack
-    void removeView(P44ViewPtr aView);
+    /// @return true if view actually was a subview and was removed
+    virtual bool removeView(P44ViewPtr aView) P44_OVERRIDE;
 
     /// offset all subviews
     /// @param aOffset will be added to all subview frame's x/y
