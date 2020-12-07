@@ -1,0 +1,32 @@
+menu "p44utils"
+
+config P44LRGRAPHICS_ENABLE_VIEWCONFIG
+    bool "Enable p44lrgraphics JSON view config"
+    help
+        This enables the p44lrgraphics JSON based view configuration support.
+        Needs JSON support in p44utils to be enabled, too
+
+config P44LRGRAPHICS_ENABLE_VIEWSTATUS
+    bool "Enable p44lrgraphics JSON view status"
+    help
+        This enables the p44lrgraphics JSON status support.
+        Needs JSON support in p44utils to be enabled, too
+
+config P44LRGRAPHICS_ENABLE_EPX_SUPPORT
+    bool "Enable p44lrgraphics EPX support"
+    help
+        This enables the p44lrgraphics expressive pixels (EPX) view
+
+config P44LRGRAPHICS_ENABLE_ANIMATION
+    bool "Enable p44lrgraphics animation"
+    help
+        This enables the p44view property animation features
+
+config P44LRGRAPHICS_IMAGE_SUPPORT
+    bool "Enable p44lrgraphics image support"
+    help
+        This enables the imageview supporting PNG images
+        Needs libpng component to be available
+
+
+endmenu
