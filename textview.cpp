@@ -850,7 +850,7 @@ void TextView::renderText()
     }
     // now render glyphs
     for (size_t i = 0; i<glyphs.size(); ++i) {
-      const glyph_t &g = fontGlyphs[glyphs[i]];
+      const glyph_t &g = fontGlyphs[(unsigned int)glyphs[i]];
       for (int j = 0; j<g.width; ++j) {
         textPixelCols.append(1, g.cols[j]);
       }

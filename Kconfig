@@ -1,4 +1,4 @@
-menu "p44utils"
+menu "p44lrgraphics"
 
 config P44LRGRAPHICS_ENABLE_VIEWCONFIG
     bool "Enable p44lrgraphics JSON view config"

@@ -549,12 +549,12 @@ namespace p44 {
     virtual JsonObjectPtr viewStatus();
     #endif // ENABLE_VIEWSTATUS
 
-    #if ENABLE_ANIMATION
-
   public:
 
     /// call to request an update (in case the display does not update itself with a fixed frame rate)
     virtual void requestUpdate();
+
+    #if ENABLE_ANIMATION
 
     /// get an animator for a property
     /// @param aProperty name of the property to animate

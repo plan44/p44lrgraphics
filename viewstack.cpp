@@ -96,7 +96,7 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
     }
   }
   viewStack.push_back(aView);
-  FOCUSLOG("+++ ViewStack '%s' pushes subview #%lu with frame=(%d,%d,%d,%d) - frame coords are relative to content origin",
+  FOCUSLOG("+++ ViewStack '%s' pushes subview #%zu with frame=(%d,%d,%d,%d) - frame coords are relative to content origin",
     label.c_str(),
     viewStack.size(),
     aView->frame.x, aView->frame.y, aView->frame.dx, aView->frame.dy
@@ -146,7 +146,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
     ) {
       if (viewStack.size()<=1) break; // do not purge last view in stack
       // remove this view
-      FOCUSLOG("--- purges subview #%lu with frame=(%d,%d,%d,%d)",
+      FOCUSLOG("--- purges subview #%zu with frame=(%d,%d,%d,%d)",
         viewStack.size(),
         v->frame.x, v->frame.y, v->frame.dx, v->frame.dy
       );

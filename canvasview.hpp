@@ -51,11 +51,16 @@ namespace p44 {
 
     size_t getNumPixels() { return numPixels; }
 
+    #if ENABLE_VIEWCONFIG
+
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
     /// @return ok or error in case of real errors (image not found etc., but minor
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
+
+    #endif
+
 
   protected:
 

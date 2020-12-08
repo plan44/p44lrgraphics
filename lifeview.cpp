@@ -37,7 +37,7 @@ LifeView::LifeView() :
   minPopulation(9)
 {
   // original coloring scheme was yellow-green for newborn cells
-  setForegroundColor({ 128, 255, 0 });
+  setForegroundColor({ 128, 255, 0, 0 });
   hueGradient = -330.0/360*100;
   satGradient = 0;
   briGradient = -25;
