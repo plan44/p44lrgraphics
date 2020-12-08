@@ -116,11 +116,11 @@ double ColorEffectView::gradientCurveLevel(double aProgress, GradientMode aMode)
   bool minus = aProgress<0;
   double samp = gradientCycles(fabs(aProgress), aMode);
   switch (aMode&gradient_curve_mask) {
-    case gradient_curve_square: samp = samp>0.5 ? 1 : 0; // square
+    case gradient_curve_square: samp = samp>0.5 ? 1 : 0; break; // square
     case gradient_curve_sin: samp = sin(samp*M_PI/2); break; // sine
     case gradient_curve_cos: samp = 1-cos(samp*M_PI/2); break; // cosine
-    case gradient_curve_log: samp = 1.0/CURVE_EXP*log(samp*(exp(CURVE_EXP)-1)+1); // logarithmic
-    case gradient_curve_exp: samp = (exp(samp*CURVE_EXP)-1)/(exp(CURVE_EXP)-1); // exponential
+    case gradient_curve_log: samp = 1.0/CURVE_EXP*log(samp*(exp(CURVE_EXP)-1)+1); break; // logarithmic
+    case gradient_curve_exp: samp = (exp(samp*CURVE_EXP)-1)/(exp(CURVE_EXP)-1); break; // exponential
     default:
     case gradient_curve_lin: break; // linear/triangle
   }
