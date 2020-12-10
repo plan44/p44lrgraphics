@@ -554,6 +554,10 @@ namespace p44 {
     /// call to request an update (in case the display does not update itself with a fixed frame rate)
     virtual void requestUpdate();
 
+    /// call to request an update if needed (i.e. the view is dirty)
+    void requestUpdateIfNeeded();
+
+
     #if ENABLE_ANIMATION
 
     /// get an animator for a property

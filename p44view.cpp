@@ -67,7 +67,9 @@ P44View::P44View() :
 
 P44View::~P44View()
 {
+  geometryChange(true); // unbalanced, avoid any further dependency updates while finally deleting view
   clear();
+  removeFromParent();
 }
 
 
@@ -371,6 +373,15 @@ void P44View::requestUpdate()
     MainLoop::currentMainLoop().executeNow(p->needUpdateCB);
   }
 }
+
+
+void P44View::requestUpdateIfNeeded()
+{
+  if (!updateRequested && isDirty()) {
+    requestUpdate();
+  }
+}
+
 
 void P44View::updated()
 {
