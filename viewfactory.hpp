@@ -24,6 +24,17 @@
 
 #include "p44lrg_common.hpp"
 
+#include "imageview.hpp"
+#include "epxview.hpp"
+#include "textview.hpp"
+#include "viewsequencer.hpp"
+#include "viewstack.hpp"
+#include "viewscroller.hpp"
+#include "lightspotview.hpp"
+#include "canvasview.hpp"
+#include "lifeview.hpp"
+#include "torchview.hpp"
+
 #if ENABLE_VIEWCONFIG
 
 #include "jsonobject.hpp"

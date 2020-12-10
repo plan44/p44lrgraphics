@@ -25,17 +25,6 @@
 
 #include "extutils.hpp"
 
-#include "imageview.hpp"
-#include "epxview.hpp"
-#include "textview.hpp"
-#include "viewsequencer.hpp"
-#include "viewstack.hpp"
-#include "viewscroller.hpp"
-#include "lightspotview.hpp"
-#include "canvasview.hpp"
-#include "lifeview.hpp"
-#include "torchview.hpp"
-
 using namespace p44;
 
 // MARK: ===== View factory functions
