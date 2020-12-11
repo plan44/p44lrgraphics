@@ -258,8 +258,6 @@ namespace p44 {
     double rotSin;
     double rotCos;
 
-
-
     string label; ///< label of the view for addressing it
 
     /// announce/finish geometry change

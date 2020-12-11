@@ -361,12 +361,17 @@ void P44View::makeDirtyAndUpdate()
 
 void P44View::requestUpdate()
 {
+  FOCUSLOG("requestUpdate() called for view@%p", this);
   P44View *p = this;
   while (p->parentView) {
+    if (p->updateRequested) return;  // already requested, no need to descend to root
+    p->updateRequested = true; // mark having requested update all the way down to root, update() will be called on all views to clear it
     p = p->parentView;
   }
+  // now p = root view
   if (!p->updateRequested && p->needUpdateCB) {
-    updateRequested = true; // only request once
+    p->updateRequested = true; // only request once
+    FOCUSLOG("actually requesting update from root view@%p (from view@%p)", p, this);
     // there is a needUpdate callback here
     // DO NOT call it directly, but from mainloop, so receiver can safely call
     // back into any view object method without causing recursions
