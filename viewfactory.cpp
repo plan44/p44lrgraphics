@@ -29,6 +29,8 @@ using namespace p44;
 
 // MARK: ===== View factory functions
 
+#if ENABLE_JSON_APPLICATION
+
 ErrorPtr p44::createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView)
 {
   ErrorPtr err;
@@ -39,6 +41,7 @@ ErrorPtr p44::createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const st
   return err;
 }
 
+#endif // ENABLE_JSON_APPLICATION
 
 ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView)
 {

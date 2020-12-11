@@ -52,6 +52,7 @@ namespace p44 {
   /// @return OK or error
   ErrorPtr createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView);
 
+  #if ENABLE_JSON_APPLICATION
   /// factory function possibly reading from resource
   /// @param aResourceOrObj if this is a single JSON string ending on ".json", it is treated as a resource file name
   ///    which is loaded and used as view configuration. All other JSON is used as view config as-is
@@ -61,6 +62,7 @@ namespace p44 {
   /// @param aParentView the parent view. This is always applied to aNewView, even if just reconfiguring an existing view
   /// @return OK or error
   ErrorPtr createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView);
+  #endif // ENABLE_JSON_APPLICATION
 
   #if ENABLE_P44SCRIPT
 
