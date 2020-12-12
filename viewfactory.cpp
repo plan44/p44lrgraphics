@@ -160,13 +160,13 @@ static void configure_func(BuiltinFunctionContextPtr f)
   else
   #endif
   {
-    // JSON from string or file
+    // JSON from string (or file if we have a JSON app)
     string viewConfig = f->arg(0)->stringValue();
-    // get the string
-    if (viewConfig.c_str()[0]!='{') {
-      // must be a file name, try to load it
-      viewCfgJSON = Application::jsonResource(viewConfig, &err);
-    }
+    #if ENABLE_JSON_APPLICATION
+    viewCfgJSON = Application::jsonObjOrResource(viewConfig, &err);
+    #else
+    viewCfgJSON = JsonObject::objFromText(viewConfig.c_str(), -1, &err);
+    #endif
   }
   if (Error::isOK(err)) {
     err = v->view()->configureView(viewCfgJSON);
