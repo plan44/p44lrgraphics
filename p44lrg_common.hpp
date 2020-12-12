@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2016-2019 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2016-2020 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -22,6 +22,13 @@
 
 #ifndef __p44lrgraphics__common__
 #define __p44lrgraphics__common__
+
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
+#endif
+#ifdef ESP_PLATFORM
+  #include "sdkconfig.h"
+#endif
 
 #include "p44lrg_config.hpp"
 #include "p44utils_common.hpp"
