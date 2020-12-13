@@ -83,6 +83,7 @@ void ColorEffectView::setRelativeExtent(double aRelativeExtent)
 {
   extent.x = aRelativeExtent*content.dx/2;
   extent.y = aRelativeExtent*content.dy/2;
+  makeDirty();
 }
 
 
