@@ -75,7 +75,7 @@ void ColorEffectView::setColoringParameters(
 void ColorEffectView::setExtent(PixelPoint aExtent)
 {
   extent = aExtent;
-  makeDirty();
+  makeColorDirty(); // because it also affects gradient
 }
 
 
@@ -83,7 +83,7 @@ void ColorEffectView::setRelativeExtent(double aRelativeExtent)
 {
   extent.x = aRelativeExtent*content.dx/2;
   extent.y = aRelativeExtent*content.dy/2;
-  makeDirty();
+  makeColorDirty(); // because it also affects gradient
 }
 
 
