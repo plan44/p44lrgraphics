@@ -892,7 +892,7 @@ PixelColor TextView::contentColorAt(PixelPoint aPt)
       return foregroundColor;
     }
   }
-  return inherited::contentColorAt(aPt);
+  return backgroundColor;
 }
 
 

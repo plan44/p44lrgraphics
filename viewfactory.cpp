@@ -255,6 +255,16 @@ static void parent_func(BuiltinFunctionContextPtr f)
 }
 
 
+// clear()     clear view
+static void clear_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  v->view()->clear(); // to make sure changes are applied
+  f->finish(v); // return view itself to allow chaining
+}
+
+
 
 #if ENABLE_ANIMATION
 
@@ -279,6 +289,7 @@ static const BuiltinMemberDescriptor viewFunctions[] = {
   { "render", executable|object, 0, NULL, &render_func },
   { "remove", executable|numeric, 0, NULL, &remove_func },
   { "parent", executable|object, 0, NULL, &parent_func },
+  { "clear", executable|object, 0, NULL, &clear_func },
   #if ENABLE_ANIMATION
   { "animator", executable|object, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|object, 0, NULL, &stopanimations_func },

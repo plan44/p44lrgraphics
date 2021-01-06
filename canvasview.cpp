@@ -86,8 +86,8 @@ void CanvasView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 
 PixelColor CanvasView::contentColorAt(PixelPoint aPt)
 {
-  if (!canvasBuffer || aPt.x<0 || aPt.x>=content.dx || aPt.y<0 || aPt.y>=content.dy) {
-    return inherited::contentColorAt(aPt);
+  if (!canvasBuffer || !isInContentSize(aPt)) {
+    return backgroundColor;
   }
   else {
     // get pixel information from canvas buffer

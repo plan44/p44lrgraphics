@@ -83,6 +83,7 @@ bool P44View::isInContentSize(PixelPoint aPt)
 
 PixelColor P44View::contentColorAt(PixelPoint aPt)
 {
+  // for plain views, show content rect in foreground
   if (isInContentSize(aPt))
     return foregroundColor;
   else

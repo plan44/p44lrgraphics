@@ -289,6 +289,7 @@ namespace p44 {
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
     /// @note this default base class implementation shows the foreground color on all pixels within contentSize, background otherwise
+    /// @note subclasses should not call inherited normally, but directly return foreground or background colors (or calculated other colors)
     virtual PixelColor contentColorAt(PixelPoint aPt);
 
     /// helper for implementations: check if aPt within set content size
