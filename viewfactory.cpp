@@ -102,7 +102,7 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
 
 // MARK: - script support
 
-#if ENABLE_P44SCRIPT
+#if P44SCRIPT_FULL_SUPPORT
 
 using namespace P44Script;
 
@@ -368,7 +368,7 @@ P44lrgLookup::P44lrgLookup(P44ViewPtr *aRootViewPtrP) :
 {
 }
 
-#endif // ENABLE_P44SCRIPT
+#endif // P44SCRIPT_FULL_SUPPORT
 
 
 // TODO: remove legacy EXPRESSION_SCRIPT_SUPPORT later
