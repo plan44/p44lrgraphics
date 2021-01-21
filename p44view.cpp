@@ -716,7 +716,7 @@ void p44::mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, PixelColo
           aMainPixel.r = r>255 ? 255 : r;
           aMainPixel.g = g>255 ? 255 : g;
           aMainPixel.b = b>255 ? 255 : b;
-          aMainPixel.a = alpha>255 ? 255 : alpha;
+          aMainPixel.a = alpha;
         }
         else {
           // brightness below max, just convert back

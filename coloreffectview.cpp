@@ -148,7 +148,7 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   double base_h,base_s,base_b;
   pixelToHsb(foregroundColor, base_h, base_s, base_b, true);
   double h,s,b;
-  // now create gradient pixels covering larger extent dimension
+  // now create gradient pixels covering extent dimension
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
     double pr = aExtentPixels>0 ? (double)i/aExtentPixels : 0;
