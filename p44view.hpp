@@ -298,9 +298,6 @@ namespace p44 {
     /// color effect params have changed
     virtual void recalculateColoring() { /* NOP in the base class */ };
 
-    /// set dirty, additionally request a step ASAP
-    void makeDirtyAndUpdate();
-
     /// set dirty - to be called by step() and property setters (config, animation) when the view needs to be redisplayed
     void makeDirty();
 
@@ -549,6 +546,9 @@ namespace p44 {
     #endif // ENABLE_VIEWSTATUS
 
   public:
+
+    /// set dirty, additionally request a step ASAP
+    void makeDirtyAndUpdate();
 
     /// call to request an update (in case the display does not update itself with a fixed frame rate)
     virtual void requestUpdate();
