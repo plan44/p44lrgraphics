@@ -118,7 +118,7 @@ static void findview_func(BuiltinFunctionContextPtr f)
     f->finish(new P44lrgViewObj(foundView));
     return;
   }
-  f->finish();
+  f->finish(new AnnotatedNullValue("no such view"));
 }
 
 
@@ -369,92 +369,6 @@ P44lrgLookup::P44lrgLookup(P44ViewPtr *aRootViewPtrP) :
 }
 
 #endif // P44SCRIPT_FULL_SUPPORT
-
-
-// TODO: remove legacy EXPRESSION_SCRIPT_SUPPORT later
-#if EXPRESSION_SCRIPT_SUPPORT
-
-#include "application.hpp"
-
-bool p44::evaluateViewFunctions(EvaluationContext* aEvalContext, const string &aFunc, const FunctionArguments &aArgs, ExpressionValue &aResult, P44ViewPtr aRootView, ValueLookupCB aSubstitutionValueLookupCB)
-{
-  if (aFunc=="hsv" && aArgs.size()>=1 && aArgs.size()<=4) {
-    // hsv(hue, sat, bri) // convert to webcolor string
-    double h = aArgs[0].numValue();
-    double s = 1.0;
-    double b = 1.0;
-    if (aArgs.size()>1) {
-      s = aArgs[1].numValue();
-      if (aArgs.size()>2) {
-        b = aArgs[2].numValue();
-      }
-    }
-    PixelColor p = hsbToPixel(h, s, b);
-    aResult.setString(pixelToWebColor(p));
-  }
-  else if (aFunc=="configureview") {
-    // configureview([viewname,]jsonconfig/filename[,substitute])
-    string viewName;
-    bool substitute = true;
-    int ai = 0;
-    if (aArgs.size()>1 && aArgs[1].isString()) {
-      // first param is the view name
-      if (aArgs[ai].notValue()) return aEvalContext->errorInArg(aArgs[ai], aResult); // return error/null from argument
-      viewName = aArgs[ai].stringValue();
-      ai++;
-    }
-    // next param is the json configuration
-    if (aArgs[ai].notValue()) return aEvalContext->errorInArg(aArgs[ai], aResult); // return error/null from argument
-    JsonObjectPtr viewCfgJSON;
-    ErrorPtr err;
-    #if EXPRESSION_JSON_SUPPORT
-    if (aArgs[ai].isJson()) {
-      // is already a JSON value, use it as-is
-      viewCfgJSON = aArgs[ai].jsonValue();
-    }
-    else
-    #endif
-    {
-      // JSON from string or file, possibly with substitution
-      string viewConfig = aArgs[ai++].stringValue();
-      if (aArgs.size()>ai) {
-        // optional subsitute flag
-        if (aArgs[ai].notValue()) return aEvalContext->errorInArg(aArgs[ai], aResult); // return error/null from argument
-        substitute = aArgs[ai++].boolValue();
-      }
-      // get the string
-      if (viewConfig.c_str()[0]!='{') {
-        // must be a file name, try to load it
-        string fpath = Application::sharedApplication()->resourcePath(viewConfig);
-        ErrorPtr err = string_fromfile(fpath, viewConfig);
-        if (Error::notOK(err)) return aEvalContext->throwError(err);
-      }
-      // substitute placeholders in the JSON
-      if (substitute && aSubstitutionValueLookupCB) {
-        substituteExpressionPlaceholders(viewConfig, aSubstitutionValueLookupCB, NULL);
-      }
-      // parse JSON
-      viewCfgJSON = JsonObject::objFromText(viewConfig.c_str(), -1, &err);
-      if (!viewCfgJSON) return aEvalContext->throwError(err);
-    }
-    // get the subview by name, if specified
-    if (!viewName.empty()) {
-      aRootView = aRootView->getView(viewName);
-      if (!aRootView) {
-        return aEvalContext->throwError(ExpressionError::NotFound, "View with label '%s' not found", viewName.c_str());
-      }
-    }
-    // actually configure the view now
-    err = aRootView->configureView(viewCfgJSON);
-    if (Error::notOK(err)) return aEvalContext->throwError(err);
-  }
-  else {
-    return false; // unknown function
-  }
-  return true;
-}
-
-#endif // EXPRESSION_SCRIPT_SUPPORT
 
 #endif // ENABLE_VIEWCONFIG
 

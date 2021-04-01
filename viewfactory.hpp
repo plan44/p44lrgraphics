@@ -40,7 +40,6 @@
 #include "jsonobject.hpp"
 
 #include "p44script.hpp"
-#include "expressions.hpp" // TODO: legacy, remove it later
 
 namespace p44 {
 
@@ -90,11 +89,6 @@ namespace p44 {
     };
 
   } // namespace P44Script
-  #endif
-
-  #if EXPRESSION_SCRIPT_SUPPORT
-  // TODO: remove legacy EXPRESSION_SCRIPT_SUPPORT later
-  bool evaluateViewFunctions(EvaluationContext* aEvalContext, const string &aFunc, const FunctionArguments &aArgs, ExpressionValue &aResult, P44ViewPtr aRootView, ValueLookupCB aSubstitutionValueLookupCB);
   #endif
 
 } // namespace p44
