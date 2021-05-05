@@ -24,15 +24,22 @@
 
 #include "p44lrg_common.hpp"
 
-namespace p44 {
+#if P44SCRIPT_FULL_SUPPORT
+  #include "p44script.hpp"
+#endif
 
+namespace p44 {
 
   /// Content reload handler
   /// @return true if scrolling should continue
   typedef boost::function<bool ()> NeedContentCB;
 
   /// Smooth scrolling (subpixel resolution)
-  class ViewScroller : public P44View
+  class ViewScroller :
+    public P44View
+    #if P44SCRIPT_FULL_SUPPORT
+    , public P44Script::EventSource
+    #endif
   {
     typedef P44View inherited;
 
@@ -54,6 +61,9 @@ namespace p44 {
     SimpleCB scrollCompletedCB; ///< called when one scroll is done
     NeedContentCB needContentCB; ///< called when we need new scroll content
     bool autopurge; ///< when set, and needContentCB is set, will try to purge completely scrolled off views
+    #if P44SCRIPT_FULL_SUPPORT
+    bool mAlertEmpty; ///< alert scroller getting empty as event
+    #endif
 
   protected:
 
@@ -139,6 +149,11 @@ namespace p44 {
     ///   x/y are set to INT_MAX to signal "infinite" (if scrolled view's wrap mode is set in the scroll direction)
     PixelPoint remainingPixelsToScroll();
 
+    /// @return true if remaining pixels in either direction are <0
+    bool needsContent();
+
+    void setAlertEmpty(bool aAlertEmpty) { mAlertEmpty = aAlertEmpty; };
+
     /// @return number time until scroll will need more content
     MLMicroSeconds remainingScrollTime();
 
@@ -177,8 +192,45 @@ namespace p44 {
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
 
+    #if P44SCRIPT_FULL_SUPPORT
+    /// @return ScriptObj representing this scroller
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
+
   };
   typedef boost::intrusive_ptr<ViewScroller> ViewScrollerPtr;
+
+  #if P44SCRIPT_FULL_SUPPORT
+
+  namespace P44Script {
+
+    /// represents scroller out-of-content event/flag
+    class ContentNeededObj : public NumericValue
+    {
+      typedef NumericValue inherited;
+      ViewScrollerPtr mScroller;
+    public:
+      ContentNeededObj(ViewScrollerPtr aScroller);
+      virtual void deactivate() P44_OVERRIDE;
+      virtual string getAnnotation() const P44_OVERRIDE;
+      virtual TypeInfo getTypeInfo() const P44_OVERRIDE;
+      virtual EventSource *eventSource() const P44_OVERRIDE;
+      virtual double doubleValue() const P44_OVERRIDE;
+    };
+
+    /// represents a ViewScroller
+    class ScrollerViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      ScrollerViewObj(P44ViewPtr aView);
+      ViewScrollerPtr scroller() { return boost::static_pointer_cast<ViewScroller>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // P44SCRIPT_FULL_SUPPORT
+
 
 } // namespace p44
 

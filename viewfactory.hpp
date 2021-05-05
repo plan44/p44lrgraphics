@@ -39,8 +39,6 @@
 
 #include "jsonobject.hpp"
 
-#include "p44script.hpp"
-
 namespace p44 {
 
   /// factory function to create a view (but also allows reconfiguration if view already exists)
@@ -63,33 +61,6 @@ namespace p44 {
   ErrorPtr createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView);
   #endif // ENABLE_JSON_APPLICATION
 
-  #if ENABLE_P44SCRIPT
-
-  namespace P44Script {
-
-    /// represents a view of a P44lrgraphics view hierarchy
-    class P44lrgViewObj : public P44Script::StructuredLookupObject
-    {
-      typedef P44Script::StructuredLookupObject inherited;
-      P44ViewPtr mView;
-    public:
-      P44lrgViewObj(P44ViewPtr aView);
-      virtual string getAnnotation() const P44_OVERRIDE { return "lrgView"; };
-      P44ViewPtr view() { return mView; }
-    };
-
-    /// represents the global objects related to p44lrgraphics
-    class P44lrgLookup : public BuiltInMemberLookup
-    {
-      typedef BuiltInMemberLookup inherited;
-      P44ViewPtr* mRootViewPtrP;
-    public:
-      P44lrgLookup(P44ViewPtr *aRootViewPtrP);
-      P44ViewPtr rootView() { return *mRootViewPtrP; }
-    };
-
-  } // namespace P44Script
-  #endif
 
 } // namespace p44
 

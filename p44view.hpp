@@ -32,6 +32,9 @@
 #if ENABLE_ANIMATION
   #include "valueanimator.hpp"
 #endif
+#if P44SCRIPT_FULL_SUPPORT
+  #include "p44script.hpp"
+#endif
 
 #define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
@@ -556,6 +559,11 @@ namespace p44 {
     /// call to request an update if needed (i.e. the view is dirty)
     void requestUpdateIfNeeded();
 
+    #if P44SCRIPT_FULL_SUPPORT
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj();
+    #endif
+
 
     #if ENABLE_ANIMATION
 
@@ -593,6 +601,36 @@ namespace p44 {
     #endif // ENABLE_ANIMATION
 
   };
+
+
+  #if P44SCRIPT_FULL_SUPPORT
+
+  namespace P44Script {
+
+    /// represents a view of a P44lrgraphics view hierarchy
+    class P44lrgViewObj : public P44Script::StructuredLookupObject
+    {
+      typedef P44Script::StructuredLookupObject inherited;
+      P44ViewPtr mView;
+    public:
+      P44lrgViewObj(P44ViewPtr aView);
+      virtual string getAnnotation() const P44_OVERRIDE { return "lrgView"; };
+      P44ViewPtr view() { return mView; }
+    };
+
+    /// represents the global objects related to p44lrgraphics
+    class P44lrgLookup : public BuiltInMemberLookup
+    {
+      typedef BuiltInMemberLookup inherited;
+      P44ViewPtr* mRootViewPtrP;
+    public:
+      P44lrgLookup(P44ViewPtr *aRootViewPtrP);
+      P44ViewPtr rootView() { return *mRootViewPtrP; }
+    };
+
+  } // namespace P44Script
+
+  #endif // P44SCRIPT_FULL_SUPPORT
 
 } // namespace p44
 

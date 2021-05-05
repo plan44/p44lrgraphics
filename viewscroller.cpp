@@ -52,6 +52,9 @@ ViewScroller::ViewScroller() :
   #else
   syncScroll(true),
   #endif
+  #if P44SCRIPT_FULL_SUPPORT
+  mAlertEmpty(false),
+  #endif
   autopurge(false)
 {
 }
@@ -163,10 +166,15 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
         }
         updateNextCall(nextCall, nextScrollStepAt, aPriorityUntil); // scrolling has priority
       } // while catchup
-      if (needContentCB && scrolledView) {
+      if ((
+        needContentCB
+        #if P44SCRIPT_FULL_SUPPORT
+        || (hasSinks() && mAlertEmpty)
+        #endif
+        ) && scrolledView
+      ) {
         // check if we need more content (i.e. scrolled view does not cover frame of the scroller any more)
-        PixelPoint rem = remainingPixelsToScroll();
-        if (rem.x<0 || rem.y<0) {
+        if (needsContent()) {
           if (FOCUSLOGENABLED) {
             PixelRect sf = scrolledView->getFrame();
             FOCUSLOG("*** Scroller '%s' needs new content: scrollX = %.2f, scrollY=%.2f, frame=(%d,%d,%d,%d) scrolledframe=(%d,%d,%d,%d)",
@@ -176,9 +184,12 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
               sf.x, sf.y, sf.dx, sf.dy
             );
           }
-          if (!needContentCB()) {
-            stopScroll();
+          #if P44SCRIPT_FULL_SUPPORT
+          if (mAlertEmpty) {
+            mAlertEmpty = false; // must re-arm before alerting again
+            sendEvent(new P44Script::NumericValue(true));
           }
+          #endif
           if (autopurge) {
             // remove views no longer in sight
             purgeScrolledOut();
@@ -212,6 +223,13 @@ PixelPoint ViewScroller::remainingPixelsToScroll()
     rem.y = (int)(scrollOffsetY_milli/1000) - sf.y;
   }
   return rem;
+}
+
+
+bool ViewScroller::needsContent()
+{
+  PixelPoint rem = remainingPixelsToScroll();
+  return rem.x<0 || rem.y<0;
 }
 
 
@@ -416,4 +434,125 @@ JsonObjectPtr ViewScroller::viewStatus()
 
 #endif // ENABLE_VIEWSTATUS
 
+// MARK: - script support
 
+#if P44SCRIPT_FULL_SUPPORT
+
+using namespace P44Script;
+
+
+ScriptObjPtr ViewScroller::newViewObj()
+{
+  // base class with standard functionality
+  return new ScrollerViewObj(this);
+}
+
+
+ContentNeededObj::ContentNeededObj(ViewScrollerPtr aScroller) :
+  inherited(false),
+  mScroller(aScroller)
+{
+}
+
+void ContentNeededObj::deactivate()
+{
+  mScroller.reset();
+}
+
+
+string ContentNeededObj::getAnnotation() const
+{
+  return "scroller event";
+}
+
+TypeInfo ContentNeededObj::getTypeInfo() const
+{
+  return inherited::getTypeInfo()|oneshot;
+}
+
+EventSource *ContentNeededObj::eventSource() const
+{
+  return static_cast<EventSource*>(mScroller.get());
+}
+
+double ContentNeededObj::doubleValue() const
+{
+  return mScroller->needsContent() ? 1 : 0;
+}
+
+
+
+// empty()
+static void empty_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  f->finish(new ContentNeededObj(v->scroller()));
+}
+
+
+// remainingpixels()
+static void remainingpixels_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  PixelPoint rem = v->scroller()->remainingPixelsToScroll();
+  JsonObjectPtr r = JsonObject::newObj();
+  r->add("x", rem.x==INT_MAX ? JsonObject::newNull() : JsonObject::newInt32(rem.x));
+  r->add("y", rem.y==INT_MAX ? JsonObject::newNull() : JsonObject::newInt32(rem.y));
+  f->finish(new JsonValue(r));
+}
+
+
+// remainingtime()
+static void remainingtime_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  f->finish(new NumericValue((double)v->scroller()->remainingScrollTime()/Second));
+}
+
+
+// purge()
+static void purge_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  v->scroller()->purgeScrolledOut();
+  f->finish(v);
+}
+
+
+// alertempty(enable)
+static const BuiltInArgDesc alertempty_args[] = { { numeric } };
+static const size_t alertempty_numargs = sizeof(alertempty_args)/sizeof(BuiltInArgDesc);
+static void alertempty_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  v->scroller()->setAlertEmpty(f->arg(0)->boolValue());
+  f->finish(v);
+}
+
+static const BuiltinMemberDescriptor scrollerFunctions[] = {
+  { "empty", executable|object, 0, NULL, &empty_func },
+  { "remainingpixels", executable|json|object, 0, NULL, &remainingpixels_func },
+  { "remainingtime", executable|numeric, 0, NULL, &remainingtime_func },
+  { "alertempty", executable|object, alertempty_numargs, alertempty_args, &alertempty_func },
+  { "purge", executable|object, 0, NULL, &purge_func },
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedScrollerFunctionLookupP = NULL;
+
+ScrollerViewObj::ScrollerViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedScrollerFunctionLookupP==NULL) {
+    sharedScrollerFunctionLookupP = new BuiltInMemberLookup(scrollerFunctions);
+    sharedScrollerFunctionLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedScrollerFunctionLookupP);
+}
+
+#endif // P44SCRIPT_FULL_SUPPORT
