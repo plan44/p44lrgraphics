@@ -40,19 +40,6 @@
 
 namespace p44 {
 
-  typedef uint8_t PixelColorComponent;
-
-  typedef struct {
-    PixelColorComponent r;
-    PixelColorComponent g;
-    PixelColorComponent b;
-    PixelColorComponent a; // alpha
-  } PixelColor;
-
-  const PixelColor transparent = { .r=0, .g=0, .b=0, .a=0 };
-  const PixelColor black = { .r=0, .g=0, .b=0, .a=255 };
-  const PixelColor white = { .r=255, .g=255, .b=255, .a=255 };
-
   typedef int PixelCoord;
 
   typedef struct {
@@ -77,85 +64,6 @@ namespace p44 {
 
   /// @return true if rectangles intersect
   bool rectIntersectsRect(const PixelRect &aRect1, const PixelRect &aRect2);
-
-  /// dim down (or light up) value
-  /// @param aVal 0..255 value to dim up or down
-  /// @param aDim 0..255: dim, >255: light up (255=100%)
-  /// @return dimmed value, limited to max==255
-  PixelColorComponent dimVal(PixelColorComponent aVal, uint16_t aDim);
-
-  /// dim  r,g,b values of a pixel (alpha unaffected)
-  /// @param aPix the pixel
-  /// @param aDim 0..255: dim, >255: light up (255=100%)
-  void dimPixel(PixelColor &aPix, uint16_t aDim);
-
-  /// return dimmed pixel (alpha same as input)
-  /// @param aPix the pixel
-  /// @param aDim 0..255: dim, >255: light up (255=100%)
-  /// @return dimmed pixel
-  PixelColor dimmedPixel(const PixelColor aPix, uint16_t aDim);
-
-  /// dim pixel r,g,b down by its alpha value, but alpha itself is not changed!
-  /// @param aPix the pixel
-  void alpahDimPixel(PixelColor &aPix);
-
-  /// reduce a value by given amount, but not below minimum
-  /// @param aByte value to be reduced
-  /// @param aAmount amount to reduce
-  /// @param aMin minimum value (default=0)
-  void reduce(uint8_t &aByte, uint8_t aAmount, uint8_t aMin = 0);
-
-  /// increase a value by given amount, but not above maximum
-  /// @param aByte value to be increased
-  /// @param aAmount amount to increase
-  /// @param aMax maximum value (default=255)
-  void increase(uint8_t &aByte, uint8_t aAmount, uint8_t aMax = 255);
-
-  /// add color of one pixel to another
-  /// @note does not check for color component overflow/wraparound!
-  /// @param aPixel the pixel to add to
-  /// @param aPixelToAdd the pixel to add
-  void addToPixel(PixelColor &aPixel, PixelColor aPixelToAdd);
-
-  /// overlay a pixel on top of a pixel (based on alpha values)
-  /// @param aPixel the original pixel to add an ovelay to
-  /// @param aOverlay the pixel to be laid on top
-  void overlayPixel(PixelColor &aPixel, PixelColor aOverlay);
-
-  /// mix two pixels
-  /// @param aMainPixel the original pixel which will be modified to contain the mix
-  /// @param aOutsidePixel the pixel to mix in
-  /// @param aAmountOutside 0..255 (= 0..100%) value to determine how much weight the outside pixel should get in the result
-  void mixinPixel(PixelColor &aMainPixel, PixelColor aOutsidePixel, PixelColorComponent aAmountOutside);
-
-  /// get RGB pixel from HSB
-  /// @param aHue hue, 0..360 degrees
-  /// @param aSaturation saturation, 0..1
-  /// @param aBrightness brightness, 0..1
-  /// @param aBrightnessAsAlpha if set, brightness is returned in alpha, while RGB will be set for full brightness
-  PixelColor hsbToPixel(double aHue, double aSaturation = 1.0, double aBrightness = 1.0, bool aBrightnessAsAlpha = false);
-
-  /// get HSB from pixel
-  /// @param aPixelColor the pixel color
-  /// @param aHue receives hue, 0..360 degrees
-  /// @param aSaturation receives saturation, 0..1
-  /// @param aBrightness receives brightness, 0..1
-  /// @param aIncludeAlphaIntoBrightness if set, alpha is included in aBrightness returned
-  void pixelToHsb(PixelColor aPixelColor, double &aHue, double &aSaturation, double &aBrightness, bool aIncludeAlphaIntoBrightness = false);
-
-  #if ENABLE_VIEWCONFIG
-
-  /// convert Web color to pixel color
-  /// @param aWebColor web style #ARGB or #AARRGGBB color, alpha (A, AA) is optional, "#" is also optional
-  /// @return pixel color. If Alpha is not specified, it is set to fully opaque = 255.
-  PixelColor webColorToPixel(const string aWebColor);
-
-  /// convert pixel color to web color
-  /// @param aPixelColor pixel color
-  /// @return web color in RRGGBB style or AARRGGBB when alpha is not fully opaque (==255)
-  string pixelToWebColor(const PixelColor aPixelColor);
-
-  #endif // ENABLE_VIEWCONFIG
 
   /// @}
 
