@@ -859,7 +859,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
             if (o->get("delay", p)) animator->startDelay(p->doubleValue()*Second);
             if (o->get("afteranchor", p) && p->boolValue()) animator->runAfter(referenceAnimation);
             if (o->get("makeanchor", p) && p->boolValue()) referenceAnimation = animator;
-            animator->repeat(autoreverse, cycles)->animate(to, duration, NULL, minsteptime, stepsize);
+            animator->repeat(autoreverse, cycles)->stepParams(minsteptime, stepsize)->animate(to, duration, NULL);
           }
         }
       }
