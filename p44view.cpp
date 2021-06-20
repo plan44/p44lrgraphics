@@ -1177,32 +1177,36 @@ static void addview_func(BuiltinFunctionContextPtr f)
 }
 
 
+static JsonObjectPtr viewConfigFromArg(ScriptObjPtr aArg, ErrorPtr &aErr)
+{
+  #if SCRIPTING_JSON_SUPPORT
+  if (aArg->hasType(json)) {
+    // is already a JSON value, use it as-is
+    return aArg->jsonValue();
+  }
+  else
+  #endif
+  {
+    // JSON from string (or file if we have a JSON app)
+    string viewConfig = aArg->stringValue();
+    #if ENABLE_JSON_APPLICATION
+    return Application::jsonObjOrResource(viewConfig, &aErr);
+    #else
+    return JsonObject::objFromText(viewConfig.c_str(), -1, &aErr);
+    #endif
+  }
+}
 
-// configure(jsonconfig/filename)
+
+// configure(jsonconfig|filename)
 static const BuiltInArgDesc configure_args[] = { { text|json|object } };
 static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
 static void configure_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  JsonObjectPtr viewCfgJSON;
   ErrorPtr err;
-  #if SCRIPTING_JSON_SUPPORT
-  if (f->arg(0)->hasType(json)) {
-    // is already a JSON value, use it as-is
-    viewCfgJSON = f->arg(0)->jsonValue();
-  }
-  else
-  #endif
-  {
-    // JSON from string (or file if we have a JSON app)
-    string viewConfig = f->arg(0)->stringValue();
-    #if ENABLE_JSON_APPLICATION
-    viewCfgJSON = Application::jsonObjOrResource(viewConfig, &err);
-    #else
-    viewCfgJSON = JsonObject::objFromText(viewConfig.c_str(), -1, &err);
-    #endif
-  }
+  JsonObjectPtr viewCfgJSON = viewConfigFromArg(f->arg(0), err);
   if (Error::isOK(err)) {
     err = v->view()->configureView(viewCfgJSON);
     if (Error::isOK(err)) {
@@ -1368,13 +1372,21 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 }
 
 
-// makeview(viewconfig)
-static const BuiltInArgDesc makeview_args[] = { { json|object } };
+// makeview(jsonconfig|filename)
+static const BuiltInArgDesc makeview_args[] = { { text|json|object } };
 static const size_t makeview_numargs = sizeof(makeview_args)/sizeof(BuiltInArgDesc);
 static void makeview_func(BuiltinFunctionContextPtr f)
 {
   P44ViewPtr newView;
-  ErrorPtr err = createViewFromConfig(f->arg(0)->jsonValue(), newView, P44ViewPtr());
+  ErrorPtr err;
+  JsonObjectPtr viewCfgJSON = viewConfigFromArg(f->arg(0), err);
+  if (Error::isOK(err)) {
+    err = createViewFromConfig(viewCfgJSON, newView, P44ViewPtr());
+  }
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
+    return;
+  }
   f->finish(newView->newViewObj());
 }
 
