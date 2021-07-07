@@ -46,7 +46,7 @@ namespace p44 {
     virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
 
     /// set new text
-    /// @note: sets the content size of the view according to the text
+    /// @note sets the content size of the view according to the text
     void setText(const string aText);
 
     /// set visibility

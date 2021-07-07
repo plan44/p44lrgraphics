@@ -76,7 +76,7 @@ namespace p44 {
     void startAnimation(bool aRepeat, SimpleCB aCompletedCB = NULL);
 
     /// stop animation
-    /// @note: completed callback will not be called
+    /// @note completed callback will not be called
     virtual void stopAnimations() P44_OVERRIDE;
 
     /// clear all steps

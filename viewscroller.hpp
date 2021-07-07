@@ -122,7 +122,7 @@ namespace p44 {
     void startScroll(double aStepX, double aStepY, MLMicroSeconds aInterval, bool aRoundOffsets = true, long aNumSteps = -1, MLMicroSeconds aStartTime = Never, SimpleCB aCompletedCB = NULL);
 
     /// stop scrolling
-    /// @note: completed callback will not be called
+    /// @note completed callback will not be called
     void stopScroll();
 
     /// @return the current X scroll step
