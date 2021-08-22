@@ -457,6 +457,7 @@ ContentNeededObj::ContentNeededObj(ViewScrollerPtr aScroller) :
 void ContentNeededObj::deactivate()
 {
   mScroller.reset();
+  inherited::deactivate();
 }
 
 
