@@ -207,20 +207,22 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
 
 PixelPoint ViewScroller::remainingPixelsToScroll()
 {
-  WrapMode w = scrolledView->getWrapMode();
-  PixelRect sf = scrolledView->getFrame();
   PixelPoint rem = { INT_MAX, INT_MAX }; // assume forever
-  if ((w&wrapXmax)==0 && scrollStepX_milli>0) {
-    rem.x = (sf.x+sf.dx) - (int)(scrollOffsetX_milli/1000+frame.dx);
-  }
-  if ((w&wrapXmin)==0 && scrollStepX_milli<0) {
-    rem.x = (int)(scrollOffsetX_milli/1000) - sf.x;
-  }
-  if ((w&wrapYmax)==0 && scrollStepY_milli>0) {
-    rem.y = (sf.y+sf.dy) - (int)(scrollOffsetY_milli/1000+frame.dy);
-  }
-  if ((w&wrapYmin)==0 && scrollStepY_milli<0) {
-    rem.y = (int)(scrollOffsetY_milli/1000) - sf.y;
+  if (scrolledView) {
+    WrapMode w = scrolledView->getWrapMode();
+    PixelRect sf = scrolledView->getFrame();
+    if ((w&wrapXmax)==0 && scrollStepX_milli>0) {
+      rem.x = (sf.x+sf.dx) - (int)(scrollOffsetX_milli/1000+frame.dx);
+    }
+    if ((w&wrapXmin)==0 && scrollStepX_milli<0) {
+      rem.x = (int)(scrollOffsetX_milli/1000) - sf.x;
+    }
+    if ((w&wrapYmax)==0 && scrollStepY_milli>0) {
+      rem.y = (sf.y+sf.dy) - (int)(scrollOffsetY_milli/1000+frame.dy);
+    }
+    if ((w&wrapYmin)==0 && scrollStepY_milli<0) {
+      rem.y = (int)(scrollOffsetY_milli/1000) - sf.y;
+    }
   }
   return rem;
 }
