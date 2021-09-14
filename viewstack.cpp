@@ -271,8 +271,14 @@ bool ViewStack::removeView(P44ViewPtr aView)
 void ViewStack::clear()
 {
   geometryChange(true);
-  viewStack.clear();
-  changedGeometry = true;
+  while (true) {
+    ViewsList::iterator pos = viewStack.begin();
+    if (pos==viewStack.end()) break;
+    (*pos)->setParent(NULL);
+    viewStack.erase(pos);
+    changedGeometry = true;
+  }
+  geometryChange(false);
   inherited::clear();
 }
 
