@@ -280,7 +280,6 @@ void P44View::setContentRotation(double aRotation)
 void P44View::setFullFrameContent()
 {
   PixelPoint sz = getFrameSize();
-  setOrientation(P44View::right);
   orientateCoord(sz);
   setContent({ 0, 0, sz.x, sz.y });
 }
@@ -769,6 +768,14 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     makeDirty();
   }
   // frame rect should be defined here (unless we'll use sizetocontent below), so we can check the content related props now
+  if (aViewConfig->get("orientation", o)) {
+    if (o->isType(json_type_string)) {
+      setOrientation(textToOrientation(o->c_strValue()));
+    }
+    else {
+      setOrientation(o->int32Value());
+    }
+  }
   if (aViewConfig->get("fullframe", o)) {
     if(o->boolValue()) setFullFrameContent();
   }
@@ -803,15 +810,6 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   if (aViewConfig->get("rotation", o)) {
     setContentRotation(o->doubleValue());
-  }
-  if (aViewConfig->get("orientation", o)) {
-    // check this after fullframe, because fullframe resets orientation
-    if (o->isType(json_type_string)) {
-      setOrientation(textToOrientation(o->c_strValue()));
-    }
-    else {
-      setOrientation(o->int32Value());
-    }
   }
   if (aViewConfig->get("timingpriority", o)) {
     localTimingPriority = o->boolValue();

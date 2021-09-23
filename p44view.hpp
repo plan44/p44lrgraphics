@@ -369,7 +369,8 @@ namespace p44 {
     /// @return frame size
     PixelPoint getFrameSize() const { return { frame.dx, frame.dy }; }
 
-    /// set content size to full frame content with same origin and orientation
+    /// set content size to match full frame size, set content position to 0,0
+    /// @note if orientation has x/y swapped, content size will also be set swapped
     void setFullFrameContent();
 
     /// size frame to content (but no move)
