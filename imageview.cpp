@@ -116,6 +116,9 @@ PixelColor ImageView::contentColorAt(PixelPoint aPt)
     return backgroundColor;
   }
   else {
+    // if content is set bigger than image, just duplicate border pixels
+    if (aPt.x>=pngImage.width) aPt.x = pngImage.width-1;
+    if (aPt.y>=pngImage.height) aPt.y = pngImage.height-1;
     PixelColor pc;
     // get pixel infomration from image buffer
     uint8_t *pix = pngBuffer+((pngImage.height-1-aPt.y)*pngImage.width+aPt.x)*4;
