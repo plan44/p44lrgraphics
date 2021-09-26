@@ -786,6 +786,7 @@ TextView::TextView()
 
 void TextView::clear()
 {
+  stopAnimations();
   setText("");
   visible = true;
 }

@@ -50,6 +50,7 @@ LifeView::~LifeView()
 
 void LifeView::clear()
 {
+  stopAnimations();
   cells.clear();
   prepareCells();
 }

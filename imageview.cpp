@@ -54,7 +54,7 @@ ImageView::~ImageView()
 
 void ImageView::clear()
 {
-  inherited::clear();
+  inherited::clear(); // zero content size
   // init libpng image structure
   memset(&pngImage, 0, (sizeof pngImage));
   pngImage.version = PNG_IMAGE_VERSION;

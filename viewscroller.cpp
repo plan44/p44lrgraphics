@@ -72,6 +72,7 @@ ViewScroller::~ViewScroller()
 
 void ViewScroller::clear()
 {
+  stopAnimations();
   // just delegate
   if (scrolledView) scrolledView->clear();
 }

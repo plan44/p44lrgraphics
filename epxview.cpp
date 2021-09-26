@@ -51,14 +51,14 @@ EpxView::EpxView() :
 
 EpxView::~EpxView()
 {
-  clear();
+  clearData();
 }
 
 
 void EpxView::clear()
 {
-  inherited::clear();
-  clearData();
+  inherited::clear(); // reset canvas to all transparent pixels
+  clearData(); // remove EXP animation
 }
 
 

@@ -341,9 +341,10 @@ void P44View::sizeFrameToContent()
 
 void P44View::clear()
 {
-  #if ENABLE_ANIMATION
   stopAnimations();
-  #endif
+  // as the only thing a P44View can display is the content rect in foreground color, reset it here
+  // Note: subclasses will not always call inherited::clear() as they might want to retain the content rectangle,
+  //       and just remove the actual content data
   setContentSize({0, 0});
 }
 

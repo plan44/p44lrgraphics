@@ -57,6 +57,7 @@ TorchView::~TorchView()
 
 void TorchView::clear()
 {
+  stopAnimations();
   // clear and resize to current size
   torchDots.clear();
   torchDots.resize(content.dy*content.dx, { torch_passive, 0, 0 });
