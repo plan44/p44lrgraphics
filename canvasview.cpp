@@ -42,14 +42,18 @@ CanvasView::CanvasView() :
 
 CanvasView::~CanvasView()
 {
-  clear();
+  clearData();
 }
 
 
 void CanvasView::clear()
 {
-  inherited::clear();
-  clearData();
+  stopAnimations();
+  // no inherited::clear(), we want to retain the canvas itself...
+  if (canvasBuffer) {
+    // ...but make all pixels transparent
+    for (PixelCoord i=0; i<numPixels; ++i) canvasBuffer[i] = transparent;
+  }
 }
 
 
@@ -70,7 +74,7 @@ void CanvasView::resize()
   if (content.dx>0 && content.dy>0) {
     numPixels = content.dx*content.dy;
     canvasBuffer = new PixelColor[numPixels];
-    for (PixelCoord i=0; i<numPixels; ++i) canvasBuffer[i] = transparent;
+    clear();
   }
 }
 
