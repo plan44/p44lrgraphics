@@ -419,7 +419,7 @@ P44ViewPtr ViewScroller::getView(const string aLabel)
 JsonObjectPtr ViewScroller::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  if (scrolledView) status->add("view", scrolledView->viewStatus());
+  if (scrolledView) status->add("scrolledview", scrolledView->viewStatus());
   status->add("offsetx", JsonObject::newDouble(getOffsetX()));
   status->add("offsety", JsonObject::newDouble(getOffsetY()));
   status->add("syncscroll", JsonObject::newBool(syncScroll));
