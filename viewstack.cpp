@@ -455,7 +455,7 @@ JsonObjectPtr ViewStack::viewStatus()
     layers->arrayAppend(layer);
   }
   status->add("layers", layers);
-  status->add("positioningmode", JsonObject::newInt32(getPositioningMode()));
+  status->add("positioningmode", JsonObject::newString(wrapModeToText(getPositioningMode(), true)));
   return status;
 }
 

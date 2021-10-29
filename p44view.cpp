@@ -624,13 +624,14 @@ typedef struct {
   const char *name;
 } OrientationDesc;
 static const OrientationDesc orientationDescs[] = {
-  { P44View::xy_swap, "xy_swap" }, //  swap x and y
-  { P44View::x_flip, "x_flip" }, //  flip x
-  { P44View::y_flip, "y_flip" }, //  flip y
   { P44View::right, "right" }, //  untransformed X goes left to right, Y goes up
+  // Note: rest of table should be ordered such that multi-bit combinations come first (for wrapModeToText)
   { P44View::down, "down" }, //  X goes down, Y goes right
   { P44View::left, "left" }, //  X goes left, Y goes down
   { P44View::up, "up" }, //  X goes down, Y goes right
+  { P44View::xy_swap, "xy_swap" }, //  swap x and y
+  { P44View::x_flip, "x_flip" }, //  flip x
+  { P44View::y_flip, "y_flip" }, //  flip y
   { 0, NULL }
 };
 
@@ -659,33 +660,33 @@ P44View::WrapMode P44View::textToOrientation(const char *aOrientationText)
 typedef struct {
   P44View::WrapMode mode;
   const char *name;
+  bool forPos;
 } WrapModeDesc;
 static const WrapModeDesc wrapModeDescs[] = {
-  { P44View::noWrap, "noWrap" }, // do not wrap
-  { P44View::wrapXmin, "wrapXmin" }, //  wrap in X direction for X<frame area
-  { P44View::wrapXmax, "wrapXmax" }, //  wrap in X direction for X>=frame area
-  { P44View::wrapX, "wrapX" }, //  wrap in both X directions
-  { P44View::wrapYmin, "wrapYmin" }, //  wrap in Y direction for Y<frame area
-  { P44View::wrapYmax, "wrapYmax" }, //  wrap in Y direction for Y>=frame area
-  { P44View::wrapY, "wrapY" }, //  wrap in both Y directions
-  { P44View::wrapXY, "wrapXY" }, //  wrap in all directions
-  { P44View::wrapMask, "wrapMask" }, //  mask for wrap bits
-  { P44View::clipXmin, "clipXmin" }, //  clip content left of frame area
-  { P44View::clipXmax, "clipXmax" }, //  clip content right of frame area
-  { P44View::clipX, "clipX" }, //  clip content horizontally
-  { P44View::clipYmin, "clipYmin" }, //  clip content below frame area
-  { P44View::clipYmax, "clipYmax" }, //  clip content above frame area
-  { P44View::clipY, "clipY" }, //  clip content vertically
-  { P44View::clipXY, "clipXY" }, //  clip content
-  { P44View::clipMask, "clipMask" }, //  mask for clip bits
-  { P44View::noAdjust, "noAdjust" }, //  for positioning: do not adjust content rectangle
-  { P44View::appendLeft, "appendLeft" }, //  for positioning: extend to the left
-  { P44View::appendRight, "appendRight" }, //  for positioning: extend to the right
-  { P44View::fillX, "fillX" }, //  for positioning: set frame size fill parent in X direction
-  { P44View::appendBottom, "appendBottom" }, //  for positioning: extend towards bottom
-  { P44View::appendTop, "appendTop" }, //  for positioning: extend towards top
-  { P44View::fillY, "fillY" }, //  for positioning: set frame size fill parent in Y direction
-  { P44View::fillXY, "fillXY" }, //  for positioning: set frame size fill parent frame
+  { P44View::noWrap, "none", false }, // do not wrap or clip
+  // Note: rest of table should be ordered such that multi-bit combinations come first (for wrapModeToText)
+  { P44View::wrapXY, "wrapXY", false }, //  wrap in all directions
+  { P44View::wrapX, "wrapX", false }, //  wrap in both X directions
+  { P44View::wrapY, "wrapY", false }, //  wrap in both Y directions
+  { P44View::wrapXmin, "wrapXmin", false }, //  wrap in X direction for X<frame area
+  { P44View::wrapXmax, "wrapXmax", false }, //  wrap in X direction for X>=frame area
+  { P44View::wrapYmin, "wrapYmin", false }, //  wrap in Y direction for Y<frame area
+  { P44View::wrapYmax, "wrapYmax", false }, //  wrap in Y direction for Y>=frame area
+  { P44View::clipXY, "clipXY", false }, //  clip content
+  { P44View::clipY, "clipY", false }, //  clip content vertically
+  { P44View::clipX, "clipX", false }, //  clip content horizontally
+  { P44View::clipXmin, "clipXmin", false }, //  clip content left of frame area
+  { P44View::clipXmax, "clipXmax", false }, //  clip content right of frame area
+  { P44View::clipYmin, "clipYmin", false }, //  clip content below frame area
+  { P44View::clipYmax, "clipYmax", false }, //  clip content above frame area
+  { P44View::noAdjust, "noAdjust", true }, //  for positioning: do not adjust content rectangle
+  { P44View::fillXY, "fillXY", true }, //  for positioning: set frame size fill parent frame
+  { P44View::fillX, "fillX", true }, //  for positioning: set frame size fill parent in X direction
+  { P44View::fillY, "fillY", true }, //  for positioning: set frame size fill parent in Y direction
+  { P44View::appendLeft, "appendLeft", true }, //  for positioning: extend to the left
+  { P44View::appendRight, "appendRight", true }, //  for positioning: extend to the right
+  { P44View::appendBottom, "appendBottom", true }, //  for positioning: extend towards bottom
+  { P44View::appendTop, "appendTop", true }, //  for positioning: extend towards top
   { 0, NULL }
 };
 
@@ -696,7 +697,7 @@ P44View::WrapMode P44View::textToWrapMode(const char *aWrapModeText)
   while (aWrapModeText) {
     size_t n = 0;
     while (aWrapModeText[n] && aWrapModeText[n]!='|') n++;
-    for (const WrapModeDesc *wd = wrapModeDescs; wd->name; wd++) {
+    for (const WrapModeDesc *wd = wrapModeDescs; wd->name && n>0; wd++) {
       if (strucmp(aWrapModeText, wd->name, n)==0) {
         m |= wd->mode;
       }
@@ -898,6 +899,41 @@ ErrorPtr P44View::configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const
 
 #if ENABLE_VIEWSTATUS
 
+
+string P44View::wrapModeToText(P44View::WrapMode aWrapMode, bool aForPositioning)
+{
+  const WrapModeDesc *wd = wrapModeDescs;
+  string modes;
+  if (aWrapMode==P44View::noWrap) modes = wd->name;
+  else while ((++wd)->name && aWrapMode) {
+    if (aForPositioning!=wd->forPos) continue;
+    if ((aWrapMode & wd->mode) == wd->mode) {
+      if (!modes.empty()) modes += "|";
+      modes += wd->name;
+      aWrapMode &= ~wd->mode;
+    }
+  }
+  return modes;
+}
+
+
+string P44View::orientationToText(P44View::Orientation aOrientation)
+{
+  const OrientationDesc *od = orientationDescs;
+  string ori;
+  if (aOrientation==P44View::right) ori = od->name;
+  else while ((++od)->name && aOrientation) {
+    if ((aOrientation & od->orientation) == od->orientation) {
+      if (!ori.empty()) ori += "|";
+      ori += od->name;
+      aOrientation &= ~od->orientation;
+    }
+  }
+  return ori;
+}
+
+
+
 JsonObjectPtr P44View::viewStatus()
 {
   JsonObjectPtr status = JsonObject::newObj();
@@ -916,8 +952,8 @@ JsonObjectPtr P44View::viewStatus()
   status->add("bgcolor", JsonObject::newString(pixelToWebColor(backgroundColor)));
   status->add("alpha", JsonObject::newInt32(getAlpha()));
   status->add("z_order", JsonObject::newInt32(getZOrder()));
-  status->add("orientation", JsonObject::newInt32(contentOrientation));
-  status->add("wrapmode", JsonObject::newInt32(getWrapMode()));
+  status->add("orientation", JsonObject::newString(orientationToText(contentOrientation)));
+  status->add("wrapmode", JsonObject::newString(wrapModeToText(getWrapMode(), false)));
   status->add("mask", JsonObject::newBool(contentIsMask));
   status->add("invertalpha", JsonObject::newBool(invertAlpha));
   status->add("timingpriority", JsonObject::newBool(localTimingPriority));

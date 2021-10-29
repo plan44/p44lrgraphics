@@ -426,8 +426,14 @@ namespace p44 {
     /// get orientation from text
     static Orientation textToOrientation(const char *aOrientationText);
 
+    /// get text from orientation
+    static string orientationToText(Orientation aOrientation);
+
     /// get wrap mode from text
     static WrapMode textToWrapMode(const char *aWrapModeText);
+
+    /// get text from wrap mode
+    static string wrapModeToText(WrapMode aWrapMode, bool aForPositioning);
 
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
