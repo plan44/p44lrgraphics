@@ -188,7 +188,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
           #if P44SCRIPT_FULL_SUPPORT
           if (mAlertEmpty) {
             mAlertEmpty = false; // must re-arm before alerting again
-            sendEvent(new P44Script::NumericValue(true));
+            sendEvent(new P44Script::ContentNeededObj(this)); // one-shot
           }
           #endif
           if (autopurge) {
