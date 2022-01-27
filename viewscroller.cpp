@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2018-2019 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2018-2022 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -471,7 +471,7 @@ string ContentNeededObj::getAnnotation() const
 
 TypeInfo ContentNeededObj::getTypeInfo() const
 {
-  return inherited::getTypeInfo()|oneshot;
+  return inherited::getTypeInfo()|oneshot|freezable;
 }
 
 EventSource *ContentNeededObj::eventSource() const
