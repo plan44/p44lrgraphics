@@ -49,5 +49,16 @@ Details tbd. but quick list for now:
 - view animations
 - Support for [Microsofts *expressive pixels* IoT animation format](https://github.com/microsoft/ExpressivePixels/wiki/Animation-Format) with the "epx" view
 - on the fly reconfiguration via JSON API/config files
+- extensive [p44script](https://plan44.ch/p44-techdocs/en/script_ref/) support.
 
-(c) 2013-2020 by Lukas Zeller / [plan44.ch](https://www.plan44.ch/opensource.php)
+
+Supporting p44lrgraphics
+------------------------
+
+1. use it!
+2. support development via [github sponsors](https://github.com/sponsors/plan44) or [flattr](https://flattr.com/@luz)
+3. Discuss it in the [plan44 community forum](https://forum.plan44.ch/t/opensource-c-vdcd).
+3. contribute patches, report issues and suggest new functionality [on github](https://github.com/plan44/p44lrgraphics) or in the [forum](https://forum.plan44.ch/t/opensource-c-vdcd).
+5. Buy plan44.ch [products](https://plan44.ch/automation/products.php) - sales revenue is paying the time for contributing to opensource projects :-)
+
+(c) 2013-2022 by Lukas Zeller / [plan44.ch](https://www.plan44.ch/opensource.php)
