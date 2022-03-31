@@ -112,7 +112,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
       // Note: will catch up in case step() was not called often enough
       while (next<=0) {
         if (next<-10*MilliSecond) {
-          LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld uS after precise time", next);
+          LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld uS after precise time", -next);
         }
         // perform step
         scrollOffsetX_milli += scrollStepX_milli;
