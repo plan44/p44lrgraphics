@@ -145,7 +145,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
             // scroll ends here
             if (scrollCompletedCB) {
               SimpleCB cb = scrollCompletedCB;
-              scrollCompletedCB = NULL;
+              scrollCompletedCB = NoOP;
               cb(); // may set up another callback already
             }
             break;

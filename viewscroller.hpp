@@ -119,7 +119,7 @@ namespace p44 {
     ///   so it should remain in sync over multiple devices as long as these have NTP synced time.
     /// @note MainLoop::now() time is not absolute, but has a unspecified starting point.
     ///   and MainLoop::unixTimeToMainLoopTime() to convert a absolute starting point into now() time.
-    void startScroll(double aStepX, double aStepY, MLMicroSeconds aInterval, bool aRoundOffsets = true, long aNumSteps = -1, MLMicroSeconds aStartTime = Never, SimpleCB aCompletedCB = NULL);
+    void startScroll(double aStepX, double aStepY, MLMicroSeconds aInterval, bool aRoundOffsets = true, long aNumSteps = -1, MLMicroSeconds aStartTime = Never, SimpleCB aCompletedCB = NoOP);
 
     /// stop scrolling
     /// @note completed callback will not be called

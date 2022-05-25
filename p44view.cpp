@@ -859,7 +859,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
             if (o->get("delay", p)) animator->startDelay(p->doubleValue()*Second);
             if (o->get("afteranchor", p) && p->boolValue()) animator->runAfter(referenceAnimation);
             if (o->get("makeanchor", p) && p->boolValue()) referenceAnimation = animator;
-            animator->repeat(autoreverse, cycles)->stepParams(minsteptime, stepsize)->animate(to, duration, NULL);
+            animator->repeat(autoreverse, cycles)->stepParams(minsteptime, stepsize)->animate(to, duration, NoOP);
           }
         }
       }
@@ -1027,7 +1027,7 @@ ValueSetterCB P44View::getColorComponentSetter(const string aComponent, PixelCol
   else if (aComponent=="brightness") {
     return getDerivedColorComponentSetter(2, aPixelColor, aCurrentValue);
   }
-  return NULL;
+  return NoOP;
 }
 
 
@@ -1130,7 +1130,7 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     return getColorComponentSetter(aProperty.substr(8), backgroundColor, aCurrentValue);
   }
   // unknown
-  return NULL;
+  return NoOP;
 }
 
 

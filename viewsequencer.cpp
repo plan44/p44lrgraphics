@@ -148,7 +148,7 @@ MLMicroSeconds ViewSequencer::stepAnimation()
           // - call back
           if (completedCB) {
             SimpleCB cb=completedCB;
-            if (!repeating) completedCB = NULL;
+            if (!repeating) completedCB = NoOP;
             cb();
           }
           // - possibly restart

@@ -73,7 +73,7 @@ namespace p44 {
     /// start animating
     /// @param aRepeat if set, animation will repeat
     /// @param aCompletedCB called when animation sequence ends (if repeating, it is called multiple times)
-    void startAnimation(bool aRepeat, SimpleCB aCompletedCB = NULL);
+    void startAnimation(bool aRepeat, SimpleCB aCompletedCB = NoOP);
 
     /// stop animation
     /// @note completed callback will not be called
