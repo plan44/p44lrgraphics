@@ -1300,7 +1300,7 @@ static void remove_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   bool removed = v->view()->removeFromParent();
-  f->finish(new NumericValue(removed)); // true if actually removed
+  f->finish(new BoolValue(removed)); // true if actually removed
 }
 
 
