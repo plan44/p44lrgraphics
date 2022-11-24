@@ -396,9 +396,14 @@ void P44View::updated()
 }
 
 
-void P44View::setNeedUpdateCB(TimerCB aNeedUpdateCB, MLMicroSeconds aMinUpdateInterval)
+void P44View::setNeedUpdateCB(TimerCB aNeedUpdateCB)
 {
   mNeedUpdateCB = aNeedUpdateCB;
+}
+
+
+void P44View::setMinUpdateInterval(MLMicroSeconds aMinUpdateInterval)
+{
   mMinUpdateInterval = aMinUpdateInterval;
 }
 

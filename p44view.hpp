@@ -317,6 +317,10 @@ namespace p44 {
     /// @param aVisible true to show, false to hide
     void setVisible(bool aVisible) { if (aVisible) show(); else hide(); };
 
+    /// Check if something of this view is potentially visible (can still consist of transparent pixels only)
+    /// @return true if visible
+    bool isVisible() { return getAlpha()!=0; }
+
     /// @return Z-Order (e.g. in a viewstack, highest is frontmost)
     int getZOrder() { return mZOrder; };
 
@@ -412,7 +416,13 @@ namespace p44 {
 
     /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needs a step() ASAP
     /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
-    void setNeedUpdateCB(TimerCB aNeedUpdateCB, MLMicroSeconds aMinUpdateInterval);
+    void setNeedUpdateCB(TimerCB aNeedUpdateCB);
+
+    /// set the minimum update interval (aka max framerate)
+    /// @note this is a hint for animations to calculate a sensible step size, and for
+    ///   other mechanisms that want to call requestUpdate(), to avoid calling it too often and wasting cpu cycles.
+    /// @param aMinUpdateInterval minimum interval between updates
+    void setMinUpdateInterval(MLMicroSeconds aMinUpdateInterval);
 
     /// get minimal update interval
     /// @return update interval set in first view towards root, if none set, DEFAULT_MIN_UPDATE_INTERVAL
