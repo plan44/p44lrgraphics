@@ -28,24 +28,24 @@ using namespace p44;
 
 
 TorchView::TorchView() :
-  nextCalculation(Never)
+  mNextCalculation(Never)
 {
-  flame_min = 100;
-  flame_max = 220;
-  flame_height = 1;
-  spark_probability = 2;
-  spark_min = 200;
-  spark_max = 255;
-  spark_tfr = 40;
-  spark_cap = 200;
-  up_rad = 40;
-  side_rad = 35;
-  heat_cap = 0;
-  hotspark_min = 250;
-  hotsparkColor = { 170, 170, 250, 255 };
-  hotsparkColorInc = { 0, 0, 5, 255 };
-  foregroundColor = { 180, 145, 0, 255 }; // foreground is "energy" color, which scales up with energy of the spark
-  cycleTime = 25*MilliSecond;
+  mFlameMin = 100;
+  mFlameMax = 220;
+  mFlameHeight = 1;
+  mSparkProbability = 2;
+  mSparkMin = 200;
+  mSparkMax = 255;
+  mSparkTfr = 40;
+  mSparkCap = 200;
+  mUpRad = 40;
+  mSideRad = 35;
+  mHeatCap = 0;
+  mHotsparkMin = 250;
+  mHotsparkColor = { 170, 170, 250, 255 };
+  mHotsparkColorInc = { 0, 0, 5, 255 };
+  mForegroundColor = { 180, 145, 0, 255 }; // foreground is "energy" color, which scales up with energy of the spark
+  mCycleTime = 25*MilliSecond;
   clear();
 }
 
@@ -59,23 +59,23 @@ void TorchView::clear()
 {
   stopAnimations();
   // clear and resize to current size
-  torchDots.clear();
-  torchDots.resize(content.dy*content.dx, { torch_passive, 0, 0 });
+  mTorchDots.clear();
+  mTorchDots.resize(mContent.dy*mContent.dx, { torch_passive, 0, 0 });
 }
 
 
 TorchView::TorchDot& TorchView::dot(PixelPoint aPt)
 {
-  int dotIdx = aPt.y*content.dx+aPt.x;
-  if (dotIdx>=torchDots.size()) clear(); // safety, resize on access outside range
-  return torchDots.at(dotIdx);
+  int dotIdx = aPt.y*mContent.dx+aPt.x;
+  if (dotIdx>=mTorchDots.size()) clear(); // safety, resize on access outside range
+  return mTorchDots.at(dotIdx);
 }
 
 
 
 void TorchView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 {
-  if (aOldContent.dx!=content.dx || aOldContent.dy!=content.dy) {
+  if (aOldContent.dx!=mContent.dx || aOldContent.dy!=mContent.dy) {
     clear(); // size changed: clear and resize dots vector
   }
   inherited::geometryChanged(aOldFrame, aOldContent);
@@ -84,7 +84,7 @@ void TorchView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 
 void TorchView::recalculateColoring()
 {
-  calculateGradient(256, extent.y*256*2/content.dy);
+  calculateGradient(256, mExtent.y*256*2/mContent.dy);
   inherited::recalculateColoring();
 }
 
@@ -94,11 +94,11 @@ MLMicroSeconds TorchView::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (cycleTime!=Never && now>=nextCalculation) {
-    nextCalculation = now+cycleTime;
+  if (mCycleTime!=Never && now>=mNextCalculation) {
+    mNextCalculation = now+mCycleTime;
     calculateCycle();
   }
-  updateNextCall(nextCall, now+cycleTime);
+  updateNextCall(nextCall, now+mCycleTime);
   return nextCall;
 }
 
@@ -118,37 +118,37 @@ static uint16_t random(uint16_t aMinOrMax, uint16_t aMax = 0)
 
 void TorchView::calculateCycle()
 {
-  if (alpha==0) return; // don't waste cycles
+  if (mAlpha==0) return; // don't waste cycles
   PixelPoint dotpos;
   // random flame
-  for (dotpos.y=0; dotpos.y<flame_height; dotpos.y++) {
-    for (dotpos.x=0; dotpos.x<content.dx; dotpos.x++) {
+  for (dotpos.y=0; dotpos.y<mFlameHeight; dotpos.y++) {
+    for (dotpos.x=0; dotpos.x<mContent.dx; dotpos.x++) {
       TorchDot& d = dot(dotpos);
-      d.previous = random(flame_min, flame_max);
+      d.previous = random(mFlameMin, mFlameMax);
       d.mode = torch_nop;
     }
   }
   // random sparks in next row
-  dotpos.y = flame_height;
-  for (dotpos.x=0; dotpos.x<content.dx; dotpos.x++) {
+  dotpos.y = mFlameHeight;
+  for (dotpos.x=0; dotpos.x<mContent.dx; dotpos.x++) {
     TorchDot& d = dot(dotpos);
-    if (d.mode!=torch_spark && random(100)<spark_probability) {
-      d.previous = random(spark_min, spark_max);
+    if (d.mode!=torch_spark && random(100)<mSparkProbability) {
+      d.previous = random(mSparkMin, mSparkMax);
       d.mode = torch_spark;
     }
   }
   // let sparks fly and fade
-  for (dotpos.y=0; dotpos.y<content.dy; dotpos.y++) {
-    for (dotpos.x=0; dotpos.x<content.dx; dotpos.x++) {
+  for (dotpos.y=0; dotpos.y<mContent.dy; dotpos.y++) {
+    for (dotpos.x=0; dotpos.x<mContent.dx; dotpos.x++) {
       TorchDot& d = dot(dotpos);
       uint8_t e = d.previous;
       EnergyMode m = d.mode;
       switch (m) {
         case torch_spark: {
           // loose transfer-up-energy as long as there is any
-          reduce(e, spark_tfr);
+          reduce(e, mSparkTfr);
           // cell above is temp spark, sucking up energy from this cell until empty
-          if (dotpos.y<content.dy-1) {
+          if (dotpos.y<mContent.dy-1) {
             TorchDot& above = dot({ dotpos.x, dotpos.y+1 });
             above.mode = torch_spark_temp;
           }
@@ -158,26 +158,26 @@ void TorchView::calculateCycle()
           // just getting some energy from below
           TorchDot& below = dot({ dotpos.x, dotpos.y-1 });
           uint8_t e2 = below.previous;
-          if (e2<spark_tfr) {
+          if (e2<mSparkTfr) {
             // cell below is exhausted, becomes passive
             below.mode = torch_passive;
             // gobble up rest of energy
             increase(e, e2);
             // loose some overall energy
-            e = ((int)e*spark_cap)>>8;
+            e = ((int)e*mSparkCap)>>8;
             // this cell becomes active spark
             d.mode = torch_spark;
           }
           else {
-            increase(e, spark_tfr);
+            increase(e, mSparkTfr);
           }
           break;
         }
         case torch_passive: {
-          e = ((int)e*heat_cap)>>8;
+          e = ((int)e*mHeatCap)>>8;
           increase(e, (
-            (((int)dot({dotpos.x>0 ? dotpos.x-1 : content.dx-1, dotpos.y}).previous+(int)dot({dotpos.x<content.dx-1 ? dotpos.x+1 : 0, dotpos.y}).previous)*side_rad)>>9) +
-            (((int)dot({dotpos.x, dotpos.y-1}).previous*up_rad)>>8)
+            (((int)dot({dotpos.x>0 ? dotpos.x-1 : mContent.dx-1, dotpos.y}).previous+(int)dot({dotpos.x<mContent.dx-1 ? dotpos.x+1 : 0, dotpos.y}).previous)*mSideRad)>>9) +
+            (((int)dot({dotpos.x, dotpos.y-1}).previous*mUpRad)>>8)
           );
         }
         default:
@@ -187,7 +187,7 @@ void TorchView::calculateCycle()
     }
   }
   // transfer new
-  for (TorchDotVector::iterator pos=torchDots.begin(); pos!=torchDots.end(); ++pos) {
+  for (TorchDotVector::iterator pos=mTorchDots.begin(); pos!=mTorchDots.end(); ++pos) {
     pos->previous = pos->current;
   }
   makeDirty();
@@ -202,12 +202,12 @@ static const uint8_t energymap[32] = {0, 64, 96, 112, 128, 144, 152, 160, 168, 1
 PixelColor TorchView::contentColorAt(PixelPoint aPt)
 {
   PixelColor pix = transparent;
-  if (alpha>0 && isInContentSize(aPt)) {
+  if (mAlpha>0 && isInContentSize(aPt)) {
     TorchDot& d = dot(aPt);
-    int extraHeat = d.current-hotspark_min;
+    int extraHeat = d.current-mHotsparkMin;
     if (extraHeat>=0) {
-      pix = hotsparkColor;
-      addToPixel(pix, dimmedPixel(hotsparkColorInc, 255*(int)extraHeat/(255-hotspark_min)));
+      pix = mHotsparkColor;
+      addToPixel(pix, dimmedPixel(mHotsparkColorInc, 255*(int)extraHeat/(255-mHotsparkMin)));
     }
     else {
       if (d.current>0) {
@@ -238,53 +238,53 @@ ErrorPtr TorchView::configureView(JsonObjectPtr aViewConfig)
   if (Error::isOK(err)) {
     // flame parameters
     if (aViewConfig->get("flame_min", o)) {
-      flame_min  = o->int32Value(); makeDirty();
+      mFlameMin  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("flame_max", o)) {
-      flame_max  = o->int32Value(); makeDirty();
+      mFlameMax  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("flame_height", o)) {
-      flame_height  = o->int32Value(); makeDirty();
+      mFlameHeight  = o->int32Value(); makeDirty();
     }
     // spark generation parameters
     if (aViewConfig->get("spark_probability", o)) {
-      spark_probability  = o->int32Value(); makeDirty();
+      mSparkProbability  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("spark_min", o)) {
-      spark_min  = o->int32Value(); makeDirty();
+      mSparkMin  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("spark_max", o)) {
-      spark_max  = o->int32Value(); makeDirty();
+      mSparkMax  = o->int32Value(); makeDirty();
     }
     // spark development parameters
     if (aViewConfig->get("spark_tfr", o)) {
-      spark_tfr  = o->int32Value(); makeDirty();
+      mSparkTfr  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("spark_cap", o)) {
-      spark_cap  = o->int32Value(); makeDirty();
+      mSparkCap  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("up_rad", o)) {
-      up_rad  = o->int32Value(); makeDirty();
+      mUpRad  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("side_rad", o)) {
-      side_rad  = o->int32Value(); makeDirty();
+      mSideRad  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("heat_cap", o)) {
-      heat_cap  = o->int32Value(); makeDirty();
+      mHeatCap  = o->int32Value(); makeDirty();
     }
     // hot spark coloring parameters
     if (aViewConfig->get("hotspark_min", o)) {
-      hotspark_min  = o->int32Value(); makeDirty();
+      mHotsparkMin  = o->int32Value(); makeDirty();
     }
     if (aViewConfig->get("hotsparkcolor", o)) {
-      hotsparkColor = webColorToPixel(o->stringValue()); makeDirty();
+      mHotsparkColor = webColorToPixel(o->stringValue()); makeDirty();
     }
     if (aViewConfig->get("hotsparkinc", o)) {
-      hotsparkColorInc = webColorToPixel(o->stringValue()); makeDirty();
+      mHotsparkColorInc = webColorToPixel(o->stringValue()); makeDirty();
     }
     // timing parameter
     if (aViewConfig->get("cycletime", o)) {
-      cycleTime  = o->doubleValue()*Second;
+      mCycleTime  = o->doubleValue()*Second;
     }
   }
   return err;
@@ -298,21 +298,21 @@ ErrorPtr TorchView::configureView(JsonObjectPtr aViewConfig)
 JsonObjectPtr TorchView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("flame_min", JsonObject::newInt32(flame_min));
-  status->add("flame_max", JsonObject::newInt32(flame_max));
-  status->add("flame_height", JsonObject::newInt32(flame_height));
-  status->add("spark_probability", JsonObject::newInt32(spark_probability));
-  status->add("spark_min", JsonObject::newInt32(spark_min));
-  status->add("spark_max", JsonObject::newInt32(spark_max));
-  status->add("spark_tfr", JsonObject::newInt32(spark_tfr));
-  status->add("spark_cap", JsonObject::newInt32(spark_cap));
-  status->add("up_rad", JsonObject::newInt32(up_rad));
-  status->add("side_rad", JsonObject::newInt32(side_rad));
-  status->add("heat_cap", JsonObject::newInt32(heat_cap));
-  status->add("hotspark_min", JsonObject::newInt32(hotspark_min));
-  status->add("hotsparkinc", JsonObject::newString(pixelToWebColor(hotsparkColorInc)));
-  status->add("hotsparkcolor", JsonObject::newString(pixelToWebColor(hotsparkColor)));
-  status->add("cycletime", JsonObject::newDouble((double)cycleTime/Second));
+  status->add("flame_min", JsonObject::newInt32(mFlameMin));
+  status->add("flame_max", JsonObject::newInt32(mFlameMax));
+  status->add("flame_height", JsonObject::newInt32(mFlameHeight));
+  status->add("spark_probability", JsonObject::newInt32(mSparkProbability));
+  status->add("spark_min", JsonObject::newInt32(mSparkMin));
+  status->add("spark_max", JsonObject::newInt32(mSparkMax));
+  status->add("spark_tfr", JsonObject::newInt32(mSparkTfr));
+  status->add("spark_cap", JsonObject::newInt32(mSparkCap));
+  status->add("up_rad", JsonObject::newInt32(mUpRad));
+  status->add("side_rad", JsonObject::newInt32(mSideRad));
+  status->add("heat_cap", JsonObject::newInt32(mHeatCap));
+  status->add("hotspark_min", JsonObject::newInt32(mHotsparkMin));
+  status->add("hotsparkinc", JsonObject::newString(pixelToWebColor(mHotsparkColorInc)));
+  status->add("hotsparkcolor", JsonObject::newString(pixelToWebColor(mHotsparkColor)));
+  status->add("cycletime", JsonObject::newDouble((double)mCycleTime/Second));
 
   return status;
 }

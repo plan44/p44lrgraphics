@@ -34,8 +34,8 @@ namespace p44 {
   {
     typedef P44View inherited;
 
-    png_image pngImage; /// The control structure used by libpng
-    png_bytep pngBuffer; /// byte buffer
+    png_image mPngImage; /// The control structure used by libpng
+    png_bytep mPngBuffer; /// byte buffer
 
   public :
 

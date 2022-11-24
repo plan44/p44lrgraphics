@@ -29,18 +29,18 @@ using namespace p44;
 
 
 LifeView::LifeView() :
-  generationInterval(777*MilliSecond),
-  lastGeneration(Never),
-  staticcount(0),
-  maxStatic(23),
-  minStatic(10),
-  minPopulation(9)
+  mGenerationInterval(777*MilliSecond),
+  mLastGeneration(Never),
+  mStaticcount(0),
+  mMaxStatic(23),
+  mMinStatic(10),
+  mMinPopulation(9)
 {
   // original coloring scheme was yellow-green for newborn cells
   setForegroundColor({ 128, 255, 0, 0 });
-  hueGradient = -330.0/360*100;
-  satGradient = 0;
-  briGradient = -25;
+  mHueGradient = -330.0/360*100;
+  mSatGradient = 0;
+  mBriGradient = -25;
 }
 
 LifeView::~LifeView()
@@ -51,7 +51,7 @@ LifeView::~LifeView()
 void LifeView::clear()
 {
   stopAnimations();
-  cells.clear();
+  mCells.clear();
   prepareCells();
 }
 
@@ -61,10 +61,10 @@ bool LifeView::prepareCells()
   PixelPoint csz = getContentSize();
   int numCells = csz.x*csz.y;
   if (numCells<=0) return false;
-  if (numCells!=cells.size()) {
-    cells.clear();
+  if (numCells!=mCells.size()) {
+    mCells.clear();
     for (int i=0; i<numCells; ++i) {
-      cells.push_back(0);
+      mCells.push_back(0);
     }
     makeDirty();
   }
@@ -75,7 +75,7 @@ bool LifeView::prepareCells()
 
 void LifeView::setGenerationInterval(MLMicroSeconds aInterval)
 {
-  generationInterval = aInterval;
+  mGenerationInterval = aInterval;
 }
 
 
@@ -86,10 +86,10 @@ MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (alpha>0 && generationInterval!=Never && now>=lastGeneration+generationInterval) {
-    lastGeneration = now;
+  if (mAlpha>0 && mGenerationInterval!=Never && now>=mLastGeneration+mGenerationInterval) {
+    mLastGeneration = now;
     nextGeneration();
-    updateNextCall(nextCall, now+generationInterval);
+    updateNextCall(nextCall, now+mGenerationInterval);
   }
   return nextCall;
 }
@@ -97,7 +97,7 @@ MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil)
 
 void LifeView::recalculateColoring()
 {
-  pixelToHsb(foregroundColor, hue, saturation, brightness);
+  pixelToHsb(mForegroundColor, mHue, mSaturation, mBrightness);
   inherited::recalculateColoring();
 }
 
@@ -105,21 +105,21 @@ void LifeView::recalculateColoring()
 void LifeView::nextGeneration()
 {
   calculateGeneration();
-  if (dynamics==0) {
-    staticcount++;
-    LOG(LOG_NOTICE, "No dynamics for %d cycles, population is %d", staticcount, population);
-    if (staticcount>maxStatic || (population<minPopulation && staticcount>minStatic)) {
+  if (mDynamics==0) {
+    mStaticcount++;
+    LOG(LOG_NOTICE, "No dynamics for %d cycles, population is %d", mStaticcount, mPopulation);
+    if (mStaticcount>mMaxStatic || (mPopulation<mMinPopulation && mStaticcount>mMinStatic)) {
       revive();
     }
   }
   else {
-    if (staticcount>0) {
-      staticcount -= 2;
-      if (staticcount<0) staticcount = 0;
-      LOG(LOG_NOTICE, "Dynamics (%+d) in this cycle, population is %d, reduced staticount to %d", dynamics, population, staticcount);
+    if (mStaticcount>0) {
+      mStaticcount -= 2;
+      if (mStaticcount<0) mStaticcount = 0;
+      LOG(LOG_NOTICE, "Dynamics (%+d) in this cycle, population is %d, reduced staticount to %d", mDynamics, mPopulation, mStaticcount);
     }
     else {
-      LOG(LOG_INFO, "Dynamics (%+d) in this cycle, population is %d", dynamics, population);
+      LOG(LOG_INFO, "Dynamics (%+d) in this cycle, population is %d", mDynamics, mPopulation);
     }
   }
   makeDirty();
@@ -129,7 +129,7 @@ void LifeView::nextGeneration()
 void LifeView::revive()
 {
   // shoot in some new cells
-  createRandomCells((int)cells.size()/20+1,(int)cells.size()/6+1);
+  createRandomCells((int)mCells.size()/20+1,(int)mCells.size()/6+1);
   makeDirty();
 }
 
@@ -138,29 +138,29 @@ void LifeView::revive()
 int LifeView::cellindex(int aX, int aY, bool aWrap)
 {
   if (aX<0) {
-    if (!aWrap) return (int)cells.size(); // out of range
-    aX += content.dx;
+    if (!aWrap) return (int)mCells.size(); // out of range
+    aX += mContent.dx;
   }
-  else if (aX>=content.dx) {
-    if (!aWrap) return (int)cells.size(); // out of range
-    aX -= content.dx;
+  else if (aX>=mContent.dx) {
+    if (!aWrap) return (int)mCells.size(); // out of range
+    aX -= mContent.dx;
   }
   if (aY<0) {
-    if (!aWrap) return (int)cells.size(); // out of range
-    aY += content.dy;
+    if (!aWrap) return (int)mCells.size(); // out of range
+    aY += mContent.dy;
   }
-  else if (aY>=content.dx) {
-    if (!aWrap) return (int)cells.size(); // out of range
-    aY -= content.dy;
+  else if (aY>=mContent.dx) {
+    if (!aWrap) return (int)mCells.size(); // out of range
+    aY -= mContent.dy;
   }
-  return aY*content.dx+aX;
+  return aY*mContent.dx+aX;
 }
 
 
 void LifeView::calculateGeneration()
 {
-  population = 0;
-  dynamics = 0;
+  mPopulation = 0;
+  mDynamics = 0;
   if (!prepareCells()) return;
   // cell age 0 : dead for longer
   // cell age 1 : killed in this cycle
@@ -169,21 +169,21 @@ void LifeView::calculateGeneration()
   // - 3 = spawned
   // - 4..n aged
   // first age all living cells by 1, clean those that were killed in last cycle
-  for (int i=0; i<cells.size(); ++i) {
-    int age = cells[i];
+  for (int i=0; i<mCells.size(); ++i) {
+    int age = mCells[i];
     if (age==1) {
-      cells[i] = 0;
+      mCells[i] = 0;
     }
     else if (age==2) {
-      cells[i] = 4; // skip 3
+      mCells[i] = 4; // skip 3
     }
     else if (age>2) {
-      cells[i]++; // just age normally
+      mCells[i]++; // just age normally
     }
   }
   // apply rules
-  for (int x=0; x<content.dx; ++x) {
-    for (int y=0; y<content.dy; y++) {
+  for (int x=0; x<mContent.dx; ++x) {
+    for (int y=0; y<mContent.dy; y++) {
       int ci = cellindex(x, y, false);
       // calculate number of neighbours
       int nn = 0;
@@ -192,7 +192,7 @@ void LifeView::calculateGeneration()
           if (dx!=0 || dy!=0) {
             // one of the 8 neighbours
             int nci = cellindex(x+dx, y+dy, true);
-            if (nci<cells.size() && (cells[nci]>3 || cells[nci]==1)) {
+            if (nci<mCells.size() && (mCells[nci]>3 || mCells[nci]==1)) {
               // is a living neighbour (exclude newborns of this cycle, include those that will die at end of this cycle
               nn++;
             }
@@ -200,16 +200,16 @@ void LifeView::calculateGeneration()
         }
       }
       // rules for living cells:
-      if (cells[ci]>0) {
+      if (mCells[ci]>0) {
         // - Any live cell with fewer than two live neighbours dies,
         //   as if caused by underpopulation.
         // - Any live cell with more than three live neighbours dies, as if by overpopulation.
         if (nn<2 || nn>3) {
-          cells[ci] = 1; // will die at end of this cycle (but still alive for calculation)
-          dynamics--; // a dying cell is a transition
+          mCells[ci] = 1; // will die at end of this cycle (but still alive for calculation)
+          mDynamics--; // a dying cell is a transition
         }
         else {
-          population++; // lives on, counts for population
+          mPopulation++; // lives on, counts for population
         }
         // - Any live cell with two or three live neighbours lives on to the next generation.
       }
@@ -217,9 +217,9 @@ void LifeView::calculateGeneration()
       else {
         // - Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
         if (nn==3) {
-          cells[ci] = 3; // spawned
-          dynamics++; // a new cell is a transition
-          population++; // now lives, counts for population
+          mCells[ci] = 3; // spawned
+          mDynamics++; // a new cell is a transition
+          mPopulation++; // now lives, counts for population
         }
       }
     }
@@ -232,8 +232,8 @@ void LifeView::createRandomCells(int aMinCells, int aMaxCells)
   if (!prepareCells()) return;
   int numcells = aMinCells + rand() % (aMaxCells-aMinCells+1);
   while (numcells-- > 0) {
-    int ci = rand() % cells.size();
-    cells[ci] = 2; // created out of void
+    int ci = rand() % mCells.size();
+    mCells[ci] = 2; // created out of void
   }
   makeDirty();
 }
@@ -290,8 +290,8 @@ void LifeView::placePattern(uint16_t aPatternNo, bool aWrap, int aCenterX, int a
 {
   if (!prepareCells()) return;
   if (aPatternNo>=NUMPATTERNS) return;
-  if (aCenterX<0) aCenterX = rand() % content.dx;
-  if (aCenterY<0) aCenterY = rand() % content.dy;
+  if (aCenterX<0) aCenterX = rand() % mContent.dx;
+  if (aCenterY<0) aCenterY = rand() % mContent.dy;
   if (aOrientation<0) aOrientation = rand() % 4;
   for (int i=0; i<patterns[aPatternNo].numpix; i++) {
     int x,y;
@@ -303,7 +303,7 @@ void LifeView::placePattern(uint16_t aPatternNo, bool aWrap, int aCenterX, int a
       case 3: x=aCenterX-px.y; y=aCenterY+px.x; break;
     }
     int ci = cellindex(x, y, aWrap);
-    cells[ci] = 2; // created out of void
+    mCells[ci] = 2; // created out of void
   }
 }
 
@@ -313,9 +313,9 @@ PixelColor LifeView::contentColorAt(PixelPoint aPt)
   PixelColor pix = transparent;
   // simplest colorisation: from yellow (young) to red
   int ci = cellindex(aPt.x, aPt.y, false);
-  if (ci>=cells.size()) return pix; // out of range
-  pix = backgroundColor;
-  int age = cells[ci];
+  if (ci>=mCells.size()) return pix; // out of range
+  pix = mBackgroundColor;
+  int age = mCells[ci];
   if (age<2) return pix; // dead, background
   // fixed, not dependent on color set
   if (age==2) {
@@ -331,17 +331,17 @@ PixelColor LifeView::contentColorAt(PixelPoint aPt)
   double cellSaturation;
   if (age==3) {
     // just born - leave the color as-is
-    cellHue = hue;
+    cellHue = mHue;
     cellBrightness = 1.0;
-    cellSaturation = saturation;
+    cellSaturation = mSaturation;
   }
   else {
     age -= 3;
     if (age>57) age = 57; // limit
-    cellHue = cyclic(hue+hueGradient*660/7.3+(hueGradient*660/66*age),0,360);
+    cellHue = cyclic(mHue+mHueGradient*660/7.3+(mHueGradient*660/66*age),0,360);
     if (cellHue<0) cellHue+=360;
-    cellBrightness = limited(brightness+(briGradient/10*age),0,1);
-    cellSaturation = limited(saturation+(satGradient/10*age),0,1);
+    cellBrightness = limited(mBrightness+(mBriGradient/10*age),0,1);
+    cellSaturation = limited(mSaturation+(mSatGradient/10*age),0,1);
   }
   pix = hsbToPixel(cellHue, cellSaturation, cellBrightness);
   return pix;
@@ -358,16 +358,16 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     if (aViewConfig->get("generationinterval", o)) {
-      generationInterval  = o->doubleValue()*Second;
+      mGenerationInterval  = o->doubleValue()*Second;
     }
     if (aViewConfig->get("maxstatic", o)) {
-      maxStatic  = o->int32Value();
+      mMaxStatic  = o->int32Value();
     }
     if (aViewConfig->get("minstatic", o)) {
-      minStatic  = o->int32Value();
+      mMinStatic  = o->int32Value();
     }
     if (aViewConfig->get("minpopulation", o)) {
-      minPopulation  = o->int32Value();
+      mMinPopulation  = o->int32Value();
     }
     if (aViewConfig->get("addrandom", o)) {
       int c = o->int32Value();
@@ -389,10 +389,10 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
 JsonObjectPtr LifeView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("generationinterval", JsonObject::newDouble((double)generationInterval/Second));
-  status->add("maxstatic", JsonObject::newInt32(maxStatic));
-  status->add("minstatic", JsonObject::newInt32(minStatic));
-  status->add("minpopulation", JsonObject::newInt32(minPopulation));
+  status->add("generationinterval", JsonObject::newDouble((double)mGenerationInterval/Second));
+  status->add("maxstatic", JsonObject::newInt32(mMaxStatic));
+  status->add("minstatic", JsonObject::newInt32(mMinStatic));
+  status->add("minpopulation", JsonObject::newInt32(mMinPopulation));
   return status;
 }
 

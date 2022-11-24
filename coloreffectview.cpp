@@ -29,19 +29,19 @@ using namespace p44;
 
 
 ColorEffectView::ColorEffectView() :
-  radial(true),
-  briGradient(0),
-  hueGradient(0),
-  satGradient(0),
-  briMode(gradient_none),
-  hueMode(gradient_none),
-  satMode(gradient_none)
+  mRadial(true),
+  mBriGradient(0),
+  mHueGradient(0),
+  mSatGradient(0),
+  mBriMode(gradient_none),
+  mHueMode(gradient_none),
+  mSatMode(gradient_none)
 {
   // make sure we start dark!
   setForegroundColor(black);
   setBackgroundColor(transparent);
-  extent.x = 10;
-  extent.y = 10;
+  mExtent.x = 10;
+  mExtent.y = 10;
 }
 
 ColorEffectView::~ColorEffectView()
@@ -57,16 +57,16 @@ void ColorEffectView::setColoringParameters(
   bool aRadial
 ) {
   if (
-    aBaseColor.r!=foregroundColor.r || aBaseColor.b!=foregroundColor.g || aBaseColor.g!=foregroundColor.b || aBaseColor.a!=foregroundColor.a ||
-    briGradient!=aBri || hueGradient!=aHue || satGradient!=aSat ||
-    briMode!=aBriMode || hueMode!=aHueMode || satMode!=aSatMode ||
-    aRadial!=radial
+    aBaseColor.r!=mForegroundColor.r || aBaseColor.b!=mForegroundColor.g || aBaseColor.g!=mForegroundColor.b || aBaseColor.a!=mForegroundColor.a ||
+    mBriGradient!=aBri || mHueGradient!=aHue || mSatGradient!=aSat ||
+    mBriMode!=aBriMode || mHueMode!=aHueMode || mSatMode!=aSatMode ||
+    aRadial!=mRadial
   ) {
-    radial = aRadial;
-    foregroundColor = aBaseColor;
-    briGradient = aBri; briMode = aBriMode;
-    hueGradient = aHue; hueMode = aHueMode;
-    satGradient = aSat; satMode = aSatMode;
+    mRadial = aRadial;
+    mForegroundColor = aBaseColor;
+    mBriGradient = aBri; mBriMode = aBriMode;
+    mHueGradient = aHue; mHueMode = aHueMode;
+    mSatGradient = aSat; mSatMode = aSatMode;
     makeColorDirty();
   }
 }
@@ -74,15 +74,15 @@ void ColorEffectView::setColoringParameters(
 
 void ColorEffectView::setExtent(PixelPoint aExtent)
 {
-  extent = aExtent;
+  mExtent = aExtent;
   makeColorDirty(); // because it also affects gradient
 }
 
 
 void ColorEffectView::setRelativeExtent(double aRelativeExtent)
 {
-  extent.x = aRelativeExtent*content.dx/2;
-  extent.y = aRelativeExtent*content.dy/2;
+  mExtent.x = aRelativeExtent*mContent.dx/2;
+  mExtent.y = aRelativeExtent*mContent.dy/2;
   makeColorDirty(); // because it also affects gradient
 }
 
@@ -142,35 +142,35 @@ double ColorEffectView::gradiated(double aValue, double aProgress, double aGradi
 
 void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels)
 {
-  gradientPixels.clear();
-  if (briGradient==0 && hueGradient==0 && satGradient==0) return; // optimized
+  mGradientPixels.clear();
+  if (mBriGradient==0 && mHueGradient==0 && mSatGradient==0) return; // optimized
   // initial HSV
   double base_h,base_s,base_b;
-  pixelToHsb(foregroundColor, base_h, base_s, base_b, true);
+  pixelToHsb(mForegroundColor, base_h, base_s, base_b, true);
   double h,s,b;
   // now create gradient pixels covering extent dimension
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
     double pr = aExtentPixels>0 ? (double)i/aExtentPixels : 0;
     // - hue
-    h = gradiated(base_h, pr, hueGradient, hueMode, 360, true);
+    h = gradiated(base_h, pr, mHueGradient, mHueMode, 360, true);
     // - saturation
-    s = gradiated(base_s, pr, satGradient, satMode, 1, false);
+    s = gradiated(base_s, pr, mSatGradient, mSatMode, 1, false);
     // - brightness
-    b = gradiated(base_b, pr, briGradient, briMode, 1, false);
+    b = gradiated(base_b, pr, mBriGradient, mBriMode, 1, false);
     // store the pixel
     PixelColor gpix = hsbToPixel(h,s,b, true);
-    gradientPixels.push_back(gpix);
+    mGradientPixels.push_back(gpix);
   }
 }
 
 
 PixelColor ColorEffectView::gradientPixel(int aPixelIndex)
 {
-  int numGPixels = (int)gradientPixels.size();
-  if (numGPixels==0) return foregroundColor;
+  int numGPixels = (int)mGradientPixels.size();
+  if (numGPixels==0) return mForegroundColor;
   if (aPixelIndex<0) aPixelIndex = 0; else if (aPixelIndex>=numGPixels) aPixelIndex = numGPixels-1;
-  return gradientPixels[aPixelIndex];
+  return mGradientPixels[aPixelIndex];
 }
 
 
@@ -186,42 +186,42 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
   if (Error::isOK(err)) {
     bool colsChanged = false;
     if (aViewConfig->get("brightness_gradient", o)) {
-      briGradient = o->doubleValue();
+      mBriGradient = o->doubleValue();
       colsChanged = true;
     }
     if (aViewConfig->get("hue_gradient", o)) {
-      hueGradient = o->doubleValue();
+      mHueGradient = o->doubleValue();
       colsChanged = true;
     }
     if (aViewConfig->get("saturation_gradient", o)) {
-      satGradient = o->doubleValue();
+      mSatGradient = o->doubleValue();
       colsChanged = true;
     }
     if (aViewConfig->get("brightness_mode", o)) {
-      briMode = o->int32Value();
+      mBriMode = o->int32Value();
       colsChanged = true;
     }
     if (aViewConfig->get("hue_mode", o)) {
-      hueMode = o->int32Value();
+      mHueMode = o->int32Value();
       colsChanged = true;
     }
     if (aViewConfig->get("saturation_mode", o)) {
-      satMode = o->int32Value();
+      mSatMode = o->int32Value();
       colsChanged = true;
     }
     if (aViewConfig->get("radial", o)) {
-      radial = o->boolValue();
+      mRadial = o->boolValue();
       colsChanged = true;
     }
     if (colsChanged) {
       makeColorDirty();
     }
     if (aViewConfig->get("extent_x", o)) {
-      extent.x = o->doubleValue();
+      mExtent.x = o->doubleValue();
       makeDirty();
     }
     if (aViewConfig->get("extent_y", o)) {
-      extent.y = o->doubleValue();
+      mExtent.y = o->doubleValue();
       makeDirty();
     }
     if (aViewConfig->get("rel_extent", o)) {
@@ -238,15 +238,15 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
 JsonObjectPtr ColorEffectView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("brightness_gradient", JsonObject::newDouble(briGradient));
-  status->add("hue_gradient", JsonObject::newDouble(hueGradient));
-  status->add("saturation_gradient", JsonObject::newDouble(satGradient));
-  status->add("brightness_mode", JsonObject::newInt32(briMode));
-  status->add("hu_mode", JsonObject::newInt32(hueMode));
-  status->add("saturation_mode", JsonObject::newInt32(satMode));
-  status->add("radial", JsonObject::newBool(radial));
-  status->add("extent_x", JsonObject::newDouble(extent.x));
-  status->add("extent_y", JsonObject::newDouble(extent.y));
+  status->add("brightness_gradient", JsonObject::newDouble(mBriGradient));
+  status->add("hue_gradient", JsonObject::newDouble(mHueGradient));
+  status->add("saturation_gradient", JsonObject::newDouble(mSatGradient));
+  status->add("brightness_mode", JsonObject::newInt32(mBriMode));
+  status->add("hu_mode", JsonObject::newInt32(mHueMode));
+  status->add("saturation_mode", JsonObject::newInt32(mSatMode));
+  status->add("radial", JsonObject::newBool(mRadial));
+  status->add("extent_x", JsonObject::newDouble(mExtent.x));
+  status->add("extent_y", JsonObject::newDouble(mExtent.y));
   return status;
 }
 
@@ -267,22 +267,22 @@ void ColorEffectView::coloringPropertySetter(double &aColoringParam, double aNew
 ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double& aCurrentValue)
 {
   if (aProperty=="hue_gradient") {
-    aCurrentValue = hueGradient;
-    return boost::bind(&ColorEffectView::coloringPropertySetter, this, hueGradient, _1);
+    aCurrentValue = mHueGradient;
+    return boost::bind(&ColorEffectView::coloringPropertySetter, this, mHueGradient, _1);
   }
   else if (aProperty=="brightness_gradient") {
-    aCurrentValue = hueGradient;
-    return boost::bind(&ColorEffectView::coloringPropertySetter, this, briGradient, _1);
+    aCurrentValue = mHueGradient;
+    return boost::bind(&ColorEffectView::coloringPropertySetter, this, mBriGradient, _1);
   }
   else if (aProperty=="saturation_gradient") {
-    aCurrentValue = satGradient;
-    return boost::bind(&ColorEffectView::coloringPropertySetter, this, satGradient, _1);
+    aCurrentValue = mSatGradient;
+    return boost::bind(&ColorEffectView::coloringPropertySetter, this, mSatGradient, _1);
   }
   else if (aProperty=="extent_x") {
-    return getCoordPropertySetter(extent.x, aCurrentValue);
+    return getCoordPropertySetter(mExtent.x, aCurrentValue);
   }
   else if (aProperty=="extent_y") {
-    return getCoordPropertySetter(extent.y, aCurrentValue);
+    return getCoordPropertySetter(mExtent.y, aCurrentValue);
   }
   if (aProperty=="rel_extent") {
     aCurrentValue = 0; // dummy

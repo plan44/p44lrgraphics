@@ -40,32 +40,32 @@ using namespace p44;
 
 
 ViewScroller::ViewScroller() :
-  scrollOffsetX_milli(0),
-  scrollOffsetY_milli(0),
-  scrollStepX_milli(0),
-  scrollStepY_milli(0),
-  scrollSteps(0),
-  scrollStepInterval(Never),
-  nextScrollStepAt(Never),
+  mScrollOffsetX_milli(0),
+  mScrollOffsetY_milli(0),
+  mScrollStepX_milli(0),
+  mScrollStepY_milli(0),
+  mScrollSteps(0),
+  mScrollStepInterval(Never),
+  mNextScrollStepAt(Never),
   #ifdef __APPLE__
-  syncScroll(false),
+  mSyncScroll(false),
   #else
-  syncScroll(true),
+  mSyncScroll(true),
   #endif
   #if P44SCRIPT_FULL_SUPPORT
   mAlertEmpty(false),
   #endif
-  autopurge(false)
+  mAutoPurge(false)
 {
 }
 
 
 ViewScroller::~ViewScroller()
 {
-  if (scrolledView) {
-    scrolledView->setParent(NULL);
+  if (mScrolledView) {
+    mScrolledView->setParent(NULL);
   }
-  scrolledView.reset();
+  mScrolledView.reset();
 }
 
 
@@ -74,20 +74,20 @@ void ViewScroller::clear()
 {
   stopAnimations();
   // just delegate
-  if (scrolledView) scrolledView->clear();
+  if (mScrolledView) mScrolledView->clear();
 }
 
 
 void ViewScroller::setOffsetX(double aOffsetX)
 {
-  scrollOffsetX_milli = aOffsetX*1000l;
+  mScrollOffsetX_milli = aOffsetX*1000l;
   makeDirty();
 }
 
 
 void ViewScroller::setOffsetY(double aOffsetY)
 {
-  scrollOffsetY_milli = aOffsetY*1000l;
+  mScrollOffsetY_milli = aOffsetY*1000l;
   makeDirty();
 }
 
@@ -97,15 +97,15 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (scrolledView) {
-    updateNextCall(nextCall, scrolledView->step(aPriorityUntil));
+  if (mScrolledView) {
+    updateNextCall(nextCall, mScrolledView->step(aPriorityUntil));
   }
   // scroll
-  if (scrollSteps!=0 && scrollStepInterval>0) {
+  if (mScrollSteps!=0 && mScrollStepInterval>0) {
     // scrolling
-    MLMicroSeconds next = nextScrollStepAt-now; // time to next step
+    MLMicroSeconds next = mNextScrollStepAt-now; // time to next step
     if (next>0) {
-      updateNextCall(nextCall, nextScrollStepAt, aPriorityUntil); // scrolling has priority
+      updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
     }
     else {
       // execute all step(s) pending
@@ -115,73 +115,73 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
           LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld uS after precise time", -next);
         }
         // perform step
-        scrollOffsetX_milli += scrollStepX_milli;
-        scrollOffsetY_milli += scrollStepY_milli;
+        mScrollOffsetX_milli += mScrollStepX_milli;
+        mScrollOffsetY_milli += mScrollStepY_milli;
         makeDirty();
         // limit coordinate increase in wraparound scroll view
         // Note: might need multiple rounds after scrolled view's content size has changed to get back in range
-        if (scrolledView) {
-          WrapMode wm = scrolledView->getWrapMode();
-          PixelPoint svfsz = scrolledView->getFrameSize();
+        if (mScrolledView) {
+          WrapMode wm = mScrolledView->getWrapMode();
+          PixelPoint svfsz = mScrolledView->getFrameSize();
           if (wm&wrapX) {
             long fsx_milli = svfsz.x*1000;
-            while ((wm&wrapXmax) && scrollOffsetX_milli>=fsx_milli && fsx_milli>0)
-              scrollOffsetX_milli-=fsx_milli;
-            while ((wm&wrapXmin) && scrollOffsetX_milli<0 && fsx_milli>0)
-              scrollOffsetX_milli+=fsx_milli;
+            while ((wm&wrapXmax) && mScrollOffsetX_milli>=fsx_milli && fsx_milli>0)
+              mScrollOffsetX_milli-=fsx_milli;
+            while ((wm&wrapXmin) && mScrollOffsetX_milli<0 && fsx_milli>0)
+              mScrollOffsetX_milli+=fsx_milli;
           }
           if (wm&wrapY) {
             long fsy_milli = svfsz.y*1000;
-            while ((wm&wrapYmax) && scrollOffsetY_milli>=fsy_milli && fsy_milli>0)
-              scrollOffsetY_milli-=fsy_milli;
-            while ((wm&wrapYmin) && scrollOffsetY_milli<0 && fsy_milli>0)
-              scrollOffsetY_milli+=fsy_milli;
+            while ((wm&wrapYmax) && mScrollOffsetY_milli>=fsy_milli && fsy_milli>0)
+              mScrollOffsetY_milli-=fsy_milli;
+            while ((wm&wrapYmin) && mScrollOffsetY_milli<0 && fsy_milli>0)
+              mScrollOffsetY_milli+=fsy_milli;
           }
         }
         // check scroll end
-        if (scrollSteps>0) {
-          scrollSteps--;
-          if (scrollSteps==0) {
+        if (mScrollSteps>0) {
+          mScrollSteps--;
+          if (mScrollSteps==0) {
             // scroll ends here
-            if (scrollCompletedCB) {
-              SimpleCB cb = scrollCompletedCB;
-              scrollCompletedCB = NoOP;
+            if (mScrollCompletedCB) {
+              SimpleCB cb = mScrollCompletedCB;
+              mScrollCompletedCB = NoOP;
               cb(); // may set up another callback already
             }
             break;
           }
         }
         // advance to next step
-        if (syncScroll) {
+        if (mSyncScroll) {
           // try to catch up
-          next += scrollStepInterval;
-          nextScrollStepAt += scrollStepInterval;
+          next += mScrollStepInterval;
+          mNextScrollStepAt += mScrollStepInterval;
           if (next<0) {
             LOG(LOG_DEBUG, "ViewScroller: needs to catch-up steps -> call step() more often!");
           }
         }
         else {
-          // time next from now, even if we are (pussibly much) late
-          next = scrollStepInterval;
-          nextScrollStepAt = now+scrollStepInterval;
+          // time next from now, even if we are (possibly much) late
+          next = mScrollStepInterval;
+          mNextScrollStepAt = now+mScrollStepInterval;
         }
-        updateNextCall(nextCall, nextScrollStepAt, aPriorityUntil); // scrolling has priority
+        updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
       } // while catchup
       if ((
-        needContentCB
+        mNeedContentCB
         #if P44SCRIPT_FULL_SUPPORT
         || (hasSinks() && mAlertEmpty)
         #endif
-        ) && scrolledView
+        ) && mScrolledView
       ) {
         // check if we need more content (i.e. scrolled view does not cover frame of the scroller any more)
         if (needsContent()) {
           if (FOCUSLOGENABLED) {
-            PixelRect sf = scrolledView->getFrame();
+            PixelRect sf = mScrolledView->getFrame();
             FOCUSLOG("*** Scroller '%s' needs new content: scrollX = %.2f, scrollY=%.2f, frame=(%d,%d,%d,%d) scrolledframe=(%d,%d,%d,%d)",
-              label.c_str(),
-              (double)scrollOffsetX_milli/1000, (double)scrollOffsetY_milli/1000,
-              frame.x, frame.y, frame.dx, frame.dy,
+              mLabel.c_str(),
+              (double)mScrollOffsetX_milli/1000, (double)mScrollOffsetY_milli/1000,
+              mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
               sf.x, sf.y, sf.dx, sf.dy
             );
           }
@@ -191,7 +191,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
             sendEvent(new P44Script::ContentNeededObj(this)); // one-shot
           }
           #endif
-          if (autopurge) {
+          if (mAutoPurge) {
             // remove views no longer in sight
             purgeScrolledOut();
             // re-adjust scroll offset to prevent getting out of range over time
@@ -209,20 +209,20 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
 PixelPoint ViewScroller::remainingPixelsToScroll()
 {
   PixelPoint rem = { INT_MAX, INT_MAX }; // assume forever
-  if (scrolledView) {
-    WrapMode w = scrolledView->getWrapMode();
-    PixelRect sf = scrolledView->getFrame();
-    if ((w&wrapXmax)==0 && scrollStepX_milli>0) {
-      rem.x = (sf.x+sf.dx) - (int)(scrollOffsetX_milli/1000+frame.dx);
+  if (mScrolledView) {
+    WrapMode w = mScrolledView->getWrapMode();
+    PixelRect sf = mScrolledView->getFrame();
+    if ((w&wrapXmax)==0 && mScrollStepX_milli>0) {
+      rem.x = (sf.x+sf.dx) - (int)(mScrollOffsetX_milli/1000+mFrame.dx);
     }
-    if ((w&wrapXmin)==0 && scrollStepX_milli<0) {
-      rem.x = (int)(scrollOffsetX_milli/1000) - sf.x;
+    if ((w&wrapXmin)==0 && mScrollStepX_milli<0) {
+      rem.x = (int)(mScrollOffsetX_milli/1000) - sf.x;
     }
-    if ((w&wrapYmax)==0 && scrollStepY_milli>0) {
-      rem.y = (sf.y+sf.dy) - (int)(scrollOffsetY_milli/1000+frame.dy);
+    if ((w&wrapYmax)==0 && mScrollStepY_milli>0) {
+      rem.y = (sf.y+sf.dy) - (int)(mScrollOffsetY_milli/1000+mFrame.dy);
     }
-    if ((w&wrapYmin)==0 && scrollStepY_milli<0) {
-      rem.y = (int)(scrollOffsetY_milli/1000) - sf.y;
+    if ((w&wrapYmin)==0 && mScrollStepY_milli<0) {
+      rem.y = (int)(mScrollOffsetY_milli/1000) - sf.y;
     }
   }
   return rem;
@@ -241,16 +241,16 @@ MLMicroSeconds ViewScroller::remainingScrollTime()
   PixelPoint rem = remainingPixelsToScroll();
   if (rem.x==INT_MAX && rem.y==INT_MAX) return Infinite; // no limit
   int steps = INT_MAX;
-  if (scrollStepX_milli>0) {
-    int s = rem.x*1000/scrollStepX_milli;
+  if (mScrollStepX_milli>0) {
+    int s = rem.x*1000/mScrollStepX_milli;
     if (s<steps) steps = s;
   }
-  if (scrollStepY_milli>0) {
-    int s = rem.y*1000/scrollStepY_milli;
+  if (mScrollStepY_milli>0) {
+    int s = rem.y*1000/mScrollStepY_milli;
     if (s<steps) steps = s;
   }
   if (steps==INT_MAX) return Infinite; // we can NOT scroll infinitely ;-)
-  return steps*scrollStepInterval;
+  return steps*mScrollStepInterval;
 }
 
 
@@ -258,7 +258,7 @@ MLMicroSeconds ViewScroller::remainingScrollTime()
 bool ViewScroller::isDirty()
 {
   if (inherited::isDirty()) return true; // dirty anyway
-  if (scrolledView && reportDirtyChilds()) return scrolledView->isDirty();
+  if (mScrolledView && reportDirtyChilds()) return mScrolledView->isDirty();
   return false;
 }
 
@@ -266,40 +266,40 @@ bool ViewScroller::isDirty()
 void ViewScroller::updated()
 {
   inherited::updated();
-  if (scrolledView) scrolledView->updated();
+  if (mScrolledView) mScrolledView->updated();
 }
 
 
 PixelColor ViewScroller::contentColorAt(PixelPoint aPt)
 {
-  if (!scrolledView) return transparent;
+  if (!mScrolledView) return transparent;
   // Note: implementation aims to be efficient at integer scroll offsets in either or both directions
-  int sampleOffsetX = (int)((scrollOffsetX_milli+(scrollOffsetX_milli>0 ? 500 : -500))/1000);
-  int sampleOffsetY = (int)((scrollOffsetY_milli+(scrollOffsetY_milli>0 ? 500 : -500))/1000);
+  int sampleOffsetX = (int)((mScrollOffsetX_milli+(mScrollOffsetX_milli>0 ? 500 : -500))/1000);
+  int sampleOffsetY = (int)((mScrollOffsetY_milli+(mScrollOffsetY_milli>0 ? 500 : -500))/1000);
   int subSampleOffsetX = 1;
   int subSampleOffsetY = 1;
-  int outsideWeightX = (int)((scrollOffsetX_milli-(long)sampleOffsetX*1000)*255/1000);
+  int outsideWeightX = (int)((mScrollOffsetX_milli-(long)sampleOffsetX*1000)*255/1000);
   if (outsideWeightX<0) { outsideWeightX *= -1; subSampleOffsetX = -1; }
-  int outsideWeightY = (int)((scrollOffsetY_milli-(long)sampleOffsetY*1000)*255/1000);
+  int outsideWeightY = (int)((mScrollOffsetY_milli-(long)sampleOffsetY*1000)*255/1000);
   if (outsideWeightY<0) { outsideWeightY *= -1; subSampleOffsetY = -1; }
   sampleOffsetX += aPt.x;
   sampleOffsetY += aPt.y;
-  PixelColor samp = scrolledView->colorAt({sampleOffsetX, sampleOffsetY});
+  PixelColor samp = mScrolledView->colorAt({sampleOffsetX, sampleOffsetY});
   if (outsideWeightX!=0) {
     // X Subsampling (and possibly also Y, checked below)
-    mixinPixel(samp, scrolledView->colorAt({sampleOffsetX+subSampleOffsetX, sampleOffsetY}), outsideWeightX);
+    mixinPixel(samp, mScrolledView->colorAt({sampleOffsetX+subSampleOffsetX, sampleOffsetY}), outsideWeightX);
     // check if ALSO parts from other pixels in Y direction needed
     if (outsideWeightY!=0) {
       // subsample the Y side neigbours
-      PixelColor neighbourY = scrolledView->colorAt({sampleOffsetX, sampleOffsetY+subSampleOffsetY});
-      mixinPixel(neighbourY, scrolledView->colorAt({sampleOffsetX+subSampleOffsetX, sampleOffsetY+subSampleOffsetY}), outsideWeightX);
+      PixelColor neighbourY = mScrolledView->colorAt({sampleOffsetX, sampleOffsetY+subSampleOffsetY});
+      mixinPixel(neighbourY, mScrolledView->colorAt({sampleOffsetX+subSampleOffsetX, sampleOffsetY+subSampleOffsetY}), outsideWeightX);
       // combine with Y main
       mixinPixel(samp, neighbourY, outsideWeightY);
     }
   }
   else if (outsideWeightY!=0) {
     // only Y subsampling
-    mixinPixel(samp, scrolledView->colorAt({sampleOffsetX, sampleOffsetY+subSampleOffsetY}), outsideWeightY);
+    mixinPixel(samp, mScrolledView->colorAt({sampleOffsetX, sampleOffsetY+subSampleOffsetY}), outsideWeightY);
   }
   return samp;
 }
@@ -307,35 +307,35 @@ PixelColor ViewScroller::contentColorAt(PixelPoint aPt)
 
 void ViewScroller::startScroll(double aStepX, double aStepY, MLMicroSeconds aInterval, bool aRoundOffsets, long aNumSteps, MLMicroSeconds aStartTime, SimpleCB aCompletedCB)
 {
-  scrollStepX_milli = aStepX*1000;
-  scrollStepY_milli = aStepY*1000;
+  mScrollStepX_milli = aStepX*1000;
+  mScrollStepY_milli = aStepY*1000;
   if (aRoundOffsets) {
-    if (scrollStepX_milli) scrollOffsetX_milli = (scrollOffsetX_milli+(scrollStepX_milli>>1))/scrollStepX_milli*scrollStepX_milli;
-    if (scrollStepY_milli) scrollOffsetY_milli = (scrollOffsetY_milli+(scrollStepY_milli>>1))/scrollStepY_milli*scrollStepY_milli;
+    if (mScrollStepX_milli) mScrollOffsetX_milli = (mScrollOffsetX_milli+(mScrollStepX_milli>>1))/mScrollStepX_milli*mScrollStepX_milli;
+    if (mScrollStepY_milli) mScrollOffsetY_milli = (mScrollOffsetY_milli+(mScrollStepY_milli>>1))/mScrollStepY_milli*mScrollStepY_milli;
   }
-  scrollStepInterval = aInterval;
-  scrollSteps = aNumSteps;
+  mScrollStepInterval = aInterval;
+  mScrollSteps = aNumSteps;
   MLMicroSeconds now = MainLoop::now();
   // do not allow setting scroll step into the past, as this would cause massive catch-up
-  nextScrollStepAt = aStartTime==Never || aStartTime<now ? now : aStartTime;
-  scrollCompletedCB = aCompletedCB;
+  mNextScrollStepAt = aStartTime==Never || aStartTime<now ? now : aStartTime;
+  mScrollCompletedCB = aCompletedCB;
 }
 
 
 void ViewScroller::stopScroll()
 {
   // no more steps
-  scrollSteps = 0;
+  mScrollSteps = 0;
 }
 
 void ViewScroller::purgeScrolledOut()
 {
-  ViewStackPtr vs = boost::dynamic_pointer_cast<ViewStack>(scrolledView);
+  ViewStackPtr vs = boost::dynamic_pointer_cast<ViewStack>(mScrolledView);
   if (vs) {
     PixelPoint rem = remainingPixelsToScroll();
     if (rem.x==INT_MAX) rem.x = 0;
     if (rem.y==INT_MAX) rem.y = 0;
-    vs->purgeViews(frame.dx+rem.x, frame.dy+rem.y, false);
+    vs->purgeViews(mFrame.dx+rem.x, mFrame.dy+rem.y, false);
   }
 }
 
@@ -351,7 +351,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
     JsonObjectPtr o;
     // view
     if (aViewConfig->get("scrolledview", o)) {
-      err = p44::createViewFromConfig(o, scrolledView, this);
+      err = p44::createViewFromConfig(o, mScrolledView, this);
       makeDirty();
     }
     // offsets
@@ -362,10 +362,10 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       setOffsetY(o->doubleValue());
     }
     if (aViewConfig->get("syncscroll", o)) {
-      syncScroll = o->boolValue();
+      mSyncScroll = o->boolValue();
     }
     if (aViewConfig->get("autopurge", o)) {
-      autopurge = o->boolValue();
+      mAutoPurge = o->boolValue();
     }
     // scroll
     double stepX = 0;
@@ -405,8 +405,8 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
 
 P44ViewPtr ViewScroller::getView(const string aLabel)
 {
-  if (scrolledView) {
-    P44ViewPtr view = scrolledView->getView(aLabel);
+  if (mScrolledView) {
+    P44ViewPtr view = mScrolledView->getView(aLabel);
     if (view) return view;
   }
   return inherited::getView(aLabel);
@@ -419,15 +419,15 @@ P44ViewPtr ViewScroller::getView(const string aLabel)
 JsonObjectPtr ViewScroller::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  if (scrolledView) status->add("scrolledview", scrolledView->viewStatus());
+  if (mScrolledView) status->add("scrolledview", mScrolledView->viewStatus());
   status->add("offsetx", JsonObject::newDouble(getOffsetX()));
   status->add("offsety", JsonObject::newDouble(getOffsetY()));
-  status->add("syncscroll", JsonObject::newBool(syncScroll));
-  status->add("autopurge", JsonObject::newBool(autopurge));
+  status->add("syncscroll", JsonObject::newBool(mSyncScroll));
+  status->add("autopurge", JsonObject::newBool(mAutoPurge));
   status->add("stepx", JsonObject::newDouble(getStepX()));
   status->add("stepy", JsonObject::newDouble(getStepY()));
-  status->add("interval", JsonObject::newDouble((double)scrollStepInterval/Second));
-  status->add("steps", JsonObject::newInt64(scrollSteps));
+  status->add("interval", JsonObject::newDouble((double)mScrollStepInterval/Second));
+  status->add("steps", JsonObject::newInt64(mScrollSteps));
   PixelPoint r = remainingPixelsToScroll();
   status->add("remainingx", JsonObject::newInt64(r.x));
   status->add("remainingy", JsonObject::newInt64(r.y));

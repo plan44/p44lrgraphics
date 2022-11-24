@@ -31,8 +31,8 @@ using namespace p44;
 // MARK: ===== ViewAnimator
 
 ViewSequencer::ViewSequencer() :
-  repeating(false),
-  currentStep(-1),
+  mRepeating(false),
+  mCurrentStep(-1),
   animationState(as_begin)
 {
 }
@@ -40,18 +40,18 @@ ViewSequencer::ViewSequencer() :
 
 ViewSequencer::~ViewSequencer()
 {
-  for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
-    P44ViewPtr v = pos->view;
+  for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
+    P44ViewPtr v = pos->mView;
     if (v) v->setParent(NULL);
   }
-  sequence.clear();
+  mSequence.clear();
 }
 
 
 void ViewSequencer::clear()
 {
   stopAnimations();
-  sequence.clear();
+  mSequence.clear();
   inherited::clear();
 }
 
@@ -59,11 +59,11 @@ void ViewSequencer::clear()
 void ViewSequencer::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime, MLMicroSeconds aFadeOutTime)
 {
   AnimationStep s;
-  s.view = aView;
-  s.showTime = aShowTime;
-  s.fadeInTime = aFadeInTime;
-  s.fadeOutTime = aFadeOutTime;
-  sequence.push_back(s);
+  s.mView = aView;
+  s.mShowTime = aShowTime;
+  s.mFadeInTime = aFadeInTime;
+  s.mFadeOutTime = aFadeOutTime;
+  mSequence.push_back(s);
   makeDirty();
 }
 
@@ -72,8 +72,8 @@ MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
   updateNextCall(nextCall, stepAnimation(), aPriorityUntil); // animation has priority
-  if (currentStep<sequence.size()) {
-    updateNextCall(nextCall, sequence[currentStep].view->step(aPriorityUntil));
+  if (mCurrentStep<mSequence.size()) {
+    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(aPriorityUntil));
   }
   return nextCall;
 }
@@ -81,43 +81,43 @@ MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil)
 
 void ViewSequencer::stopAnimations()
 {
-  if (currentView) currentView->stopAnimations();
+  if (mCurrentView) mCurrentView->stopAnimations();
   animationState = as_begin;
-  currentStep = -1;
+  mCurrentStep = -1;
   inherited::stopAnimations();
 }
 
 
 MLMicroSeconds ViewSequencer::stepAnimation()
 {
-  if (currentStep<sequence.size()) {
+  if (mCurrentStep<mSequence.size()) {
     MLMicroSeconds now = MainLoop::now();
-    MLMicroSeconds sinceLast = now-lastStateChange;
-    AnimationStep as = sequence[currentStep];
+    MLMicroSeconds sinceLast = now-mLastStateChange;
+    AnimationStep as = mSequence[mCurrentStep];
     switch (animationState) {
       case as_begin:
         // initiate animation
         // - set current view
-        currentView = as.view;
+        mCurrentView = as.mView;
         makeDirty();
-        if (as.fadeInTime>0) {
+        if (as.mFadeInTime>0) {
           #if ENABLE_ANIMATION
-          currentView->setAlpha(0);
-          currentView->animatorFor("alpha")->animate(255, as.fadeInTime);
+          mCurrentView->setAlpha(0);
+          mCurrentView->animatorFor("alpha")->animate(255, as.mFadeInTime);
           #else
           currentView->setAlpha(255);
           #endif
         }
         animationState = as_show;
-        lastStateChange = now;
+        mLastStateChange = now;
         // next change we must handle is end of show time
-        return now+as.fadeInTime+as.showTime;
+        return now+as.mFadeInTime+as.mShowTime;
       case as_show:
-        if (sinceLast>as.fadeInTime+as.showTime) {
+        if (sinceLast>as.mFadeInTime+as.mShowTime) {
           // check fadeout
-          if (as.fadeOutTime>0) {
+          if (as.mFadeOutTime>0) {
             #if ENABLE_ANIMATION
-            as.view->animatorFor("alpha")->animate(255, as.fadeOutTime);
+            as.mView->animatorFor("alpha")->animate(255, as.mFadeOutTime);
             #else
             as.view->setAlpha(255);
             #endif
@@ -126,34 +126,34 @@ MLMicroSeconds ViewSequencer::stepAnimation()
           else {
             goto ended;
           }
-          lastStateChange = now;
+          mLastStateChange = now;
           // next change we must handle is end of fade out time
-          return now + as.fadeOutTime;
+          return now + as.mFadeOutTime;
         }
         else {
           // still waiting for end of show time
-          return lastStateChange+as.fadeInTime+as.showTime;
+          return mLastStateChange+as.mFadeInTime+as.mShowTime;
         }
       case as_fadeout:
-        if (sinceLast<as.fadeOutTime) {
+        if (sinceLast<as.mFadeOutTime) {
           // next change is end of fade out
-          return lastStateChange+as.fadeOutTime;
+          return mLastStateChange+as.mFadeOutTime;
         }
       ended:
         // end of this step
         animationState = as_begin; // begins from start
-        currentStep++;
-        if (currentStep>=sequence.size()) {
+        mCurrentStep++;
+        if (mCurrentStep>=mSequence.size()) {
           // all steps done
           // - call back
-          if (completedCB) {
-            SimpleCB cb=completedCB;
-            if (!repeating) completedCB = NoOP;
+          if (mCompletedCB) {
+            SimpleCB cb=mCompletedCB;
+            if (!mRepeating) mCompletedCB = NoOP;
             cb();
           }
           // - possibly restart
-          if (repeating) {
-            currentStep = 0;
+          if (mRepeating) {
+            mCurrentStep = 0;
           }
           else {
             stopAnimations();
@@ -169,9 +169,9 @@ MLMicroSeconds ViewSequencer::stepAnimation()
 
 void ViewSequencer::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
 {
-  repeating = aRepeat;
-  completedCB = aCompletedCB;
-  currentStep = 0;
+  mRepeating = aRepeat;
+  mCompletedCB = aCompletedCB;
+  mCurrentStep = 0;
   animationState = as_begin; // begins from start
   stepAnimation();
 }
@@ -181,26 +181,26 @@ void ViewSequencer::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
 bool ViewSequencer::isDirty()
 {
   if (inherited::isDirty()) return true; // dirty anyway
-  return currentView && reportDirtyChilds() ? currentView->isDirty() : false;
+  return mCurrentView && reportDirtyChilds() ? mCurrentView->isDirty() : false;
 }
 
 
 void ViewSequencer::updated()
 {
   inherited::updated();
-  if (currentView) currentView->updated();
+  if (mCurrentView) mCurrentView->updated();
 }
 
 
 PixelColor ViewSequencer::contentColorAt(PixelPoint aPt)
 {
   // default is the animator's background color
-  if (alpha==0 || !currentView) {
+  if (mAlpha==0 || !mCurrentView) {
     return transparent; // entire viewstack is invisible
   }
   else {
     // consult current step's view
-    return currentView->colorAt(aPt);
+    return mCurrentView->colorAt(aPt);
   }
 }
 
@@ -255,8 +255,8 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
 
 P44ViewPtr ViewSequencer::getView(const string aLabel)
 {
-  for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
-    P44ViewPtr v = pos->view;
+  for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
+    P44ViewPtr v = pos->mView;
     if (v) {
       P44ViewPtr view = v->getView(aLabel);
       if (view) return view;
@@ -275,12 +275,12 @@ JsonObjectPtr ViewSequencer::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
   JsonObjectPtr steps = JsonObject::newArray();
-  for (SequenceVector::iterator pos = sequence.begin(); pos!=sequence.end(); ++pos) {
+  for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
     JsonObjectPtr step = JsonObject::newObj();
-    step->add("view", pos->view->viewStatus());
-    step->add("showtime", JsonObject::newDouble((double)pos->showTime/Second));
-    step->add("fadeintime", JsonObject::newDouble((double)pos->fadeInTime/Second));
-    step->add("fadeouttime", JsonObject::newDouble((double)pos->fadeOutTime/Second));
+    step->add("view", pos->mView->viewStatus());
+    step->add("showtime", JsonObject::newDouble((double)pos->mShowTime/Second));
+    step->add("fadeintime", JsonObject::newDouble((double)pos->mFadeInTime/Second));
+    step->add("fadeouttime", JsonObject::newDouble((double)pos->mFadeOutTime/Second));
     steps->arrayAppend(step);
   }
   status->add("steps", steps);

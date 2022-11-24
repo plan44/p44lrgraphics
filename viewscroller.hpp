@@ -45,22 +45,22 @@ namespace p44 {
 
   private:
 
-    P44ViewPtr scrolledView;
+    P44ViewPtr mScrolledView;
 
     // current scroll offsets
-    long scrollOffsetX_milli; ///< in millipixel, X distance from this view's content origin to the scrolled view's origin
-    long scrollOffsetY_milli; ///< in millipixel, Y distance from this view's content origin to the scrolled view's origin
+    long mScrollOffsetX_milli; ///< in millipixel, X distance from this view's content origin to the scrolled view's origin
+    long mScrollOffsetY_milli; ///< in millipixel, Y distance from this view's content origin to the scrolled view's origin
 
     // scroll animation
-    long scrollStepX_milli; ///< in millipixel, X distance to scroll per scrollStepInterval
-    long scrollStepY_milli; ///< in millipixel, Y distance to scroll per scrollStepInterval
-    long scrollSteps; ///< >0: number of remaining scroll steps, <0 = scroll forever, 0=scroll stopped
-    bool syncScroll; ///< if set, scroll timing has absolute priority (and multi-step jumps can occur to catch up delays)
-    MLMicroSeconds scrollStepInterval; ///< interval between scroll steps
-    MLMicroSeconds nextScrollStepAt; ///< exact time when next step should occur
-    SimpleCB scrollCompletedCB; ///< called when one scroll is done
-    NeedContentCB needContentCB; ///< called when we need new scroll content
-    bool autopurge; ///< when set, and needContentCB is set, will try to purge completely scrolled off views
+    long mScrollStepX_milli; ///< in millipixel, X distance to scroll per scrollStepInterval
+    long mScrollStepY_milli; ///< in millipixel, Y distance to scroll per scrollStepInterval
+    long mScrollSteps; ///< >0: number of remaining scroll steps, <0 = scroll forever, 0=scroll stopped
+    bool mSyncScroll; ///< if set, scroll timing has absolute priority (and multi-step jumps can occur to catch up delays)
+    MLMicroSeconds mScrollStepInterval; ///< interval between scroll steps
+    MLMicroSeconds mNextScrollStepAt; ///< exact time when next step should occur
+    SimpleCB mScrollCompletedCB; ///< called when one scroll is done
+    NeedContentCB mNeedContentCB; ///< called when we need new scroll content
+    bool mAutoPurge; ///< when set, and needContentCB is set, will try to purge completely scrolled off views
     #if P44SCRIPT_FULL_SUPPORT
     bool mAlertEmpty; ///< alert scroller getting empty as event
     #endif
@@ -84,10 +84,10 @@ namespace p44 {
 
     /// set the to be scrolled view
     /// @param aScrolledView the view of which a part should be shown in this view.
-    void setScrolledView(P44ViewPtr aScrolledView) { scrolledView = aScrolledView; if (aScrolledView) aScrolledView->setParent(this); makeDirty(); }
+    void setScrolledView(P44ViewPtr aScrolledView) { mScrolledView = aScrolledView; if (aScrolledView) aScrolledView->setParent(this); makeDirty(); }
 
     /// @return the view being scrolled
-    P44ViewPtr getScrolledView() { return scrolledView; }
+    P44ViewPtr getScrolledView() { return mScrolledView; }
 
     /// set scroll offsets
     /// @param aOffsetX X direction scroll offset, subpixel distances allowed
@@ -102,10 +102,10 @@ namespace p44 {
     void setOffsetY(double aOffsetY);
 
     /// @return the current X scroll offset
-    double getOffsetX() const { return (double)scrollOffsetX_milli/1000; };
+    double getOffsetX() const { return (double)mScrollOffsetX_milli/1000; };
 
     /// @return the current Y scroll offset
-    double getOffsetY() const { return (double)scrollOffsetY_milli/1000; };
+    double getOffsetY() const { return (double)mScrollOffsetY_milli/1000; };
 
     /// start scrolling
     /// @param aStepX scroll step in X direction
@@ -126,13 +126,13 @@ namespace p44 {
     void stopScroll();
 
     /// @return the current X scroll step
-    double getStepX() const { return (double)scrollStepX_milli/1000; }
+    double getStepX() const { return (double)mScrollStepX_milli/1000; }
 
     /// @return the current Y scroll step
-    double getStepY() const { return (double)scrollStepY_milli/1000; }
+    double getStepY() const { return (double)mScrollStepY_milli/1000; }
 
     /// @return the time interval between two scroll steps
-    MLMicroSeconds getScrollStepInterval() const { return scrollStepInterval; }
+    MLMicroSeconds getScrollStepInterval() const { return mScrollStepInterval; }
 
     /// set handler to be called when new content is needed (current scrolledView does no longer provide content for scrolling further)
     /// @param aNeedContentCB handler to be called when content has scrolled so far that it no longer fills the frame
@@ -140,7 +140,7 @@ namespace p44 {
     ///   every time after aNeedContentCB is called.
     /// @note when the scrolled view does not run out of content, no auto-purging will happen. So make sure to call purgeScrolledOut()
     ///   once in a while when content is added other than via the aNeedContentCB callback.
-    void setNeedContentHandler(NeedContentCB aNeedContentCB, bool aAutoPurge = true) { needContentCB = aNeedContentCB; autopurge = aAutoPurge; };
+    void setNeedContentHandler(NeedContentCB aNeedContentCB, bool aAutoPurge = true) { mNeedContentCB = aNeedContentCB; mAutoPurge = aAutoPurge; };
 
     /// purge unneeded (scrolled off) views in content view (if it is a ViewStack)
     void purgeScrolledOut();

@@ -31,8 +31,8 @@ namespace p44 {
   {
     typedef P44View inherited;
 
-    PixelColor* canvasBuffer;
-    size_t numPixels;
+    PixelColor* mCanvasBuffer;
+    size_t mNumPixels;
 
   public :
 
@@ -49,7 +49,7 @@ namespace p44 {
     void setPixel(PixelColor aColor, PixelCoord aPixelIndex);
     void setPixel(PixelColor aColor, PixelPoint aPixelPoint);
 
-    size_t getNumPixels() { return numPixels; }
+    size_t getNumPixels() { return mNumPixels; }
 
     #if ENABLE_VIEWCONFIG
 

@@ -32,10 +32,10 @@ namespace p44 {
     typedef ColorEffectView inherited;
 
     // text rendering
-    string text; ///< internal representation of text
-    bool visible; ///< if not set, text view is reduced to zero width
-    int textSpacing; ///< pixels between characters
-    string textPixelCols; ///< string of text column bytes
+    string mText; ///< internal representation of text
+    bool mVisible; ///< if not set, text view is reduced to zero width
+    int mTextSpacing; ///< pixels between characters
+    string mTextPixelCols; ///< string of text column bytes
 
   public :
 
@@ -53,13 +53,13 @@ namespace p44 {
     void setVisible(bool aVisible);
 
     /// get current text
-    string getText() const { return text; }
+    string getText() const { return mText; }
 
     /// set character spacing
-    void setTextSpacing(int aTextSpacing) { textSpacing = aTextSpacing; renderText(); }
+    void setTextSpacing(int aTextSpacing) { mTextSpacing = aTextSpacing; renderText(); }
 
     /// get text color
-    int getTextSpacing() const { return textSpacing; }
+    int getTextSpacing() const { return mTextSpacing; }
 
     /// clear contents of this view
     virtual void clear() P44_OVERRIDE;

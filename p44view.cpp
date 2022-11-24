@@ -36,32 +36,32 @@ using namespace p44;
 // MARK: ===== View
 
 P44View::P44View() :
-  parentView(NULL),
-  dirty(false),
-  updateRequested(false),
-  minUpdateInterval(0),
-  geometryChanging(0),
-  changedGeometry(false),
-  sizeToContent(false),
-  contentRotation(0),
-  rotCos(1.0),
-  rotSin(0.0)
+  mParentView(NULL),
+  mDirty(false),
+  mUpdateRequested(false),
+  mMinUpdateInterval(0),
+  mGeometryChanging(0),
+  mChangedGeometry(false),
+  mSizeToContent(false),
+  mContentRotation(0),
+  mRotCos(1.0),
+  mRotSin(0.0)
 {
   setFrame(zeroRect);
   // default to normal orientation
-  contentOrientation = right;
+  mContentOrientation = right;
   // default to clip, no content wrap
-  contentWrapMode = clipXY;
+  mContentWrapMode = clipXY;
   // default content size is same as view's
   setContent(zeroRect);
-  backgroundColor = { .r=0, .g=0, .b=0, .a=0 }; // transparent background,
-  foregroundColor = { .r=255, .g=255, .b=255, .a=255 }; // fully white foreground...
-  alpha = 255; // but content pixels passed trough 1:1
-  z_order = 0; // none in particular
-  contentIsMask = false; // content color will be used
-  invertAlpha = false; // inverted mask
-  localTimingPriority = true;
-  maskChildDirtyUntil = Never;
+  mBackgroundColor = { .r=0, .g=0, .b=0, .a=0 }; // transparent background,
+  mForegroundColor = { .r=255, .g=255, .b=255, .a=255 }; // fully white foreground...
+  mAlpha = 255; // but content pixels passed trough 1:1
+  mZOrder = 0; // none in particular
+  mContentIsMask = false; // content color will be used
+  mInvertAlpha = false; // inverted mask
+  mLocalTimingPriority = true;
+  mMaskChildDirtyUntil = Never;
 }
 
 
@@ -77,7 +77,7 @@ P44View::~P44View()
 
 bool P44View::isInContentSize(PixelPoint aPt)
 {
-  return aPt.x>=0 && aPt.y>=0 && aPt.x<content.dx && aPt.y<content.dy;
+  return aPt.x>=0 && aPt.y>=0 && aPt.x<mContent.dx && aPt.y<mContent.dy;
 }
 
 
@@ -85,41 +85,41 @@ PixelColor P44View::contentColorAt(PixelPoint aPt)
 {
   // for plain views, show content rect in foreground
   if (isInContentSize(aPt))
-    return foregroundColor;
+    return mForegroundColor;
   else
-    return backgroundColor;
+    return mBackgroundColor;
 }
 
 
 void P44View::geometryChange(bool aStart)
 {
   if (aStart){
-    if (geometryChanging<=0) {
+    if (mGeometryChanging<=0) {
       // start tracking changes
-      changedGeometry = false;
-      previousFrame = frame;
-      previousContent = content;
+      mChangedGeometry = false;
+      mPreviousFrame = mFrame;
+      mPreviousContent = mContent;
     }
-    geometryChanging++;
+    mGeometryChanging++;
   }
   else {
-    if (geometryChanging>0) {
-      geometryChanging--;
-      if (geometryChanging==0) {
-        if (changedGeometry) {
+    if (mGeometryChanging>0) {
+      mGeometryChanging--;
+      if (mGeometryChanging==0) {
+        if (mChangedGeometry) {
           FOCUSLOG("View '%s' changed geometry: frame=(%d,%d,%d,%d)->(%d,%d,%d,%d), content=(%d,%d,%d,%d)->(%d,%d,%d,%d)",
-            label.c_str(),
-            previousFrame.x, previousFrame.y, previousFrame.dx, previousFrame.dy,
-            frame.x, frame.y, frame.dx, frame.dy,
-            previousContent.x, previousContent.y, previousContent.dx, previousContent.dy,
-            content.x, content.y, content.dx, content.dy
+            mLabel.c_str(),
+            mPreviousFrame.x, mPreviousFrame.y, mPreviousFrame.dx, mPreviousFrame.dy,
+            mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
+            mPreviousContent.x, mPreviousContent.y, mPreviousContent.dx, mPreviousContent.dy,
+            mContent.x, mContent.y, mContent.dx, mContent.dy
           );
           makeDirty();
-          geometryChanged(previousFrame, previousContent); // let subclasses know
-          if (parentView) {
+          geometryChanged(mPreviousFrame, mPreviousContent); // let subclasses know
+          if (mParentView) {
             // Note: as we are passing in the frames, it is safe when the following calls recursively calls geometryChange again
             //   except that it must not do so unconditionally to prevent endless recursion
-            parentView->childGeometryChanged(this, previousFrame, previousContent);
+            mParentView->childGeometryChanged(this, mPreviousFrame, mPreviousContent);
           }
         }
       }
@@ -131,7 +131,7 @@ void P44View::geometryChange(bool aStart)
 
 void P44View::orientateCoord(PixelPoint &aCoord)
 {
-  if (contentOrientation & xy_swap) {
+  if (mContentOrientation & xy_swap) {
     swap(aCoord.x, aCoord.y);
   }
 }
@@ -140,11 +140,11 @@ void P44View::orientateCoord(PixelPoint &aCoord)
 void P44View::flipCoordInFrame(PixelPoint &aCoord)
 {
   // flip within frame if not zero sized
-  if ((contentOrientation & x_flip) && frame.dx>0) {
-    aCoord.x = frame.dx-aCoord.x-1;
+  if ((mContentOrientation & x_flip) && mFrame.dx>0) {
+    aCoord.x = mFrame.dx-aCoord.x-1;
   }
-  if ((contentOrientation & y_flip) && frame.dy>0) {
-    aCoord.y = frame.dy-aCoord.y-1;
+  if ((mContentOrientation & y_flip) && mFrame.dy>0) {
+    aCoord.y = mFrame.dy-aCoord.y-1;
   }
 }
 
@@ -153,15 +153,15 @@ void P44View::inFrameToContentCoord(PixelPoint &aCoord)
 {
   flipCoordInFrame(aCoord);
   orientateCoord(aCoord);
-  aCoord.x -= content.x;
-  aCoord.y -= content.y;
+  aCoord.x -= mContent.x;
+  aCoord.y -= mContent.y;
 }
 
 
 void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 {
-  aCoord.x += content.x;
-  aCoord.y += content.y;
+  aCoord.x += mContent.x;
+  aCoord.y += mContent.y;
   orientateCoord(aCoord);
   flipCoordInFrame(aCoord);
 }
@@ -171,19 +171,19 @@ void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 void P44View::changeGeometryRect(PixelRect &aRect, PixelRect aNewRect)
 {
   if (aNewRect.x!=aRect.x) {
-    changedGeometry = true;
+    mChangedGeometry = true;
     aRect.x = aNewRect.x;
   }
   if (aNewRect.y!=aRect.y) {
-    changedGeometry = true;
+    mChangedGeometry = true;
     aRect.y = aNewRect.y;
   }
   if (aNewRect.dx!=aRect.dx) {
-    changedGeometry = true;
+    mChangedGeometry = true;
     aRect.dx = aNewRect.dx;
   }
   if (aNewRect.dy!=aRect.dy) {
-    changedGeometry = true;
+    mChangedGeometry = true;
     aRect.dy = aNewRect.dy;
   }
 }
@@ -193,20 +193,20 @@ void P44View::changeGeometryRect(PixelRect &aRect, PixelRect aNewRect)
 void P44View::setFrame(PixelRect aFrame)
 {
   geometryChange(true);
-  changeGeometryRect(frame, aFrame);
+  changeGeometryRect(mFrame, aFrame);
   geometryChange(false);
 }
 
 
 void P44View::setParent(P44ViewPtr aParentView)
 {
-  parentView = aParentView.get();
+  mParentView = aParentView.get();
 }
 
 
 P44ViewPtr P44View::getParent()
 {
-  return P44ViewPtr(parentView);
+  return P44ViewPtr(mParentView);
 }
 
 
@@ -214,8 +214,8 @@ P44ViewPtr P44View::getParent()
 void P44View::setContent(PixelRect aContent)
 {
   geometryChange(true);
-  changeGeometryRect(content, aContent);
-  if (sizeToContent) {
+  changeGeometryRect(mContent, aContent);
+  if (mSizeToContent) {
     moveFrameToContent(true);
   }
   geometryChange(false);
@@ -225,8 +225,8 @@ void P44View::setContent(PixelRect aContent)
 void P44View::setContentSize(PixelPoint aSize)
 {
   geometryChange(true);
-  changeGeometryRect(content, { content.x, content.y, aSize.x, aSize.y });
-  if (changedGeometry && sizeToContent) moveFrameToContent(true);
+  changeGeometryRect(mContent, { mContent.x, mContent.y, aSize.x, aSize.y });
+  if (mChangedGeometry && mSizeToContent) moveFrameToContent(true);
   geometryChange(false);
 };
 
@@ -234,7 +234,7 @@ void P44View::setContentSize(PixelPoint aSize)
 void P44View::setContentOrigin(PixelPoint aOrigin)
 {
   geometryChange(true);
-  changeGeometryRect(content, { aOrigin.x, aOrigin.y, content.dx, content.dy });
+  changeGeometryRect(mContent, { aOrigin.x, aOrigin.y, mContent.dx, mContent.dy });
   geometryChange(false);
 };
 
@@ -251,7 +251,7 @@ void P44View::setRelativeContentOriginX(double aRelX, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
   geometryChange(true);
-  changeGeometryRect(content, { (int)(aRelX*max(content.dx,frame.dx)+(aCentered ? frame.dx/2 : 0)), content.y, content.dx, content.dy });
+  changeGeometryRect(mContent, { (int)(aRelX*max(mContent.dx,mFrame.dx)+(aCentered ? mFrame.dx/2 : 0)), mContent.y, mContent.dx, mContent.dy });
   geometryChange(false);
 }
 
@@ -260,18 +260,18 @@ void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
   geometryChange(true);
-  changeGeometryRect(content, { content.x, (int)(aRelY*max(content.dy,frame.dy)+(aCentered ? frame.dy/2 : 0)), content.dx, content.dy });
+  changeGeometryRect(mContent, { mContent.x, (int)(aRelY*max(mContent.dy,mFrame.dy)+(aCentered ? mFrame.dy/2 : 0)), mContent.dx, mContent.dy });
   geometryChange(false);
 }
 
 
 void P44View::setContentRotation(double aRotation)
 {
-  if (aRotation!=contentRotation) {
-    contentRotation = aRotation;
-    double rotPi = contentRotation*M_PI/180;
-    rotSin = sin(rotPi);
-    rotCos = cos(rotPi);
+  if (aRotation!=mContentRotation) {
+    mContentRotation = aRotation;
+    double rotPi = mContentRotation*M_PI/180;
+    mRotSin = sin(rotPi);
+    mRotCos = cos(rotPi);
     makeDirty();
   }
 }
@@ -291,21 +291,21 @@ void P44View::contentRectAsViewCoord(PixelRect &aRect)
   // get opposite content rect corners
   PixelPoint c1 = { 0, 0 };
   contentToInFrameCoord(c1);
-  PixelPoint inset = { content.dx>0 ? 1 : 0, content.dy>0 ? 1 : 0 };
-  PixelPoint c2 = { content.dx-inset.x, content.dy-inset.y };
+  PixelPoint inset = { mContent.dx>0 ? 1 : 0, mContent.dy>0 ? 1 : 0 };
+  PixelPoint c2 = { mContent.dx-inset.x, mContent.dy-inset.y };
   // transform into coords relative to frame origin
   contentToInFrameCoord(c2);
   // make c2 the non-origin corner
   if (c1.x>c2.x) swap(c1.x, c2.x);
   if (c1.y>c2.y) swap(c1.y, c2.y);
   // create view coord rectangle around current contents
-  aRect.x = c1.x + frame.x;
+  aRect.x = c1.x + mFrame.x;
   aRect.dx = c2.x-c1.x+inset.x;
-  aRect.y = c1.y + frame.y;
+  aRect.y = c1.y + mFrame.y;
   aRect.dy = c2.y-c1.y+inset.y;
   FOCUSLOG("View '%s' frame=(%d,%d,%d,%d), content rect as view coords=(%d,%d,%d,%d)",
-    label.c_str(),
-    frame.x, frame.y, frame.dx, frame.dy,
+    mLabel.c_str(),
+    mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
     aRect.x, aRect.y, aRect.dx, aRect.dy
   );
 }
@@ -320,21 +320,21 @@ void P44View::moveFrameToContent(bool aResize)
   PixelRect f;
   contentRectAsViewCoord(f);
   // move frame to the place where the content rectangle did appear so far...
-  changeGeometryRect(frame, f);
+  changeGeometryRect(mFrame, f);
   // ...which means that no content offset is needed any more (we've compensated it by moving the frame)
-  content.x = 0; content.y = 0;
+  mContent.x = 0; mContent.y = 0;
   geometryChange(false);
 }
 
 
 void P44View::sizeFrameToContent()
 {
-  PixelPoint sz = { content.dx, content.dy };
+  PixelPoint sz = { mContent.dx, mContent.dy };
   orientateCoord(sz);
-  PixelRect f = frame;
+  PixelRect f = mFrame;
   f.dx = sz.x;
   f.dy = sz.y;
-  changeGeometryRect(frame, f);
+  changeGeometryRect(mFrame, f);
 }
 
 
@@ -364,26 +364,26 @@ void P44View::requestUpdate()
 {
   FOCUSLOG("requestUpdate() called for view@%p", this);
   P44View *p = this;
-  while (p->parentView) {
-    if (p->updateRequested) return;  // already requested, no need to descend to root
-    p->updateRequested = true; // mark having requested update all the way down to root, update() will be called on all views to clear it
-    p = p->parentView;
+  while (p->mParentView) {
+    if (p->mUpdateRequested) return;  // already requested, no need to descend to root
+    p->mUpdateRequested = true; // mark having requested update all the way down to root, update() will be called on all views to clear it
+    p = p->mParentView;
   }
   // now p = root view
-  if (!p->updateRequested && p->needUpdateCB) {
-    p->updateRequested = true; // only request once
+  if (!p->mUpdateRequested && p->mNeedUpdateCB) {
+    p->mUpdateRequested = true; // only request once
     FOCUSLOG("actually requesting update from root view@%p (from view@%p)", p, this);
     // there is a needUpdate callback here
     // DO NOT call it directly, but from mainloop, so receiver can safely call
     // back into any view object method without causing recursions
-    MainLoop::currentMainLoop().executeNow(p->needUpdateCB);
+    MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
   }
 }
 
 
 void P44View::requestUpdateIfNeeded()
 {
-  if (!updateRequested && isDirty()) {
+  if (!mUpdateRequested && isDirty()) {
     requestUpdate();
   }
 }
@@ -391,15 +391,15 @@ void P44View::requestUpdateIfNeeded()
 
 void P44View::updated()
 {
-  dirty = false;
-  updateRequested = false;
+  mDirty = false;
+  mUpdateRequested = false;
 }
 
 
 void P44View::setNeedUpdateCB(TimerCB aNeedUpdateCB, MLMicroSeconds aMinUpdateInterval)
 {
-  needUpdateCB = aNeedUpdateCB;
-  minUpdateInterval = aMinUpdateInterval;
+  mNeedUpdateCB = aNeedUpdateCB;
+  mMinUpdateInterval = aMinUpdateInterval;
 }
 
 
@@ -407,8 +407,8 @@ MLMicroSeconds P44View::getMinUpdateInterval()
 {
   P44View *p = this;
   do {
-    if (p->minUpdateInterval>0) return p->minUpdateInterval;
-    p = p->parentView;
+    if (p->mMinUpdateInterval>0) return p->mMinUpdateInterval;
+    p = p->mParentView;
   } while (p);
   return DEFAULT_MIN_UPDATE_INTERVAL;
 }
@@ -416,8 +416,8 @@ MLMicroSeconds P44View::getMinUpdateInterval()
 
 bool P44View::removeFromParent()
 {
-  if (parentView) {
-    return parentView->removeView(this); // should always return true...
+  if (mParentView) {
+    return mParentView->removeView(this); // should always return true...
   }
   return false;
 }
@@ -425,7 +425,7 @@ bool P44View::removeFromParent()
 
 void P44View::makeDirty()
 {
-  dirty = true;
+  mDirty = true;
 }
 
 
@@ -438,11 +438,11 @@ void P44View::makeColorDirty()
 
 bool P44View::reportDirtyChilds()
 {
-  if (maskChildDirtyUntil) {
-    if (MainLoop::now()<maskChildDirtyUntil) {
+  if (mMaskChildDirtyUntil) {
+    if (MainLoop::now()<mMaskChildDirtyUntil) {
       return false;
     }
-    maskChildDirtyUntil = 0;
+    mMaskChildDirtyUntil = 0;
   }
   return true;
 }
@@ -450,10 +450,10 @@ bool P44View::reportDirtyChilds()
 
 void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil)
 {
-  if (localTimingPriority && aCandidatePriorityUntil>0 && aCallCandidate>=0 && aCallCandidate<aCandidatePriorityUntil) {
+  if (mLocalTimingPriority && aCandidatePriorityUntil>0 && aCallCandidate>=0 && aCallCandidate<aCandidatePriorityUntil) {
     // children must not cause "dirty" before candidate time is over
     MLMicroSeconds now = MainLoop::now();
-    maskChildDirtyUntil = (aCallCandidate-now)*2+now; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
+    mMaskChildDirtyUntil = (aCallCandidate-now)*2+now; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
   }
   if (aNextCall<=0 || (aCallCandidate>0 && aCallCandidate<aNextCall)) {
     // candidate wins
@@ -464,17 +464,17 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
 {
-  updateRequested = false; // no step request pending any more
+  mUpdateRequested = false; // no step request pending any more
   // check animations
   MLMicroSeconds nextCall = Infinite;
   #if ENABLE_ANIMATION
-  AnimationsList::iterator pos = animations.begin();
-  while (pos != animations.end()) {
+  AnimationsList::iterator pos = mAnimations.begin();
+  while (pos != mAnimations.end()) {
     ValueAnimatorPtr animator = (*pos);
     MLMicroSeconds nextStep = animator->step();
     if (!animator->inProgress()) {
       // this animation is done, remove it from the list
-      pos = animations.erase(pos);
+      pos = mAnimations.erase(pos);
       continue;
     }
     updateNextCall(nextCall, nextStep);
@@ -487,8 +487,8 @@ MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
 
 void P44View::setAlpha(PixelColorComponent aAlpha)
 {
-  if (alpha!=aAlpha) {
-    alpha = aAlpha;
+  if (mAlpha!=aAlpha) {
+    mAlpha = aAlpha;
     makeDirty();
   }
 }
@@ -497,9 +497,9 @@ void P44View::setAlpha(PixelColorComponent aAlpha)
 void P44View::setZOrder(int aZOrder)
 {
   geometryChange(true);
-  if (z_order!=aZOrder) {
-    z_order = aZOrder;
-    changedGeometry = true;
+  if (mZOrder!=aZOrder) {
+    mZOrder = aZOrder;
+    mChangedGeometry = true;
   }
   geometryChange(false);
 }
@@ -512,20 +512,20 @@ void P44View::setZOrder(int aZOrder)
 PixelColor P44View::colorAt(PixelPoint aPt)
 {
   // default is background color
-  PixelColor pc = backgroundColor;
-  if (alpha==0) {
+  PixelColor pc = mBackgroundColor;
+  if (mAlpha==0) {
     pc.a = 0; // entire view is invisible
   }
   else {
     // calculate coordinate relative to the frame's origin
-    aPt.x -= frame.x;
-    aPt.y -= frame.y;
+    aPt.x -= mFrame.x;
+    aPt.y -= mFrame.y;
     // optionally clip content to frame
-    if (contentWrapMode&clipXY && (
-      ((contentWrapMode&clipXmin) && aPt.x<0) ||
-      ((contentWrapMode&clipXmax) && aPt.x>=frame.dx) ||
-      ((contentWrapMode&clipYmin) && aPt.y<0) ||
-      ((contentWrapMode&clipYmax) && aPt.y>=frame.dy)
+    if (mContentWrapMode&clipXY && (
+      ((mContentWrapMode&clipXmin) && aPt.x<0) ||
+      ((mContentWrapMode&clipXmax) && aPt.x>=mFrame.dx) ||
+      ((mContentWrapMode&clipYmin) && aPt.y<0) ||
+      ((mContentWrapMode&clipYmax) && aPt.y>=mFrame.dy)
     )) {
       // clip
       pc.a = 0; // invisible
@@ -533,36 +533,36 @@ PixelColor P44View::colorAt(PixelPoint aPt)
     else {
       // not clipped
       // optionally wrap content (repeat frame contents in selected directions)
-      if (frame.dx>0) {
-        while ((contentWrapMode&wrapXmin) && aPt.x<0) aPt.x+=frame.dx;
-        while ((contentWrapMode&wrapXmax) && aPt.x>=frame.dx) aPt.x-=frame.dx;
+      if (mFrame.dx>0) {
+        while ((mContentWrapMode&wrapXmin) && aPt.x<0) aPt.x+=mFrame.dx;
+        while ((mContentWrapMode&wrapXmax) && aPt.x>=mFrame.dx) aPt.x-=mFrame.dx;
       }
-      if (frame.dy>0) {
-        while ((contentWrapMode&wrapYmin) && aPt.y<0) aPt.y+=frame.dy;
-        while ((contentWrapMode&wrapYmax) && aPt.y>=frame.dy) aPt.y-=frame.dy;
+      if (mFrame.dy>0) {
+        while ((mContentWrapMode&wrapYmin) && aPt.y<0) aPt.y+=mFrame.dy;
+        while ((mContentWrapMode&wrapYmax) && aPt.y>=mFrame.dy) aPt.y-=mFrame.dy;
       }
       // translate into content coordinates
       inFrameToContentCoord(aPt);
       // now get content pixel in content coordinates
-      if (contentRotation==0) {
+      if (mContentRotation==0) {
         // optimization: no rotation, get pixel
         pc = contentColorAt(aPt);
       }
       else {
         // - rotate first
         PixelPoint rpt;
-        rpt.x = aPt.x*rotCos-aPt.y*rotSin;
-        rpt.y = aPt.x*rotSin+aPt.y*rotCos;
+        rpt.x = aPt.x*mRotCos-aPt.y*mRotSin;
+        rpt.y = aPt.x*mRotSin+aPt.y*mRotCos;
         pc = contentColorAt(rpt);
       }
-      if (invertAlpha) {
+      if (mInvertAlpha) {
         pc.a = 255-pc.a;
       }
-      if (contentIsMask) {
+      if (mContentIsMask) {
         // use only (possibly inverted) alpha of content, color comes from foregroundColor
-        pc.r = foregroundColor.r;
-        pc.g = foregroundColor.g;
-        pc.b = foregroundColor.b;
+        pc.r = mForegroundColor.r;
+        pc.g = mForegroundColor.g;
+        pc.b = mForegroundColor.b;
       }
       #if SHOW_ORIGIN
       if (aPt.x==0 && aPt.y==0) {
@@ -577,13 +577,13 @@ PixelColor P44View::colorAt(PixelPoint aPt)
       #endif
       if (pc.a==0) {
         // background is where content is fully transparent
-        pc = backgroundColor;
+        pc = mBackgroundColor;
         // Note: view background does NOT shine through semi-transparent content pixels!
         //   Rather, non-fully-transparent content pixels directly are view pixels!
       }
       // factor in layer alpha
-      if (alpha!=255) {
-        pc.a = dimVal(pc.a, alpha);
+      if (mAlpha!=255) {
+        pc.a = dimVal(pc.a, mAlpha);
       }
     }
   }
@@ -720,32 +720,32 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   JsonObjectPtr o;
   geometryChange(true);
   if (aViewConfig->get("label", o)) {
-    label = o->stringValue();
+    mLabel = o->stringValue();
   }
   if (aViewConfig->get("clear", o)) {
     if(o->boolValue()) clear();
   }
   if (aViewConfig->get("x", o)) {
-    frame.x = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mFrame.x = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("y", o)) {
-    frame.y = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mFrame.y = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("dx", o)) {
-    frame.dx = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mFrame.dx = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("dy", o)) {
-    frame.dy = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mFrame.dy = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("bgcolor", o)) {
-    backgroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
+    mBackgroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
   }
   if (aViewConfig->get("color", o)) {
-    foregroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
+    mForegroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
   }
   if (aViewConfig->get("alpha", o)) {
     setAlpha(o->int32Value());
@@ -762,11 +762,11 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     }
   }
   if (aViewConfig->get("mask", o)) {
-    contentIsMask = o->boolValue();
+    mContentIsMask = o->boolValue();
     makeDirty();
   }
   if (aViewConfig->get("invertalpha", o)) {
-    invertAlpha = o->boolValue();
+    mInvertAlpha = o->boolValue();
     makeDirty();
   }
   // frame rect should be defined here (unless we'll use sizetocontent below), so we can check the content related props now
@@ -783,20 +783,20 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   // modification of content rect
   if (aViewConfig->get("content_x", o)) {
-    content.x = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mContent.x = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("content_y", o)) {
-    content.y = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mContent.y = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("content_dx", o)) {
-    content.dx = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mContent.dx = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("content_dy", o)) {
-    content.dy = o->int32Value(); makeDirty();
-    changedGeometry = true;
+    mContent.dy = o->int32Value(); makeDirty();
+    mChangedGeometry = true;
   }
   if (aViewConfig->get("rel_content_x", o)) {
     setRelativeContentOriginX(o->doubleValue(), false);
@@ -814,12 +814,12 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     setContentRotation(o->doubleValue());
   }
   if (aViewConfig->get("timingpriority", o)) {
-    localTimingPriority = o->boolValue();
+    mLocalTimingPriority = o->boolValue();
   }
   if (aViewConfig->get("sizetocontent", o)) {
-    sizeToContent = o->boolValue();
+    mSizeToContent = o->boolValue();
   }
-  if (changedGeometry && sizeToContent) {
+  if (mChangedGeometry && mSizeToContent) {
     moveFrameToContent(true);
   }
   if (aViewConfig->get("stopanimations", o)) {
@@ -873,7 +873,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 
 P44ViewPtr P44View::getView(const string aLabel)
 {
-  if (aLabel==label) {
+  if (aLabel==mLabel) {
     return P44ViewPtr(this); // that's me
   }
   return P44ViewPtr(); // not found
@@ -938,27 +938,27 @@ JsonObjectPtr P44View::viewStatus()
 {
   JsonObjectPtr status = JsonObject::newObj();
   status->add("type", JsonObject::newString(viewTypeName()));
-  if (!label.empty()) status->add("label", JsonObject::newString(label));
-  status->add("x", JsonObject::newInt32(frame.x));
-  status->add("y", JsonObject::newInt32(frame.y));
-  status->add("dx", JsonObject::newInt32(frame.dx));
-  status->add("dy", JsonObject::newInt32(frame.dy));
-  status->add("content_x", JsonObject::newInt32(content.x));
-  status->add("content_y", JsonObject::newInt32(content.y));
-  status->add("content_dx", JsonObject::newInt32(content.dx));
-  status->add("content_dy", JsonObject::newInt32(content.dy));
-  status->add("rotation", JsonObject::newDouble(contentRotation));
-  status->add("color", JsonObject::newString(pixelToWebColor(foregroundColor)));
-  status->add("bgcolor", JsonObject::newString(pixelToWebColor(backgroundColor)));
+  if (!mLabel.empty()) status->add("label", JsonObject::newString(mLabel));
+  status->add("x", JsonObject::newInt32(mFrame.x));
+  status->add("y", JsonObject::newInt32(mFrame.y));
+  status->add("dx", JsonObject::newInt32(mFrame.dx));
+  status->add("dy", JsonObject::newInt32(mFrame.dy));
+  status->add("content_x", JsonObject::newInt32(mContent.x));
+  status->add("content_y", JsonObject::newInt32(mContent.y));
+  status->add("content_dx", JsonObject::newInt32(mContent.dx));
+  status->add("content_dy", JsonObject::newInt32(mContent.dy));
+  status->add("rotation", JsonObject::newDouble(mContentRotation));
+  status->add("color", JsonObject::newString(pixelToWebColor(mForegroundColor)));
+  status->add("bgcolor", JsonObject::newString(pixelToWebColor(mBackgroundColor)));
   status->add("alpha", JsonObject::newInt32(getAlpha()));
   status->add("z_order", JsonObject::newInt32(getZOrder()));
-  status->add("orientation", JsonObject::newString(orientationToText(contentOrientation)));
+  status->add("orientation", JsonObject::newString(orientationToText(mContentOrientation)));
   status->add("wrapmode", JsonObject::newString(wrapModeToText(getWrapMode(), false)));
-  status->add("mask", JsonObject::newBool(contentIsMask));
-  status->add("invertalpha", JsonObject::newBool(invertAlpha));
-  status->add("timingpriority", JsonObject::newBool(localTimingPriority));
+  status->add("mask", JsonObject::newBool(mContentIsMask));
+  status->add("invertalpha", JsonObject::newBool(mInvertAlpha));
+  status->add("timingpriority", JsonObject::newBool(mLocalTimingPriority));
   #if ENABLE_ANIMATION
-  status->add("animations", JsonObject::newInt64(animations.size()));
+  status->add("animations", JsonObject::newInt64(mAnimations.size()));
   #endif
   return status;
 }
@@ -975,8 +975,8 @@ void P44View::geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
   if (newValue!=*aPixelCoordP) {
     geometryChange(true);
     *aPixelCoordP = newValue;
-    changedGeometry = true;
-    if (sizeToContent) moveFrameToContent(true);
+    mChangedGeometry = true;
+    if (mSizeToContent) moveFrameToContent(true);
     geometryChange(false);
   }
 }
@@ -1080,26 +1080,26 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     return boost::bind(&P44View::setAlpha, this, _1);
   }
   else if (aProperty=="rotation") {
-    aCurrentValue = contentRotation;
+    aCurrentValue = mContentRotation;
     return boost::bind(&P44View::setContentRotation, this, _1);
   }
   else if (aProperty=="x") {
-    return getGeometryPropertySetter(frame.x, aCurrentValue);
+    return getGeometryPropertySetter(mFrame.x, aCurrentValue);
   }
   else if (aProperty=="y") {
-    return getGeometryPropertySetter(frame.y, aCurrentValue);
+    return getGeometryPropertySetter(mFrame.y, aCurrentValue);
   }
   else if (aProperty=="dx") {
-    return getGeometryPropertySetter(frame.dx, aCurrentValue);
+    return getGeometryPropertySetter(mFrame.dx, aCurrentValue);
   }
   else if (aProperty=="dy") {
-    return getGeometryPropertySetter(frame.dy, aCurrentValue);
+    return getGeometryPropertySetter(mFrame.dy, aCurrentValue);
   }
   else if (aProperty=="content_x") {
-    return getGeometryPropertySetter(content.x, aCurrentValue);
+    return getGeometryPropertySetter(mContent.x, aCurrentValue);
   }
   else if (aProperty=="content_y") {
-    return getGeometryPropertySetter(content.y, aCurrentValue);
+    return getGeometryPropertySetter(mContent.y, aCurrentValue);
   }
   else if (aProperty=="rel_content_x") {
     aCurrentValue = 0; // dummy
@@ -1118,16 +1118,16 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     return boost::bind(&P44View::setRelativeContentOriginY, this, _1, true);
   }
   else if (aProperty=="content_dx") {
-    return getGeometryPropertySetter(content.dx, aCurrentValue);
+    return getGeometryPropertySetter(mContent.dx, aCurrentValue);
   }
   else if (aProperty=="content_dy") {
-    return getGeometryPropertySetter(content.dy, aCurrentValue);
+    return getGeometryPropertySetter(mContent.dy, aCurrentValue);
   }
   else if (aProperty.substr(0,6)=="color.") {
-    return getColorComponentSetter(aProperty.substr(6), foregroundColor, aCurrentValue);
+    return getColorComponentSetter(aProperty.substr(6), mForegroundColor, aCurrentValue);
   }
   else if (aProperty.substr(0,8)=="bgcolor.") {
-    return getColorComponentSetter(aProperty.substr(8), backgroundColor, aCurrentValue);
+    return getColorComponentSetter(aProperty.substr(8), mBackgroundColor, aCurrentValue);
   }
   // unknown
   return NoOP;
@@ -1140,7 +1140,7 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
   ValueSetterCB valueSetter = getPropertySetter(aProperty, startValue);
   ValueAnimatorPtr animator = ValueAnimatorPtr(new ValueAnimator(valueSetter, false, getMinUpdateInterval())); // not self-timed
   if (animator->valid()) {
-    animations.push_back(animator);
+    mAnimations.push_back(animator);
     makeDirtyAndUpdate(); // to make sure animation sequence starts
   }
   return animator->from(startValue);
@@ -1154,10 +1154,10 @@ void P44View::stopAnimations()
 {
   // always available as base implementation for other animations (such as in viewseqencer)
   #if ENABLE_ANIMATION
-  for (AnimationsList::iterator pos = animations.begin(); pos!=animations.end(); ++pos) {
+  for (AnimationsList::iterator pos = mAnimations.begin(); pos!=mAnimations.end(); ++pos) {
     (*pos)->stop(false); // stop with no callback
   }
-  animations.clear();
+  mAnimations.clear();
   #endif
 }
 

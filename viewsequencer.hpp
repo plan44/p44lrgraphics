@@ -30,10 +30,10 @@ namespace p44 {
   class AnimationStep
   {
   public:
-    P44ViewPtr view;
-    MLMicroSeconds fadeInTime;
-    MLMicroSeconds showTime;
-    MLMicroSeconds fadeOutTime;
+    P44ViewPtr mView;
+    MLMicroSeconds mFadeInTime;
+    MLMicroSeconds mShowTime;
+    MLMicroSeconds mFadeOutTime;
   };
 
 
@@ -44,18 +44,18 @@ namespace p44 {
 
     typedef std::vector<AnimationStep> SequenceVector;
 
-    SequenceVector sequence; ///< sequence
-    bool repeating; ///< set if current animation is repeating
-    int currentStep; ///< current step in running animation
-    SimpleCB completedCB; ///< called when one animation run is done
-    P44ViewPtr currentView; ///< current view
+    SequenceVector mSequence; ///< sequence
+    bool mRepeating; ///< set if current animation is repeating
+    int mCurrentStep; ///< current step in running animation
+    SimpleCB mCompletedCB; ///< called when one animation run is done
+    P44ViewPtr mCurrentView; ///< current view
 
     enum {
       as_begin,
       as_show,
       as_fadeout
     } animationState;
-    MLMicroSeconds lastStateChange;
+    MLMicroSeconds mLastStateChange;
 
   public :
 

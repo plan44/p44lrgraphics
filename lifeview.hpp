@@ -31,22 +31,22 @@ namespace p44 {
   {
     typedef ColorEffectView inherited;
 
-    std::vector<uint32_t> cells; ///< internal representation
+    std::vector<uint32_t> mCells; ///< internal representation
 
-    int dynamics;
-    int population;
+    int mDynamics;
+    int mPopulation;
 
-    int staticcount;
-    int maxStatic;
-    int minPopulation;
-    int minStatic;
+    int mStaticcount;
+    int mMaxStatic;
+    int mMinPopulation;
+    int mMinStatic;
 
-    MLMicroSeconds generationInterval;
-    MLMicroSeconds lastGeneration;
+    MLMicroSeconds mGenerationInterval;
+    MLMicroSeconds mLastGeneration;
 
-    double hue;
-    double saturation;
-    double brightness;
+    double mHue;
+    double mSaturation;
+    double mBrightness;
 
   public :
 

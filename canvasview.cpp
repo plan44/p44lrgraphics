@@ -34,8 +34,8 @@ using namespace p44;
 // MARK: ===== CanvasView
 
 CanvasView::CanvasView() :
-  canvasBuffer(NULL),
-  numPixels(0)
+  mCanvasBuffer(NULL),
+  mNumPixels(0)
 {
 }
 
@@ -50,9 +50,9 @@ void CanvasView::clear()
 {
   stopAnimations();
   // no inherited::clear(), we want to retain the canvas itself...
-  if (canvasBuffer) {
+  if (mCanvasBuffer) {
     // ...but make all pixels transparent
-    for (PixelCoord i=0; i<numPixels; ++i) canvasBuffer[i] = transparent;
+    for (PixelCoord i=0; i<mNumPixels; ++i) mCanvasBuffer[i] = transparent;
   }
 }
 
@@ -60,10 +60,10 @@ void CanvasView::clear()
 void CanvasView::clearData()
 {
   // free the buffer if allocated
-  if (canvasBuffer) {
-    delete[] canvasBuffer;
-    canvasBuffer = NULL;
-    numPixels = 0;
+  if (mCanvasBuffer) {
+    delete[] mCanvasBuffer;
+    mCanvasBuffer = NULL;
+    mNumPixels = 0;
   }
 }
 
@@ -71,9 +71,9 @@ void CanvasView::clearData()
 void CanvasView::resize()
 {
   clearData();
-  if (content.dx>0 && content.dy>0) {
-    numPixels = content.dx*content.dy;
-    canvasBuffer = new PixelColor[numPixels];
+  if (mContent.dx>0 && mContent.dy>0) {
+    mNumPixels = mContent.dx*mContent.dy;
+    mCanvasBuffer = new PixelColor[mNumPixels];
     clear();
   }
 }
@@ -81,7 +81,7 @@ void CanvasView::resize()
 
 void CanvasView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 {
-  if (aOldContent.dx!=content.dx || aOldContent.dy!=content.dy) {
+  if (aOldContent.dx!=mContent.dx || aOldContent.dy!=mContent.dy) {
     resize(); // size changed: clear and resize canvas
   }
   inherited::geometryChanged(aOldFrame, aOldContent);
@@ -90,26 +90,26 @@ void CanvasView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 
 PixelColor CanvasView::contentColorAt(PixelPoint aPt)
 {
-  if (!canvasBuffer || !isInContentSize(aPt)) {
-    return backgroundColor;
+  if (!mCanvasBuffer || !isInContentSize(aPt)) {
+    return mBackgroundColor;
   }
   else {
     // get pixel information from canvas buffer
-    return canvasBuffer[aPt.y*content.dx+aPt.x];
+    return mCanvasBuffer[aPt.y*mContent.dx+aPt.x];
   }
 }
 
 
 void CanvasView::setPixel(PixelColor aColor, PixelCoord aPixelIndex)
 {
-  if (!canvasBuffer || aPixelIndex<0 || aPixelIndex>=numPixels) return;
-  canvasBuffer[aPixelIndex] = aColor;
+  if (!mCanvasBuffer || aPixelIndex<0 || aPixelIndex>=mNumPixels) return;
+  mCanvasBuffer[aPixelIndex] = aColor;
 }
 
 
 void CanvasView::setPixel(PixelColor aColor, PixelPoint aPixelPoint)
 {
-  setPixel(aColor, aPixelPoint.y*content.dx+aPixelPoint.x);
+  setPixel(aColor, aPixelPoint.y*mContent.dx+aPixelPoint.x);
 }
 
 
@@ -133,7 +133,7 @@ ErrorPtr CanvasView::configureView(JsonObjectPtr aViewConfig)
       draw = true;
     }
     if (draw) {
-      setPixel(foregroundColor, p);
+      setPixel(mForegroundColor, p);
     }
   }
   return err;

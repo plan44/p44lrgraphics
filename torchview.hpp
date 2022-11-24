@@ -32,29 +32,28 @@ namespace p44 {
     typedef ColorEffectView inherited;
 
     // flame parameters
-    uint8_t flame_min; ///< 0..255, minimal flame pixel energy
-    uint8_t flame_max; ///< 0..255, maximal flame pixel energy
-    uint8_t flame_height; ///< number of flame (random fire) rows at the bottom
+    uint8_t mFlameMin; ///< 0..255, minimal flame pixel energy
+    uint8_t mFlameMax; ///< 0..255, maximal flame pixel energy
+    uint8_t mFlameHeight; ///< number of flame (random fire) rows at the bottom
     // spark generation parameters
-    uint8_t spark_probability; // 0..100, probability for generating a spark at all
-    uint8_t spark_min; ///< 0..255, minimal initial spark energy
-    uint8_t spark_max; ///< 0..255, maximal initial spark energy
+    uint8_t mSparkProbability; // 0..100, probability for generating a spark at all
+    uint8_t mSparkMin; ///< 0..255, minimal initial spark energy
+    uint8_t mSparkMax; ///< 0..255, maximal initial spark energy
     // spark development parameters
-    uint8_t spark_tfr; ///< 0..256 how much energy is transferred up for a spark per cycle
-    uint16_t spark_cap; ///< 0..255: how much energy is retained from previous cycle
-    uint16_t up_rad; ///< up radiation
-    uint16_t side_rad; ///< sidewards radiation
-    uint16_t heat_cap; ///< 0..255: passive cells: how much energy is retained from previous cycle
+    uint8_t mSparkTfr; ///< 0..256 how much energy is transferred up for a spark per cycle
+    uint16_t mSparkCap; ///< 0..255: how much energy is retained from previous cycle
+    uint16_t mUpRad; ///< up radiation
+    uint16_t mSideRad; ///< sidewards radiation
+    uint16_t mHeatCap; ///< 0..255: passive cells: how much energy is retained from previous cycle
     // hot spark coloring parameters
-    uint8_t hotspark_min; ///< 0..255 energy level for showing a spark in hotsparkColor
-    PixelColor hotsparkColor; ///< color of lowest temp extra hot spark
-    PixelColor hotsparkColorInc; ///< color increment for highest temp extra hot spark
-//    PixelColor biasColor; ///< color bias for flame and spark pixels
+    uint8_t mHotsparkMin; ///< 0..255 energy level for showing a spark in hotsparkColor
+    PixelColor mHotsparkColor; ///< color of lowest temp extra hot spark
+    PixelColor mHotsparkColorInc; ///< color increment for highest temp extra hot spark
     // @note main color for flame and spark pixels that is scaled by energy is foregroundColor
     // timing parameter
-    MLMicroSeconds cycleTime; ///< spark update cycle time
+    MLMicroSeconds mCycleTime; ///< spark update cycle time
 
-    MLMicroSeconds nextCalculation; ///< next time animation must be calculated
+    MLMicroSeconds mNextCalculation; ///< next time animation must be calculated
 
     typedef enum {
       torch_passive = 0, // just environment, glow from nearby radiation
@@ -71,7 +70,7 @@ namespace p44 {
 
     typedef std::vector<TorchDot> TorchDotVector;
 
-    TorchDotVector torchDots;
+    TorchDotVector mTorchDots;
 
   public :
 

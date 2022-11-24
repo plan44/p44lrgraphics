@@ -74,19 +74,19 @@ namespace p44 {
   {
     friend class ViewStack;
 
-    bool dirty;
-    bool updateRequested; ///< set when needUpdateCB has been called, reset at step() or update()
-    TimerCB needUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
-    MLMicroSeconds minUpdateInterval; ///< minimum update interval (as a hint from actual display)
+    bool mDirty;
+    bool mUpdateRequested; ///< set when needUpdateCB has been called, reset at step() or update()
+    TimerCB mNeedUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
+    MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
-    int geometryChanging;
-    bool changedGeometry;
-    PixelRect previousFrame;
-    PixelRect previousContent;
+    int mGeometryChanging;
+    bool mChangedGeometry;
+    PixelRect mPreviousFrame;
+    PixelRect mPreviousContent;
 
     #if ENABLE_ANIMATION
     typedef std::list<ValueAnimatorPtr> AnimationsList;
-    AnimationsList animations; /// the list of currently running animations
+    AnimationsList mAnimations; /// the list of currently running animations
     #endif
 
 
@@ -140,36 +140,36 @@ namespace p44 {
 
     // parent view (pointer only, to avoid retain cycles)
     // Containers must make sure their children's parent pointer gets reset before parent goes away
-    P44View* parentView;
+    P44View* mParentView;
 
     // outer frame
-    PixelRect frame;
-    bool sizeToContent; ///< if set, frame is automatically resized with content
+    PixelRect mFrame;
+    bool mSizeToContent; ///< if set, frame is automatically resized with content
 
     // alpha (opacity)
-    PixelColorComponent alpha;
+    PixelColorComponent mAlpha;
 
     // colors
-    PixelColor backgroundColor; ///< background color
-    PixelColor foregroundColor; ///< foreground color
+    PixelColor mBackgroundColor; ///< background color
+    PixelColor mForegroundColor; ///< foreground color
 
     // z-order
-    int z_order;
+    int mZOrder;
 
     // content
-    PixelRect content; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation translated!)
-    Orientation contentOrientation; ///< orientation of content in frame
-    WrapMode contentWrapMode; ///< content wrap mode in frame area
-    bool contentIsMask; ///< if set, only alpha of content is used on foreground color
-    bool invertAlpha; ///< invert alpha provided by content
-    bool localTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
-    MLMicroSeconds maskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
-    double contentRotation; ///< rotation of content pixels in degree CCW
+    PixelRect mContent; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation translated!)
+    Orientation mContentOrientation; ///< orientation of content in frame
+    WrapMode mContentWrapMode; ///< content wrap mode in frame area
+    bool mContentIsMask; ///< if set, only alpha of content is used on foreground color
+    bool mInvertAlpha; ///< invert alpha provided by content
+    bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
+    MLMicroSeconds mMaskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
+    double mContentRotation; ///< rotation of content pixels in degree CCW
     // - derived values
-    double rotSin;
-    double rotCos;
+    double mRotSin;
+    double mRotCos;
 
-    string label; ///< label of the view for addressing it
+    string mLabel; ///< label of the view for addressing it
 
     /// announce/finish geometry change
     void geometryChange(bool aStart);
@@ -242,10 +242,10 @@ namespace p44 {
     virtual void setFrame(PixelRect aFrame);
 
     /// @return current frame rect
-    PixelRect getFrame() { return frame; };
+    PixelRect getFrame() { return mFrame; };
 
     /// @return current content rect
-    PixelRect getContent() { return content; };
+    PixelRect getContent() { return mContent; };
 
     /// @param aParentView parent view or NULL if none
     void setParent(P44ViewPtr aParentView);
@@ -271,33 +271,33 @@ namespace p44 {
 
     /// set the view's background color
     /// @param aBackgroundColor color of pixels not covered by content
-    void setBackgroundColor(PixelColor aBackgroundColor) { backgroundColor = aBackgroundColor; makeColorDirty(); };
+    void setBackgroundColor(PixelColor aBackgroundColor) { mBackgroundColor = aBackgroundColor; makeColorDirty(); };
 
     /// @return current background color
-    PixelColor getBackgroundColor() { return backgroundColor; }
+    PixelColor getBackgroundColor() { return mBackgroundColor; }
 
     /// set foreground color
-    void setForegroundColor(PixelColor aColor) { foregroundColor = aColor; makeColorDirty(); }
+    void setForegroundColor(PixelColor aColor) { mForegroundColor = aColor; makeColorDirty(); }
 
     /// get foreground color
-    PixelColor getForegroundColor() const { return foregroundColor; }
+    PixelColor getForegroundColor() const { return mForegroundColor; }
 
     /// set content wrap mode
     /// @param aWrapMode the new wrap mode
-    void setWrapMode(WrapMode aWrapMode) { contentWrapMode = aWrapMode; makeDirty(); }
+    void setWrapMode(WrapMode aWrapMode) { mContentWrapMode = aWrapMode; makeDirty(); }
 
     /// get current wrap mode
     /// @return current wrap mode
-    WrapMode getWrapMode() { return contentWrapMode; }
+    WrapMode getWrapMode() { return mContentWrapMode; }
 
     /// set view label
     /// @note this is for referencing views in reconfigure operations
     /// @param aLabel the new label
-    void setLabel(const string aLabel) { label = aLabel; }
+    void setLabel(const string aLabel) { mLabel = aLabel; }
 
     /// set default view label (i.e. set label only if the view does have an empty label so far)
     /// @param aLabel the new label
-    void setDefaultLabel(const string aLabel) { if (label.empty()) label = aLabel; };
+    void setDefaultLabel(const string aLabel) { if (mLabel.empty()) mLabel = aLabel; };
 
     /// set view's alpha
     /// @param aAlpha 0=fully transparent, 255=fully opaque
@@ -305,7 +305,7 @@ namespace p44 {
 
     /// get current alpha
     /// @return current alpha value 0=fully transparent=invisible, 255=fully opaque
-    PixelColorComponent getAlpha() { return alpha; };
+    PixelColorComponent getAlpha() { return mAlpha; };
 
     /// hide (set alpha to 0)
     void hide() { setAlpha(0); };
@@ -318,13 +318,13 @@ namespace p44 {
     void setVisible(bool aVisible) { if (aVisible) show(); else hide(); };
 
     /// @return Z-Order (e.g. in a viewstack, highest is frontmost)
-    int getZOrder() { return z_order; };
+    int getZOrder() { return mZOrder; };
 
     /// @param aZOrder z-order (e.g. in a viewstack, highest is frontmost)
     void setZOrder(int aZOrder);
 
     /// @param aOrientation the orientation of the content in the frame
-    void setOrientation(Orientation aOrientation) { contentOrientation = aOrientation; makeDirty(); }
+    void setOrientation(Orientation aOrientation) { mContentOrientation = aOrientation; makeDirty(); }
 
     /// set content rotation around content origin
     /// @param aRotation content rotation in degrees CCW
@@ -364,10 +364,10 @@ namespace p44 {
     void setRelativeContentOriginY(double aRelY, bool aCentered = true);
 
     /// @return content size
-    PixelPoint getContentSize() const { return { content.dx, content.dy }; }
+    PixelPoint getContentSize() const { return { mContent.dx, mContent.dy }; }
 
     /// @return frame size
-    PixelPoint getFrameSize() const { return { frame.dx, frame.dy }; }
+    PixelPoint getFrameSize() const { return { mFrame.dx, mFrame.dy }; }
 
     /// set content size to match full frame size, set content position to 0,0
     /// @note if orientation has x/y swapped, content size will also be set swapped
@@ -405,7 +405,7 @@ namespace p44 {
     virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil);
 
     /// return if anything changed on the display since last call
-    virtual bool isDirty()  { return dirty; };
+    virtual bool isDirty()  { return mDirty; };
 
     /// call when display is updated
     virtual void updated();

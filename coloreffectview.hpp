@@ -54,17 +54,17 @@ namespace p44 {
   protected:
     
     typedef std::vector<PixelColor> PixelVector;
-    PixelVector gradientPixels; ///< precalculated gradient pixels
+    PixelVector mGradientPixels; ///< precalculated gradient pixels
 
     /// coloring effect parameters (usually some kind of gradient)
-    bool radial; ///< if set, gradient is applied radially from a center, otherwise along an axis
-    double briGradient;
-    double hueGradient;
-    double satGradient;
-    GradientMode briMode;
-    GradientMode hueMode;
-    GradientMode satMode;
-    PixelPoint extent; ///< extent of effect in pixels (depends on effect itself what this actually means)
+    bool mRadial; ///< if set, gradient is applied radially from a center, otherwise along an axis
+    double mBriGradient;
+    double mHueGradient;
+    double mSatGradient;
+    GradientMode mBriMode;
+    GradientMode mHueMode;
+    GradientMode mSatMode;
+    PixelPoint mExtent; ///< extent of effect in pixels (depends on effect itself what this actually means)
 
   public :
 

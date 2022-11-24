@@ -40,11 +40,11 @@ using namespace p44;
 // MARK: ===== EpxView
 
 EpxView::EpxView() :
-  paletteBuffer(NULL),
-  numPaletteEntries(0),
-  nextRender(Infinite),
-  framesCursor(0),
-  remainingLoops(0)
+  mPaletteBuffer(NULL),
+  mNumPaletteEntries(0),
+  mNextRender(Infinite),
+  mFramesCursor(0),
+  mRemainingLoops(0)
 {
 }
 
@@ -65,11 +65,11 @@ void EpxView::clear()
 void EpxView::clearData()
 {
   // free the buffer if allocated
-  if (paletteBuffer) {
-    delete[] paletteBuffer;
-    paletteBuffer = NULL;
+  if (mPaletteBuffer) {
+    delete[] mPaletteBuffer;
+    mPaletteBuffer = NULL;
   }
-  framesData.clear();
+  mFramesData.clear();
 }
 
 
@@ -105,39 +105,39 @@ ErrorPtr EpxView::loadEpxAnimationJSON(JsonObjectPtr aEpxAnimation)
   JsonObjectPtr o;
   if (aEpxAnimation->get("PaletteSize", o)) {
     // - palette
-    numPaletteEntries = o->int32Value();
-    if (numPaletteEntries>256) return TextError::err("Palette cannot exceed 256 entries");
-    paletteBuffer = new PixelColor[numPaletteEntries];
+    mNumPaletteEntries = o->int32Value();
+    if (mNumPaletteEntries>256) return TextError::err("Palette cannot exceed 256 entries");
+    mPaletteBuffer = new PixelColor[mNumPaletteEntries];
     if (aEpxAnimation->get("PaletteHex", o)) {
-      string p = hexToBinaryString(o->stringValue().c_str(), false, numPaletteEntries*3);
-      if (p.size()!=numPaletteEntries*3) return TextError::err("PaletteHex has wrong size");
+      string p = hexToBinaryString(o->stringValue().c_str(), false, mNumPaletteEntries*3);
+      if (p.size()!=mNumPaletteEntries*3) return TextError::err("PaletteHex has wrong size");
       PixelColor pc;
-      for (int i=0; i<numPaletteEntries; i++) {
+      for (int i=0; i<mNumPaletteEntries; i++) {
         pc.r = p[i*3];
         pc.g = p[i*3+1];
         pc.b = p[i*3+2];
         pc.a = 255;
-        paletteBuffer[i] = pc;
+        mPaletteBuffer[i] = pc;
       }
       if (aEpxAnimation->get("FrameCount", o)) {
-        frameCount = o->int32Value();
+        mFrameCount = o->int32Value();
         if (aEpxAnimation->get("FramesHexLength", o)) { // length of the hex string (not of the binary data!)
           // - frames data
           size_t fb = o->int32Value()/2;
           if (fb<MAX_FRAMES_DATA_SZ) {
             if (aEpxAnimation->get("FramesHex", o)) {
-              framesData = hexToBinaryString(o->stringValue().c_str(), false, fb);
-              if (fb==framesData.size()) {
+              mFramesData = hexToBinaryString(o->stringValue().c_str(), false, fb);
+              if (fb==mFramesData.size()) {
                 // - optional loopcount (default: loop forever)
-                loopCount = 0;
+                mLoopCount = 0;
                 if (aEpxAnimation->get("LoopCount", o)) {
-                  loopCount = o->int32Value();
+                  mLoopCount = o->int32Value();
                 }
                 // - optional framerate (default: 12 FPS)
-                frameInterval = Second/12;
+                mFrameInterval = Second/12;
                 if (aEpxAnimation->get("FrameRate", o)) {
                   if (o->doubleValue()>0) {
-                    frameInterval = Second/o->doubleValue();
+                    mFrameInterval = Second/o->doubleValue();
                   }
                 }
                 // Epx package read ok
@@ -145,7 +145,7 @@ ErrorPtr EpxView::loadEpxAnimationJSON(JsonObjectPtr aEpxAnimation)
                 makeDirty();
                 return ErrorPtr();
               }
-              return TextError::err("Incorrect FramesHex lenght, expected=%zd, found=%zd", fb, framesData.size());
+              return TextError::err("Incorrect FramesHex lenght, expected=%zd, found=%zd", fb, mFramesData.size());
             }
             return TextError::err("Missing FramesHex");
           }
@@ -165,18 +165,18 @@ MLMicroSeconds EpxView::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (nextRender>=0 && now>=nextRender) {
-    nextRender = renderFrame();
+  if (mNextRender>=0 && now>=mNextRender) {
+    mNextRender = renderFrame();
   }
-  updateNextCall(nextCall, nextRender); // Note: make sure nextCall is updated even when render is NOT (YET) called!
+  updateNextCall(nextCall, mNextRender); // Note: make sure nextCall is updated even when render is NOT (YET) called!
   return nextCall;
 }
 
 
 void EpxView::resetAnimation()
 {
-  remainingLoops = loopCount>0 ? loopCount : 1;
-  framesCursor = 0;
+  mRemainingLoops = mLoopCount>0 ? mLoopCount : 1;
+  mFramesCursor = 0;
   setAlpha(255); // make visible
 }
 
@@ -184,7 +184,7 @@ void EpxView::resetAnimation()
 void EpxView::start()
 {
   resetAnimation();
-  nextRender = 0; // immediately
+  mNextRender = 0; // immediately
   makeDirtyAndUpdate();
 }
 
@@ -192,15 +192,15 @@ void EpxView::start()
 void EpxView::stop()
 {
   resetAnimation();
-  nextRender = Infinite; // stop running
+  mNextRender = Infinite; // stop running
 }
 
 
 
 void EpxView::setPalettePixel(uint8_t aPaletteIndex, PixelCoord aPixelIndex)
 {
-  if (aPaletteIndex>=numPaletteEntries) return; // NOP
-  setPixel(paletteBuffer[aPaletteIndex], aPixelIndex);
+  if (aPaletteIndex>=mNumPaletteEntries) return; // NOP
+  setPixel(mPaletteBuffer[aPaletteIndex], aPixelIndex);
 }
 
 
@@ -219,51 +219,51 @@ MLMicroSeconds EpxView::renderFrame()
 {
   MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds next = Infinite;
-  if (framesCursor<framesData.size()) {
-    char ft = framesData[framesCursor++];
+  if (mFramesCursor<mFramesData.size()) {
+    char ft = mFramesData[mFramesCursor++];
     switch (ft) {
       case 'I': { // intra-coded frame (just fill in pixels)
-        uint16_t pc = getInt16(framesData, framesCursor);
+        uint16_t pc = getInt16(mFramesData, mFramesCursor);
         FOCUSLOG("I-frame with %hd pixels", pc);
         PixelCoord pi = 0;
-        while (pc>0 && framesCursor<framesData.size()) {
-          setPalettePixel(framesData[framesCursor++], pi++);
+        while (pc>0 && mFramesCursor<mFramesData.size()) {
+          setPalettePixel(mFramesData[mFramesCursor++], pi++);
           pc--;
         }
-        next = now+frameInterval;
+        next = now+mFrameInterval;
         break;
       }
       case 'P': { // prediced picture frame (addressed pixels)
-        uint16_t pc = getInt16(framesData, framesCursor);
+        uint16_t pc = getInt16(mFramesData, mFramesCursor);
         FOCUSLOG("P-frame with %hd pixel changes", pc);
         PixelCoord pi = 0;
         if (getNumPixels()>256) {
           // 16 bit pixel addresses
-          while (pc>0 && framesCursor+3<=framesData.size()) {
-            pi = getInt16(framesData, framesCursor);
-            setPalettePixel(framesData[framesCursor++], pi);
+          while (pc>0 && mFramesCursor+3<=mFramesData.size()) {
+            pi = getInt16(mFramesData, mFramesCursor);
+            setPalettePixel(mFramesData[mFramesCursor++], pi);
             pc--;
           }
         }
         else {
           // 8 bit pixel addresses
-          while (pc>0 && framesCursor+2<=framesData.size()) {
-            pi = (uint8_t)framesData[framesCursor++];
-            setPalettePixel(framesData[framesCursor++], pi);
+          while (pc>0 && mFramesCursor+2<=mFramesData.size()) {
+            pi = (uint8_t)mFramesData[mFramesCursor++];
+            setPalettePixel(mFramesData[mFramesCursor++], pi);
             pc--;
           }
         }
-        next = now+frameInterval;
+        next = now+mFrameInterval;
         break;
       }
       case 'D': { // delay
-        uint16_t d = getInt16(framesData, framesCursor);
+        uint16_t d = getInt16(mFramesData, mFramesCursor);
         FOCUSLOG("D-frame delaying %hd mS", d);
         if (d>0) next = now+(MLMicroSeconds)(d)*MilliSecond;
         break;
       }
       case 'F': { // fade out
-        uint16_t d = getInt16(framesData, framesCursor);
+        uint16_t d = getInt16(mFramesData, mFramesCursor);
         FOCUSLOG("F-frame fading down in %hd mS", d);
         animatorFor("alpha")->from(255)->animate(0, d*MilliSecond);
         if (d>0) next = now+(MLMicroSeconds)(d)*MilliSecond;
@@ -274,11 +274,11 @@ MLMicroSeconds EpxView::renderFrame()
   }
   else {
     // end of frames
-    if (loopCount>0) remainingLoops--;
-    if (remainingLoops>0) {
+    if (mLoopCount>0) mRemainingLoops--;
+    if (mRemainingLoops>0) {
       // repeat
       setAlpha(255); // make visible (again)
-      framesCursor = 0;
+      mFramesCursor = 0;
       next = now;
     }
   }
@@ -305,7 +305,7 @@ ErrorPtr EpxView::configureView(JsonObjectPtr aViewConfig)
     }
     if (aViewConfig->get("run", o)) {
       bool r = o->boolValue();
-      if (r!=(nextRender>0)) {
+      if (r!=(mNextRender>0)) {
         if (r) start();
         else stop();
       }
@@ -321,7 +321,7 @@ ErrorPtr EpxView::configureView(JsonObjectPtr aViewConfig)
 JsonObjectPtr EpxView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("run", JsonObject::newBool(nextRender>0));
+  status->add("run", JsonObject::newBool(mNextRender>0));
   return status;
 }
 

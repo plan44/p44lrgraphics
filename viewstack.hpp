@@ -32,8 +32,8 @@ namespace p44 {
 
     typedef std::list<P44ViewPtr> ViewsList;
 
-    ViewsList viewStack;
-    WrapMode positioningMode; ///< mode for positioning views with pushView, purging with purgeView, and autoresizing on child changes
+    ViewsList mViewStack;
+    WrapMode mPositioningMode; ///< mode for positioning views with pushView, purging with purgeView, and autoresizing on child changes
 
   public :
 
@@ -50,10 +50,10 @@ namespace p44 {
     /// - for pushView, purgeView and change of child view sizes: any clip bits set means *NO* automatic change of content bounds
     /// - for purgeViews: wrapXmax means measuring new size from max X coordinate in negative X direction,
     ///   wrapXmin means from min X coordinate in positive X direction, etc.
-    void setPositioningMode(WrapMode aPositioningMode) { positioningMode = aPositioningMode; }
+    void setPositioningMode(WrapMode aPositioningMode) { mPositioningMode = aPositioningMode; }
 
     /// get the current positioning mode as set by setPositioningMode()
-    WrapMode getPositioningMode() { return positioningMode; }
+    WrapMode getPositioningMode() { return mPositioningMode; }
 
     /// push view onto top of stack
     /// @param aView the view to push in front of all other views
@@ -85,7 +85,7 @@ namespace p44 {
     void offsetSubviews(PixelPoint aOffset);
 
     /// @return number of views in the stack
-    size_t numViews() { return viewStack.size(); }
+    size_t numViews() { return mViewStack.size(); }
 
     /// @param aBounds will be set to rect (in content coords) enclosing all subviews
     void getEnclosingContentRect(PixelRect &aBounds);

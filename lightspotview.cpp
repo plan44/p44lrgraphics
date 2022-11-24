@@ -42,7 +42,7 @@ LightSpotView::~LightSpotView()
 
 void LightSpotView::recalculateColoring()
 {
-  calculateGradient(radial ? max(frame.dx, frame.dy) : frame.dx,  radial ? max(extent.x, extent.y) : extent.x);
+  calculateGradient(mRadial ? max(mFrame.dx, mFrame.dy) : mFrame.dx,  mRadial ? max(mExtent.x, mExtent.y) : mExtent.x);
   inherited::recalculateColoring();
 }
 
@@ -60,29 +60,29 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
   PixelColor pix = transparent;
 
   // aPt are coordinates from center (already offset by content frame origin)
-  int numGPixels = (int)gradientPixels.size();
+  int numGPixels = (int)mGradientPixels.size();
   // - factor relative to the size (0..1)
-  double xf = (double)aPt.x/extent.x;
+  double xf = (double)aPt.x/mExtent.x;
   int extentPixels;
   double progress;
-  if (radial) {
+  if (mRadial) {
     // radial
-    double yf = (double)aPt.y/extent.y;
-    extentPixels = max(extent.x, extent.y);
+    double yf = (double)aPt.y/mExtent.y;
+    extentPixels = max(mExtent.x, mExtent.y);
     progress = sqrt(xf*xf+yf*yf);
   }
   else {
     // linear
-    extentPixels = extent.x;
+    extentPixels = mExtent.x;
     progress = fabs(xf);
   }
-  if (progress<1 || (progress==1 && xf<0)  || (contentWrapMode&clipXY)==0) {
+  if (progress<1 || (progress==1 && xf<0)  || (mContentWrapMode&clipXY)==0) {
     if (numGPixels>0) {
       int i = progress*extentPixels;
       pix = gradientPixel(i);
     }
     else {
-      pix = foregroundColor;
+      pix = mForegroundColor;
     }
   }
   return pix;

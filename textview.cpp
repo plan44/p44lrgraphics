@@ -779,8 +779,8 @@ TextView::TextView()
   binStringAsFont();
   exit(1);
   #endif
-  textSpacing = 2;
-  visible = true;
+  mTextSpacing = 2;
+  mVisible = true;
 }
 
 
@@ -788,7 +788,7 @@ void TextView::clear()
 {
   stopAnimations();
   setText("");
-  visible = true;
+  mVisible = true;
 }
 
 
@@ -799,14 +799,14 @@ TextView::~TextView()
 
 void TextView::setText(const string aText)
 {
-  text = aText;
+  mText = aText;
   renderText();
 }
 
 
 void TextView::setVisible(bool aVisible)
 {
-  visible = aVisible;
+  mVisible = aVisible;
   renderText();
 }
 
@@ -814,13 +814,13 @@ void TextView::setVisible(bool aVisible)
 
 void TextView::renderText()
 {
-  textPixelCols.clear();
-  if (visible) {
+  mTextPixelCols.clear();
+  if (mVisible) {
     // convert to glyph indices
     string glyphs;
     size_t i = 0;
-    while (i<text.size()) {
-      uint8_t textbyte = text[i++];
+    while (i<mText.size()) {
+      uint8_t textbyte = mText[i++];
       unsigned char c = 0x7F; // placeholder for unknown
       // Ä = C3 84
       // Ö = C3 96
@@ -829,8 +829,8 @@ void TextView::renderText()
       // ö = C3 B6
       // ü = C3 BC
       if (textbyte==0xC3) {
-        if (i>=text.size()) break; // end of text
-        switch ((uint8_t)text[i++]) {
+        if (i>=mText.size()) break; // end of text
+        switch ((uint8_t)mText[i++]) {
           case 0x84: c = 0x80; break; // Ä
           case 0x96: c = 0x81; break; // Ö
           case 0x9C: c = 0x82; break; // Ü
@@ -853,22 +853,22 @@ void TextView::renderText()
     for (size_t i = 0; i<glyphs.size(); ++i) {
       const glyph_t &g = fontGlyphs[(unsigned int)glyphs[i]];
       for (int j = 0; j<g.width; ++j) {
-        textPixelCols.append(1, g.cols[j]);
+        mTextPixelCols.append(1, g.cols[j]);
       }
-      for (int j = 0; j<textSpacing; ++j) {
-        textPixelCols.append(1, 0);
+      for (int j = 0; j<mTextSpacing; ++j) {
+        mTextPixelCols.append(1, 0);
       }
     }
   }
   // set content size
-  setContentSize({(int)textPixelCols.size(), rowsPerGlyph});
+  setContentSize({(int)mTextPixelCols.size(), rowsPerGlyph});
   makeDirty();
 }
 
 
 void TextView::recalculateColoring()
 {
-  calculateGradient(content.dx, extent.x);
+  calculateGradient(mContent.dx, mExtent.x);
   inherited::recalculateColoring();
 }
 
@@ -884,16 +884,16 @@ void TextView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 PixelColor TextView::contentColorAt(PixelPoint aPt)
 {
   if (isInContentSize(aPt)) {
-    uint8_t col = textPixelCols[aPt.x];
+    uint8_t col = mTextPixelCols[aPt.x];
     if (aPt.y<rowsPerGlyph && aPt.y>=0 && (col & (1<<(rowsPerGlyph-1-aPt.y)))) {
-      if (!gradientPixels.empty()) {
+      if (!mGradientPixels.empty()) {
         // horizontally gradiated text
         return gradientPixel(aPt.x);
       }
-      return foregroundColor;
+      return mForegroundColor;
     }
   }
-  return backgroundColor;
+  return mBackgroundColor;
 }
 
 
@@ -927,9 +927,9 @@ ErrorPtr TextView::configureView(JsonObjectPtr aViewConfig)
 JsonObjectPtr TextView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("text", JsonObject::newString(text));
-  status->add("visible", JsonObject::newBool(visible));
-  status->add("spacing", JsonObject::newInt32(textSpacing));
+  status->add("text", JsonObject::newString(mText));
+  status->add("visible", JsonObject::newBool(mVisible));
+  status->add("spacing", JsonObject::newInt32(mTextSpacing));
   return status;
 }
 

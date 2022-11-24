@@ -41,7 +41,7 @@ using namespace p44;
 
 
 ImageView::ImageView() :
-  pngBuffer(NULL)
+  mPngBuffer(NULL)
 {
 }
 
@@ -56,12 +56,12 @@ void ImageView::clear()
 {
   inherited::clear(); // zero content size
   // init libpng image structure
-  memset(&pngImage, 0, (sizeof pngImage));
-  pngImage.version = PNG_IMAGE_VERSION;
+  memset(&mPngImage, 0, (sizeof mPngImage));
+  mPngImage.version = PNG_IMAGE_VERSION;
   // free the buffer if allocated
-  if (pngBuffer) {
-    free(pngBuffer);
-    pngBuffer = NULL;
+  if (mPngBuffer) {
+    free(mPngBuffer);
+    mPngBuffer = NULL;
   }
 }
 
@@ -71,35 +71,35 @@ ErrorPtr ImageView::loadPNG(const string aPNGFileName)
   // clear any previous pattern (and make dirty)
   clear();
   // read image
-  if (png_image_begin_read_from_file(&pngImage, aPNGFileName.c_str()) == 0) {
+  if (png_image_begin_read_from_file(&mPngImage, aPNGFileName.c_str()) == 0) {
     // error
     return TextError::err("could not open PNG file %s", aPNGFileName.c_str());
   }
   else {
     // We want full RGBA
-    pngImage.format = PNG_FORMAT_RGBA;
+    mPngImage.format = PNG_FORMAT_RGBA;
     // Now allocate enough memory to hold the image in this format; the
     // PNG_IMAGE_SIZE macro uses the information about the image (width,
     // height and format) stored in 'image'.
-    pngBuffer = (png_bytep)malloc(PNG_IMAGE_SIZE(pngImage));
-    FOCUSLOG("Image size in bytes = %d", PNG_IMAGE_SIZE(pngImage));
-    FOCUSLOG("Image width = %d", pngImage.width);
-    FOCUSLOG("Image height = %d", pngImage.height);
-    FOCUSLOG("Image width*height = %d", pngImage.height*pngImage.width);
-    setContentSize({ (int)pngImage.width, (int)pngImage.height});
-    if (pngBuffer==NULL) {
+    mPngBuffer = (png_bytep)malloc(PNG_IMAGE_SIZE(mPngImage));
+    FOCUSLOG("Image size in bytes = %d", PNG_IMAGE_SIZE(mPngImage));
+    FOCUSLOG("Image width = %d", mPngImage.width);
+    FOCUSLOG("Image height = %d", mPngImage.height);
+    FOCUSLOG("Image width*height = %d", mPngImage.height*mPngImage.width);
+    setContentSize({ (int)mPngImage.width, (int)mPngImage.height});
+    if (mPngBuffer==NULL) {
       return TextError::err("Could not allocate buffer for reading PNG file %s", aPNGFileName.c_str());
     }
     // now actually read the image
     if (png_image_finish_read(
-      &pngImage,
+      &mPngImage,
       NULL, // background
-      pngBuffer,
+      mPngBuffer,
       0, // row_stride
       NULL //colormap
     ) == 0) {
       // error
-      ErrorPtr err = TextError::err("Error reading PNG file %s: error: %s", aPNGFileName.c_str(), pngImage.message);
+      ErrorPtr err = TextError::err("Error reading PNG file %s: error: %s", aPNGFileName.c_str(), mPngImage.message);
       clear(); // clear only after pngImage.message has been used
       return err;
     }
@@ -113,15 +113,15 @@ ErrorPtr ImageView::loadPNG(const string aPNGFileName)
 PixelColor ImageView::contentColorAt(PixelPoint aPt)
 {
   if (!isInContentSize(aPt)) {
-    return backgroundColor;
+    return mBackgroundColor;
   }
   else {
     // if content is set bigger than image, just duplicate border pixels
-    if (aPt.x>=pngImage.width) aPt.x = pngImage.width-1;
-    if (aPt.y>=pngImage.height) aPt.y = pngImage.height-1;
+    if (aPt.x>=mPngImage.width) aPt.x = mPngImage.width-1;
+    if (aPt.y>=mPngImage.height) aPt.y = mPngImage.height-1;
     PixelColor pc;
     // get pixel infomration from image buffer
-    uint8_t *pix = pngBuffer+((pngImage.height-1-aPt.y)*pngImage.width+aPt.x)*4;
+    uint8_t *pix = mPngBuffer+((mPngImage.height-1-aPt.y)*mPngImage.width+aPt.x)*4;
     pc.r = *pix++;
     pc.g = *pix++;
     pc.b = *pix++;
@@ -144,7 +144,7 @@ ErrorPtr ImageView::configureView(JsonObjectPtr aViewConfig)
     JsonObjectPtr o;
     if (aViewConfig->get("file", o)) {
       // if no dx or dy is set when loading a new image, auto-enable sizeToContent
-      if (frame.dx==0 && frame.dy==0) sizeToContent = true;
+      if (mFrame.dx==0 && mFrame.dy==0) mSizeToContent = true;
       err = loadPNG(Application::sharedApplication()->resourcePath(o->stringValue()));
     }
   }

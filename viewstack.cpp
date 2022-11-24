@@ -41,16 +41,16 @@ using namespace p44;
 
 ViewStack::ViewStack()
 {
-  positioningMode = noWrap+noAdjust;
+  mPositioningMode = noWrap+noAdjust;
 }
 
 
 ViewStack::~ViewStack()
 {
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     (*pos)->setParent(NULL);
   }
-  viewStack.clear();
+  mViewStack.clear();
 }
 
 
@@ -58,48 +58,48 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
 {
   geometryChange(true);
   // clip/noAdjust bits set means we don't want the content rect to get recalculated
-  bool adjust = (positioningMode&noAdjust)==0;
+  bool adjust = (mPositioningMode&noAdjust)==0;
   bool fill = false;
   // auto-positioning?
-  if (positioningMode & wrapXY) {
+  if (mPositioningMode & wrapXY) {
     // wrap bits determine in which direction to position the view relative to those already present
     // - wrapXmin = to the left, wrapXmax = to the right etc.
     PixelRect r;
     getEnclosingContentRect(r);
     // X auto positioning/sizing
-    if ((positioningMode&fillX)==fillX) {
-      aView->frame.dx = content.dx;
+    if ((mPositioningMode&fillX)==fillX) {
+      aView->mFrame.dx = mContent.dx;
       fill = true;
     }
-    else if (positioningMode&wrapXmax) {
-      aView->frame.x = r.x+r.dx+aSpacing;
+    else if (mPositioningMode&wrapXmax) {
+      aView->mFrame.x = r.x+r.dx+aSpacing;
     }
-    else if (positioningMode&wrapXmin) {
-      aView->frame.x = r.x-aView->frame.dx-aSpacing;
+    else if (mPositioningMode&wrapXmin) {
+      aView->mFrame.x = r.x-aView->mFrame.dx-aSpacing;
     }
     // Y auto positioning/sizing
-    if ((positioningMode&fillY)==fillY) {
-      aView->frame.dy = content.dy;
+    if ((mPositioningMode&fillY)==fillY) {
+      aView->mFrame.dy = mContent.dy;
       fill = true;
     }
-    else if (positioningMode&wrapYmax) {
-      aView->frame.y = r.y+r.dy+aSpacing;
+    else if (mPositioningMode&wrapYmax) {
+      aView->mFrame.y = r.y+r.dy+aSpacing;
     }
-    else if (positioningMode&wrapYmin) {
-      aView->frame.y = r.y-aView->frame.dy-aSpacing;
+    else if (mPositioningMode&wrapYmin) {
+      aView->mFrame.y = r.y-aView->mFrame.dy-aSpacing;
     }
     if ((aView->getWrapMode()&clipXY)==0) {
-      LOG(LOG_WARNING, "ViewStack '%s', pushed view '%s' is not clipped, probably will obscure neigbours!", label.c_str(), aView->label.c_str());
+      LOG(LOG_WARNING, "ViewStack '%s', pushed view '%s' is not clipped, probably will obscure neigbours!", mLabel.c_str(), aView->mLabel.c_str());
     }
-    if (!sizeToContent && !fill) {
-      LOG(LOG_WARNING, "ViewStack '%s' does not size to content, autopositioned view '%s' might be outside frame and thus invisible!", label.c_str(), aView->label.c_str());
+    if (!mSizeToContent && !fill) {
+      LOG(LOG_WARNING, "ViewStack '%s' does not size to content, autopositioned view '%s' might be outside frame and thus invisible!", mLabel.c_str(), aView->mLabel.c_str());
     }
   }
-  viewStack.push_back(aView);
+  mViewStack.push_back(aView);
   FOCUSLOG("+++ ViewStack '%s' pushes subview #%zu with frame=(%d,%d,%d,%d) - frame coords are relative to content origin",
-    label.c_str(),
-    viewStack.size(),
-    aView->frame.x, aView->frame.y, aView->frame.dx, aView->frame.dy
+    mLabel.c_str(),
+    mViewStack.size(),
+    aView->mFrame.x, aView->mFrame.y, aView->mFrame.dx, aView->mFrame.dy
   );
   if (adjust) {
     recalculateContentArea();
@@ -113,52 +113,52 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
 
 void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
 {
-  if ((positioningMode&wrapXY)==0) return; // no positioning -> NOP
+  if ((mPositioningMode&wrapXY)==0) return; // no positioning -> NOP
   // calculate content bounds where to keep views
   PixelRect r;
   getEnclosingContentRect(r);
-  if (positioningMode&wrapXmax) {
+  if (mPositioningMode&wrapXmax) {
     r.x = r.x+r.dx-aKeepDx;
     r.dx = aKeepDx;
   }
-  else if (positioningMode&wrapXmin) {
+  else if (mPositioningMode&wrapXmin) {
     r.dx = aKeepDx;
   }
-  if (positioningMode&wrapYmax) {
+  if (mPositioningMode&wrapYmax) {
     r.y = r.y+r.dy-aKeepDy;
     r.dy = aKeepDy;
   }
-  else if (positioningMode&wrapYmin) {
+  else if (mPositioningMode&wrapYmin) {
     r.dy = aKeepDy;
   }
   // now purge views
   FOCUSLOG("ViewStack '%s' purges with keep rectangle=(%d,%d,%d,%d)",
-    label.c_str(),
+    mLabel.c_str(),
     r.x, r.y, r.dx, r.dy
   );
-  ViewsList::iterator pos = viewStack.begin();
+  ViewsList::iterator pos = mViewStack.begin();
   geometryChange(true);
-  while (pos!=viewStack.end()) {
+  while (pos!=mViewStack.end()) {
     P44ViewPtr v = *pos;
     if (
-      !rectIntersectsRect(r, v->frame) ||
-      (aCompletely && !rectContainsRect(r, v->frame))
+      !rectIntersectsRect(r, v->mFrame) ||
+      (aCompletely && !rectContainsRect(r, v->mFrame))
     ) {
-      if (viewStack.size()<=1) break; // do not purge last view in stack
+      if (mViewStack.size()<=1) break; // do not purge last view in stack
       // remove this view
       FOCUSLOG("--- purges subview #%zu with frame=(%d,%d,%d,%d)",
-        viewStack.size(),
-        v->frame.x, v->frame.y, v->frame.dx, v->frame.dy
+        mViewStack.size(),
+        v->mFrame.x, v->mFrame.y, v->mFrame.dx, v->mFrame.dy
       );
-      pos = viewStack.erase(pos);
-      changedGeometry = true;
+      pos = mViewStack.erase(pos);
+      mChangedGeometry = true;
     }
     else {
       // test next
       ++pos;
     }
   }
-  if (changedGeometry && (positioningMode&clipXY)==0) {
+  if (mChangedGeometry && (mPositioningMode&clipXY)==0) {
     recalculateContentArea();
   }
   geometryChange(false);
@@ -184,16 +184,16 @@ static bool compare_zorder(P44ViewPtr& aFirst, P44ViewPtr& aSecond)
 
 void ViewStack::sortZOrder()
 {
-  viewStack.sort(compare_zorder);
+  mViewStack.sort(compare_zorder);
 }
 
 
 void ViewStack::offsetSubviews(PixelPoint aOffset)
 {
   geometryChange(true);
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     P44ViewPtr v = *pos;
-    PixelRect f = v->frame;
+    PixelRect f = v->mFrame;
     f.x += aOffset.x;
     f.y += aOffset.y;
     v->setFrame(f);
@@ -205,7 +205,7 @@ void ViewStack::offsetSubviews(PixelPoint aOffset)
 void ViewStack::getEnclosingContentRect(PixelRect &aBounds)
 {
   // get enclosing rect of all layers
-  if (viewStack.empty()) {
+  if (mViewStack.empty()) {
     // no content, just a point at the origin
     aBounds = zeroRect;
     return;
@@ -214,18 +214,18 @@ void ViewStack::getEnclosingContentRect(PixelRect &aBounds)
   int maxX = INT_MIN;
   int minY = INT_MAX;
   int maxY = INT_MIN;
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     P44ViewPtr v = *pos;
-    if (v->frame.x<minX) minX = v->frame.x;
-    if (v->frame.y<minY) minY = v->frame.y;
-    if (v->frame.x+v->frame.dx>maxX) maxX = v->frame.x+v->frame.dx;
-    if (v->frame.y+v->frame.dy>maxY) maxY = v->frame.y+v->frame.dy;
+    if (v->mFrame.x<minX) minX = v->mFrame.x;
+    if (v->mFrame.y<minY) minY = v->mFrame.y;
+    if (v->mFrame.x+v->mFrame.dx>maxX) maxX = v->mFrame.x+v->mFrame.dx;
+    if (v->mFrame.y+v->mFrame.dy>maxY) maxY = v->mFrame.y+v->mFrame.dy;
   }
   aBounds.x = minX;
   aBounds.y = minY;
   aBounds.dx = maxX-minX; if (aBounds.dx<0) aBounds.dx = 0;
   aBounds.dy = maxY-minY; if (aBounds.dy<0) aBounds.dy = 0;
-  FOCUSLOG("ViewStack '%s': enclosingContentRect=(%d,%d,%d,%d)", label.c_str(), aBounds.x, aBounds.y, aBounds.dx, aBounds.dy);
+  FOCUSLOG("ViewStack '%s': enclosingContentRect=(%d,%d,%d,%d)", mLabel.c_str(), aBounds.x, aBounds.y, aBounds.dx, aBounds.dy);
 }
 
 
@@ -241,10 +241,10 @@ bool ViewStack::addSubView(P44ViewPtr aSubView)
 void ViewStack::popView()
 {
   geometryChange(true);
-  if (!viewStack.empty()) {
-    viewStack.back()->setParent(NULL);
-    viewStack.pop_back();
-    changedGeometry = true;
+  if (!mViewStack.empty()) {
+    mViewStack.back()->setParent(NULL);
+    mViewStack.pop_back();
+    mChangedGeometry = true;
   }
   geometryChange(false);
 }
@@ -254,11 +254,11 @@ bool ViewStack::removeView(P44ViewPtr aView)
 {
   bool removed = false;
   geometryChange(true);
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if ((*pos)==aView) {
       (*pos)->setParent(NULL);
-      viewStack.erase(pos);
-      changedGeometry = true;
+      mViewStack.erase(pos);
+      mChangedGeometry = true;
       removed = true;
       break;
     }
@@ -272,11 +272,11 @@ void ViewStack::clear()
 {
   geometryChange(true);
   while (true) {
-    ViewsList::iterator pos = viewStack.begin();
-    if (pos==viewStack.end()) break;
+    ViewsList::iterator pos = mViewStack.begin();
+    if (pos==mViewStack.end()) break;
     (*pos)->setParent(NULL);
-    viewStack.erase(pos);
-    changedGeometry = true;
+    mViewStack.erase(pos);
+    mChangedGeometry = true;
   }
   geometryChange(false);
   inherited::clear();
@@ -286,7 +286,7 @@ void ViewStack::clear()
 MLMicroSeconds ViewStack::step(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     updateNextCall(nextCall, (*pos)->step(aPriorityUntil)); // no local view priorisation
   }
   return nextCall;
@@ -296,7 +296,7 @@ MLMicroSeconds ViewStack::step(MLMicroSeconds aPriorityUntil)
 bool ViewStack::isDirty()
 {
   if (inherited::isDirty()) return true; // dirty anyway
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if ((*pos)->isDirty())
       return true; // subview is dirty -> stack is dirty
   }
@@ -307,7 +307,7 @@ bool ViewStack::isDirty()
 void ViewStack::updated()
 {
   inherited::updated();
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     (*pos)->updated();
   }
 }
@@ -316,10 +316,10 @@ void ViewStack::updated()
 
 void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent)
 {
-  if (geometryChanging==0) {
+  if (mGeometryChanging==0) {
     // only if not already in process of changing
     //if ((positioningMode&clipXY)==0) {
-    if (sizeToContent) {
+    if (mSizeToContent) {
       // current content bounds should not clip -> auto-adjust
       recalculateContentArea();
       moveFrameToContent(true);
@@ -334,7 +334,7 @@ void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame,
 PixelColor ViewStack::contentColorAt(PixelPoint aPt)
 {
   // default is the viewstack's background color
-  if (alpha==0) {
+  if (mAlpha==0) {
     return transparent; // entire viewstack is invisible
   }
   else {
@@ -342,9 +342,9 @@ PixelColor ViewStack::contentColorAt(PixelPoint aPt)
     PixelColor pc = black; // start with black, i.e. no color (NOT background!)
     PixelColor lc;
     uint8_t seethrough = 255; // first layer is directly visible, not yet obscured
-    for (ViewsList::reverse_iterator pos = viewStack.rbegin(); pos!=viewStack.rend(); ++pos) {
+    for (ViewsList::reverse_iterator pos = mViewStack.rbegin(); pos!=mViewStack.rend(); ++pos) {
       P44ViewPtr layer = *pos;
-      if (layer->alpha==0) continue; // shortcut: skip fully transparent layers
+      if (layer->mAlpha==0) continue; // shortcut: skip fully transparent layers
       lc = layer->colorAt(aPt);
       if (lc.a==0) continue; // skip layer with fully transparent pixel
       // not-fully-transparent pixel
@@ -358,9 +358,9 @@ PixelColor ViewStack::contentColorAt(PixelPoint aPt)
     } // collect from all layers
     if (seethrough>0) {
       // rest is background or overall transparency
-      lc.a = dimVal(backgroundColor.a, seethrough);
+      lc.a = dimVal(mBackgroundColor.a, seethrough);
       seethrough -= lc.a;
-      lc = dimmedPixel(backgroundColor, lc.a);
+      lc = dimmedPixel(mBackgroundColor, lc.a);
       addToPixel(pc, lc);
     }
     if(seethrough>0) {
@@ -368,8 +368,8 @@ PixelColor ViewStack::contentColorAt(PixelPoint aPt)
       if (pc.a>0) dimPixel(pc, 65025/pc.a); // but intensity of stack result must be amplified accordingly
     }
     // factor in alpha of entire viewstack
-    if (alpha!=255) {
-      pc.a = dimVal(pc.a, alpha);
+    if (mAlpha!=255) {
+      pc.a = dimVal(pc.a, mAlpha);
     }
     return pc;
   }
@@ -414,7 +414,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
             // re-apply fullframe in case frame was adjusted during push
             if (
               fullframe &&
-              ((positioningMode&fillX)==fillX || (positioningMode&fillY)==fillY)
+              ((mPositioningMode&fillX)==fillX || (mPositioningMode&fillY)==fillY)
             ) {
               layerView->setFullFrameContent();
             }
@@ -432,7 +432,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
 
 P44ViewPtr ViewStack::getView(const string aLabel)
 {
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if (*pos) {
       P44ViewPtr view = (*pos)->getView(aLabel);
       if (view) return view;
@@ -449,7 +449,7 @@ JsonObjectPtr ViewStack::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
   JsonObjectPtr layers = JsonObject::newArray();
-  for (ViewsList::iterator pos = viewStack.begin(); pos!=viewStack.end(); ++pos) {
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     JsonObjectPtr layer = JsonObject::newObj();
     layer->add("view", (*pos)->viewStatus());
     layers->arrayAppend(layer);

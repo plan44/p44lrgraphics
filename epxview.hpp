@@ -37,18 +37,18 @@ namespace p44 {
   {
     typedef CanvasView inherited;
 
-    PixelColor* paletteBuffer;
-    size_t numPaletteEntries;
+    PixelColor* mPaletteBuffer;
+    size_t mNumPaletteEntries;
 
-    string framesData;
-    size_t frameCount;
+    string mFramesData;
+    size_t mFrameCount;
 
-    int loopCount; ///< number of loops per animation run, 0 = forever
-    MLMicroSeconds frameInterval; ///< interval between frames (1/framerate)
+    int mLoopCount; ///< number of loops per animation run, 0 = forever
+    MLMicroSeconds mFrameInterval; ///< interval between frames (1/framerate)
 
-    MLMicroSeconds nextRender; ///< time when next rendering should occur, Infinite when stopped
-    size_t framesCursor; ///< scanning position within framesData
-    int remainingLoops;
+    MLMicroSeconds mNextRender; ///< time when next rendering should occur, Infinite when stopped
+    size_t mFramesCursor; ///< scanning position within framesData
+    int mRemainingLoops;
 
   public :
 
