@@ -453,12 +453,12 @@ bool P44View::reportDirtyChilds()
 }
 
 
-void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil)
+void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil, MLMicroSeconds aNow)
 {
   if (mLocalTimingPriority && aCandidatePriorityUntil>0 && aCallCandidate>=0 && aCallCandidate<aCandidatePriorityUntil) {
     // children must not cause "dirty" before candidate time is over
-    MLMicroSeconds now = MainLoop::now();
-    mMaskChildDirtyUntil = (aCallCandidate-now)*2+now; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
+    if (aNow==Never) aNow = MainLoop::now();
+    mMaskChildDirtyUntil = (aCallCandidate-aNow)*2+aNow; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
   }
   if (aNextCall<=0 || (aCallCandidate>0 && aCallCandidate<aNextCall)) {
     // candidate wins
@@ -467,7 +467,7 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 }
 
 
-MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
 {
   mUpdateRequested = false; // no step request pending any more
   // check animations
@@ -476,7 +476,7 @@ MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil)
   AnimationsList::iterator pos = mAnimations.begin();
   while (pos != mAnimations.end()) {
     ValueAnimatorPtr animator = (*pos);
-    MLMicroSeconds nextStep = animator->step();
+    MLMicroSeconds nextStep = animator->step(aNow);
     if (!animator->inProgress()) {
       // this animation is done, remove it from the list
       pos = mAnimations.erase(pos);

@@ -118,7 +118,7 @@ namespace p44 {
     /// @note MainLoop::now() time is monotonic (CLOCK_MONOTONIC under Linux, but is adjusted by adjtime() from NTP
     ///   so it should remain in sync over multiple devices as long as these have NTP synced time.
     /// @note MainLoop::now() time is not absolute, but has a unspecified starting point.
-    ///   and MainLoop::unixTimeToMainLoopTime() to convert a absolute starting point into now() time.
+    ///   Use MainLoop::unixTimeToMainLoopTime() to convert a absolute starting point into now() time.
     void startScroll(double aStepX, double aStepY, MLMicroSeconds aInterval, bool aRoundOffsets = true, long aNumSteps = -1, MLMicroSeconds aStartTime = Never, SimpleCB aCompletedCB = NoOP);
 
     /// stop scrolling
@@ -164,7 +164,7 @@ namespace p44 {
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
     /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
     /// @note this must be called as demanded by return value, and after making changes to the view
-    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
+    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow) P44_OVERRIDE;
 
     /// return if anything changed on the display since last call
     virtual bool isDirty() P44_OVERRIDE;

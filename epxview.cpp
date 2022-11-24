@@ -161,12 +161,11 @@ ErrorPtr EpxView::loadEpxAnimationJSON(JsonObjectPtr aEpxAnimation)
 }
 
 
-MLMicroSeconds EpxView::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds EpxView::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
 {
-  MLMicroSeconds now = MainLoop::now();
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (mNextRender>=0 && now>=mNextRender) {
-    mNextRender = renderFrame();
+  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
+  if (mNextRender>=0 && aNow>=mNextRender) {
+    mNextRender = renderFrame(aNow);
   }
   updateNextCall(nextCall, mNextRender); // Note: make sure nextCall is updated even when render is NOT (YET) called!
   return nextCall;
@@ -215,9 +214,8 @@ inline static uint16_t getInt16(const string &aData, size_t &aCursor)
 }
 
 
-MLMicroSeconds EpxView::renderFrame()
+MLMicroSeconds EpxView::renderFrame(MLMicroSeconds aNow)
 {
-  MLMicroSeconds now = MainLoop::now();
   MLMicroSeconds next = Infinite;
   if (mFramesCursor<mFramesData.size()) {
     char ft = mFramesData[mFramesCursor++];
@@ -230,7 +228,7 @@ MLMicroSeconds EpxView::renderFrame()
           setPalettePixel(mFramesData[mFramesCursor++], pi++);
           pc--;
         }
-        next = now+mFrameInterval;
+        next = aNow+mFrameInterval;
         break;
       }
       case 'P': { // prediced picture frame (addressed pixels)
@@ -253,20 +251,20 @@ MLMicroSeconds EpxView::renderFrame()
             pc--;
           }
         }
-        next = now+mFrameInterval;
+        next = aNow+mFrameInterval;
         break;
       }
       case 'D': { // delay
         uint16_t d = getInt16(mFramesData, mFramesCursor);
         FOCUSLOG("D-frame delaying %hd mS", d);
-        if (d>0) next = now+(MLMicroSeconds)(d)*MilliSecond;
+        if (d>0) next = aNow+(MLMicroSeconds)(d)*MilliSecond;
         break;
       }
       case 'F': { // fade out
         uint16_t d = getInt16(mFramesData, mFramesCursor);
         FOCUSLOG("F-frame fading down in %hd mS", d);
         animatorFor("alpha")->from(255)->animate(0, d*MilliSecond);
-        if (d>0) next = now+(MLMicroSeconds)(d)*MilliSecond;
+        if (d>0) next = aNow+(MLMicroSeconds)(d)*MilliSecond;
         break;
       }
     }
@@ -279,7 +277,7 @@ MLMicroSeconds EpxView::renderFrame()
       // repeat
       setAlpha(255); // make visible (again)
       mFramesCursor = 0;
-      next = now;
+      next = aNow;
     }
   }
   FOCUSLOG("next frame due at %s", MainLoop::string_mltime(next,3).c_str());

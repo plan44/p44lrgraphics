@@ -68,12 +68,12 @@ void ViewSequencer::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicro
 }
 
 
-MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  updateNextCall(nextCall, stepAnimation(), aPriorityUntil); // animation has priority
+  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
+  updateNextCall(nextCall, stepAnimation(aNow), aPriorityUntil, aNow); // animation has priority
   if (mCurrentStep<mSequence.size()) {
-    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(aPriorityUntil));
+    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(aPriorityUntil, aNow));
   }
   return nextCall;
 }
@@ -88,11 +88,10 @@ void ViewSequencer::stopAnimations()
 }
 
 
-MLMicroSeconds ViewSequencer::stepAnimation()
+MLMicroSeconds ViewSequencer::stepAnimation(MLMicroSeconds aNow)
 {
   if (mCurrentStep<mSequence.size()) {
-    MLMicroSeconds now = MainLoop::now();
-    MLMicroSeconds sinceLast = now-mLastStateChange;
+    MLMicroSeconds sinceLast = aNow-mLastStateChange;
     AnimationStep as = mSequence[mCurrentStep];
     switch (animationState) {
       case as_begin:
@@ -109,9 +108,9 @@ MLMicroSeconds ViewSequencer::stepAnimation()
           #endif
         }
         animationState = as_show;
-        mLastStateChange = now;
+        mLastStateChange = aNow;
         // next change we must handle is end of show time
-        return now+as.mFadeInTime+as.mShowTime;
+        return aNow+as.mFadeInTime+as.mShowTime;
       case as_show:
         if (sinceLast>as.mFadeInTime+as.mShowTime) {
           // check fadeout
@@ -126,9 +125,9 @@ MLMicroSeconds ViewSequencer::stepAnimation()
           else {
             goto ended;
           }
-          mLastStateChange = now;
+          mLastStateChange = aNow;
           // next change we must handle is end of fade out time
-          return now + as.mFadeOutTime;
+          return aNow + as.mFadeOutTime;
         }
         else {
           // still waiting for end of show time
@@ -160,7 +159,7 @@ MLMicroSeconds ViewSequencer::stepAnimation()
             return Infinite; // no need to call again for this animation
           }
         }
-        return now; // call again immediately to initiate next step
+        return aNow; // call again immediately to initiate next step
     }
   }
   return Infinite;
@@ -173,7 +172,7 @@ void ViewSequencer::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
   mCompletedCB = aCompletedCB;
   mCurrentStep = 0;
   animationState = as_begin; // begins from start
-  stepAnimation();
+  stepAnimation(MainLoop::now());
 }
 
 

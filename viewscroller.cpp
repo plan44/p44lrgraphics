@@ -93,26 +93,25 @@ void ViewScroller::setOffsetY(double aOffsetY)
 
 
 
-MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
 {
-  MLMicroSeconds now = MainLoop::now();
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
+  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
   if (mScrolledView) {
-    updateNextCall(nextCall, mScrolledView->step(aPriorityUntil));
+    updateNextCall(nextCall, mScrolledView->step(aPriorityUntil, aNow));
   }
   // scroll
   if (mScrollSteps!=0 && mScrollStepInterval>0) {
     // scrolling
-    MLMicroSeconds next = mNextScrollStepAt-now; // time to next step
+    MLMicroSeconds next = mNextScrollStepAt-aNow; // time to next step
     if (next>0) {
-      updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
+      updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil, aNow); // scrolling has priority
     }
     else {
       // execute all step(s) pending
       // Note: will catch up in case step() was not called often enough
       while (next<=0) {
         if (next<-10*MilliSecond) {
-          LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld uS after precise time", -next);
+          LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld µS after precise time", -next);
         }
         // perform step
         mScrollOffsetX_milli += mScrollStepX_milli;
@@ -163,9 +162,9 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil)
         else {
           // time next from now, even if we are (possibly much) late
           next = mScrollStepInterval;
-          mNextScrollStepAt = now+mScrollStepInterval;
+          mNextScrollStepAt = aNow+mScrollStepInterval;
         }
-        updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
+        updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil, aNow); // scrolling has priority
       } // while catchup
       if ((
         mNeedContentCB

@@ -225,7 +225,9 @@ namespace p44 {
     ///   specified time (and the view is enabled for prioritized timing).
     ///   Prioritizing means that reportDirtyChilds() returns false until aCallCandidate has passed, to
     ///   prevent triggering display updates before the prioritized time.
-    void updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil = 0);
+    /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
+    ///   Only relevant when aCandidatePriorityUntil!=0, if set to Never, current mainloop time will be used
+    void updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil = 0, MLMicroSeconds aNow = Never);
 
   public :
 
@@ -404,9 +406,10 @@ namespace p44 {
 
     /// calculate changes on the display, return time of next change
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
+    /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
     /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
     /// @note this must be called as demanded by return value, and after making changes to the view
-    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil);
+    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow);
 
     /// return if anything changed on the display since last call
     virtual bool isDirty()  { return mDirty; };

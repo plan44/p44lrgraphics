@@ -283,11 +283,11 @@ void ViewStack::clear()
 }
 
 
-MLMicroSeconds ViewStack::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds ViewStack::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
+  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
-    updateNextCall(nextCall, (*pos)->step(aPriorityUntil)); // no local view priorisation
+    updateNextCall(nextCall, (*pos)->step(aPriorityUntil, aNow)); // no local view priorisation
   }
   return nextCall;
 }

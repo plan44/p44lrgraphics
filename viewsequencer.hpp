@@ -84,9 +84,10 @@ namespace p44 {
 
     /// calculate changes on the display, return time of next change
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
+    /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
     /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
     /// @note this must be called as demanded by return value, and after making changes to the view
-    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
+    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow) P44_OVERRIDE;
 
     /// return if anything changed on the display since last call
     virtual bool isDirty() P44_OVERRIDE;
@@ -124,7 +125,7 @@ namespace p44 {
 
   private:
 
-    MLMicroSeconds stepAnimation();
+    MLMicroSeconds stepAnimation(MLMicroSeconds aNow);
 
   };
   typedef boost::intrusive_ptr<ViewSequencer> ViewSequencerPtr;

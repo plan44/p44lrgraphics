@@ -82,14 +82,13 @@ void LifeView::setGenerationInterval(MLMicroSeconds aInterval)
 #define MIN_SPAWN_START 3
 
 
-MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil)
+MLMicroSeconds LifeView::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
 {
-  MLMicroSeconds now = MainLoop::now();
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil);
-  if (mAlpha>0 && mGenerationInterval!=Never && now>=mLastGeneration+mGenerationInterval) {
-    mLastGeneration = now;
+  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
+  if (mAlpha>0 && mGenerationInterval!=Never && aNow>=mLastGeneration+mGenerationInterval) {
+    mLastGeneration = aNow;
     nextGeneration();
-    updateNextCall(nextCall, now+mGenerationInterval);
+    updateNextCall(nextCall, aNow+mGenerationInterval);
   }
   return nextCall;
 }
