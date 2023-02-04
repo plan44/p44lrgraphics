@@ -38,7 +38,7 @@ typedef struct {
 
 const int rowsPerGlyph = 7;
 
-#define TEXT_FONT_GEN 0
+#define TEXT_FONT_GEN 1
 #if TEXT_FONT_GEN
 
 static const char * fontBin[] = {
@@ -1055,32 +1055,6 @@ static const GlyphRange glyphRanges[] = {
 
 // MARK: - end of generated glyph data
 
-// 'Ä' UTF8 C3 84  -> glyph # 96)
-
-// 'Ö' UTF8 C3 96  -> glyph # 97)
-
-// 'Ü' UTF8 C3 9C  -> glyph # 98)
-
-// 'à' UTF8 C3 A0  -> glyph # 99)
-// 'á' UTF8 C3 A1  -> glyph # 100)
-// 'â' UTF8 C3 A2  -> glyph # 101)
-
-// 'ä' UTF8 C3 A4  -> glyph # 102)
-
-// 'ç' UTF8 C3 A7  -> glyph # 103)
-// 'è' UTF8 C3 A8  -> glyph # 104)
-// 'é' UTF8 C3 A9  -> glyph # 105)
-// 'ê' UTF8 C3 AA  -> glyph # 106)
-// 'ë' UTF8 C3 AB  -> glyph # 107)
-// 'ì' UTF8 C3 AC  -> glyph # 108)
-// 'í' UTF8 C3 AD  -> glyph # 109)
-// 'î' UTF8 C3 AE  -> glyph # 110)
-// 'ï' UTF8 C3 AF  -> glyph # 111)
-
-// 'ö' UTF8 C3 B6  -> glyph # 112)
-
-// 'ü' UTF8 C3 BC  -> glyph # 113)
-
 
 // Glyph to codepoint mapping
 
@@ -1121,7 +1095,7 @@ static int glyphNoFromText(size_t &aIdx, const char* aText) {
 
 #if TEXT_FONT_GEN
 
-static void fontAsBinString()
+static void fontAsBinStringOLD()
 {
   printf("\n\nstatic const char * fontBin[] = {\n");
   for (int g=0; g<numGlyphs; ++g) {
@@ -1137,6 +1111,59 @@ static void fontAsBinString()
     }
   }
   printf("};\n\n");
+}
+
+/*
+static const char * fontBin[] = {
+
+  "$" /* UTF-8 24 - Glyph 4 */
+/*
+  "\n"   "..X..X.."   // 0x24
+  "\n"   "..X.X.X."   // 0x2A
+  "\n"   ".XXXXXXX"   // 0x7F
+  "\n"   "..X.X.X."   // 0x2A
+  "\n"   "...X..X." , // 0x12
+
+*/
+
+static void renderGlyph(int aGlyphNo)
+{
+  const glyph_t &glyph = fontGlyphs[aGlyphNo];
+  for (int i=0; i<glyph.width; i++) {
+    char col = glyph.cols[i];
+    string colstr;
+    for (int bit=7; bit>=0; --bit) {
+      colstr += col & (1<<bit) ? "X" : ".";
+    }
+    printf("  \"\\n\"   \"%s\" %c // 0x%02X\n", colstr.c_str(), i==glyph.width-1 ? ',' : ' ', col);
+  }
+  printf("\n");
+}
+
+static void fontAsBinString()
+{
+  printf("\n\n// MARK: - generated font verification data\n");
+  printf("\nstatic const char * fontBin[] = {\n");
+  printf("  \"placeholder\" /* 0x00 - Glyph 0 */\n\n");
+  renderGlyph(0);
+  for (const GlyphRange* grP = glyphRanges; grP->prefix; grP++) {
+    uint8_t lastchar;
+    int glyphno = grP->glyphOffset;
+    for (uint8_t lastchar = grP->first; lastchar<=grP->last; lastchar++) {
+      string chardesc = grP->prefix;
+      chardesc += lastchar;
+      string codedesc = "UTF-8";
+      for (size_t i=0; i<chardesc.size(); i++) string_format_append(codedesc, " %02X", (uint8_t)chardesc[i]);
+      if (chardesc.size()==1 && (lastchar<0x20 || lastchar>0x7E)) {
+        chardesc = string_format("\\x%02x", lastchar);
+      }
+      printf("  \"%s\" /* %s - Glyph %d */\n\n", chardesc.c_str(), codedesc.c_str(), glyphno);
+      renderGlyph(glyphno);
+      glyphno++;
+    }
+  }
+  printf("};\n\n");
+  printf("// MARK: - end of generated font verification data\n\n");
 }
 
 
@@ -1261,13 +1288,13 @@ static const GlyphRange glyphRanges[] = {
 
 TextView::TextView()
 {
+  mTextSpacing = 2;
+  mVisible = true;
   #if TEXT_FONT_GEN
   fontAsBinString();
   binStringAsFont();
   exit(1);
   #endif
-  mTextSpacing = 2;
-  mVisible = true;
 }
 
 
