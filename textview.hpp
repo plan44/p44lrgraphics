@@ -28,6 +28,26 @@
 
 namespace p44 {
 
+  typedef struct {
+    uint8_t width;
+    const char *cols;
+  } glyph_t;
+
+  typedef struct {
+    const char* prefix;
+    uint8_t first;
+    uint8_t last;
+    uint8_t glyphOffset;
+  } GlyphRange;
+
+  typedef struct {
+    const char* fontName; ///< name of the font
+    uint8_t glyphHeight; ///< height of the glyphs in pixels (max 32)
+    size_t numGlyphs; ///< total number of glyphs
+    const GlyphRange* glyphRanges; ///< mapping to codepoints
+    const glyph_t* glyphs; ///< actual glyphs
+  } font_t;
+
   class TextView : public ColorEffectView
   {
     typedef ColorEffectView inherited;
@@ -37,6 +57,7 @@ namespace p44 {
     bool mVisible; ///< if not set, text view is reduced to zero width
     int mTextSpacing; ///< pixels between characters
     string mTextPixelCols; ///< string of text column bytes
+    const font_t* mFont; ///< the font to use
 
   public :
 
@@ -52,6 +73,9 @@ namespace p44 {
 
     /// set visibility
     void setVisible(bool aVisible);
+
+    /// set font
+    void setFont(const char* aFontName);
 
     /// get current text
     string getText() const { return mText; }
