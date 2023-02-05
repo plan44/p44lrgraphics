@@ -30,7 +30,7 @@ namespace p44 {
 
   typedef struct {
     uint8_t width;
-    const char *cols;
+    const char *coldata; // for multi-byte columns: MSByte first. Bit order: Bit0 = top pixel
   } glyph_t;
 
   typedef struct {
@@ -56,7 +56,7 @@ namespace p44 {
     string mText; ///< internal representation of text
     bool mVisible; ///< if not set, text view is reduced to zero width
     int mTextSpacing; ///< pixels between characters
-    string mTextPixelCols; ///< string of text column bytes
+    string mTextPixelData; ///< string of text column data (might be multiple bytes per columnt for fonts with dy>8)
     const font_t* mFont; ///< the font to use
 
   public :

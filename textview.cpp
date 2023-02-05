@@ -28,8 +28,8 @@ using namespace p44;
 // MARK: fonts
 
 // font generator
-//#define GENERATE_FONT_SOURCE font_5x8
-#define GLYPHSTRINGS_VAR font_5x8_glyphstrings
+//#define GENERATE_FONT_SOURCE font_5x7
+#define GLYPHSTRINGS_VAR font_5x7_glyphstrings
 
 #ifdef GENERATE_FONT_SOURCE
 #if !defined(DEBUG) || !defined(__APPLE__)
@@ -42,10 +42,11 @@ using namespace p44;
 // default font
 #define DEFAULT_FONT font_5x7
 
-
+// Font data includes
 #include "fonts/font_5x7.cpp"
 #include "fonts/font_5x8.cpp"
 
+// Font table
 const font_t* fonts[] {
   &font_5x7,
   &font_5x8,
@@ -76,7 +77,6 @@ static int glyphNoFromText(const font_t& aFont, size_t &aIdx, const char* aText)
   }
   // we have the prefix and the last char
   const GlyphRange* grP = aFont.glyphRanges;
-  bool prefixmatched = false;
   while (grP->prefix) {
     if (prefix == grP->prefix) {
       // prefix matches
@@ -97,13 +97,20 @@ static int glyphNoFromText(const font_t& aFont, size_t &aIdx, const char* aText)
 static void renderGlyphTextPixels(int aGlyphNo, const font_t& aFont, FILE* aOutputFile)
 {
   const glyph_t &glyph = aFont.glyphs[aGlyphNo];
+  int colbytes = (aFont.glyphHeight+7)>>3;
   for (int i=0; i<glyph.width; i++) {
-    char col = glyph.cols[i];
+    // one column, bit 0 is topmost pixel, we want to print that last
     string colstr;
-    for (int bit=7; bit>=0; --bit) {
-      colstr += col & (1<<bit) ? "X" : ".";
+    for(int colbit = aFont.glyphHeight-1; colbit>=0; --colbit) {
+      // bytes of one column are MSB first in coldata
+      bool bitset = glyph.coldata[(i+1)*colbytes-1-(colbit>>3)] & (1<<(colbit&0x07));
+      colstr += bitset ? "X" : ".";
     }
-    fprintf(aOutputFile, "  \"\\n\"   \"%s\" %c // 0x%02X\n", colstr.c_str(), i==glyph.width-1 ? ',' : ' ', col);
+    string colhex;
+    for(int cbidx = 0; cbidx<colbytes; ++cbidx) {
+      string_format_append(colhex, " %02X", (uint8_t)(glyph.coldata[i*colbytes+cbidx]));
+    }
+    fprintf(aOutputFile, "  \"\\n\"   \"%s\" %c //%s\n", colstr.c_str(), i==glyph.width-1 ? ',' : ' ', colhex.c_str());
   }
   fprintf(aOutputFile, "\n");
 }
@@ -111,7 +118,7 @@ static void renderGlyphTextPixels(int aGlyphNo, const font_t& aFont, FILE* aOutp
 
 static void fontAsGlyphStrings(const font_t& aFont, FILE* aOutputFile)
 {
-  fprintf(aOutputFile, "\n\n// MARK: - '%s' generated font verification data\n", aFont.fontName);
+  fprintf(aOutputFile, "\n// MARK: - '%s' generated font verification data\n", aFont.fontName);
   fprintf(aOutputFile, "\nstatic const char * %s_glyphstrings[] = {\n", aFont.fontName);
   fprintf(aOutputFile, "  \"placeholder\" /* 0x00 - Glyph 0 */\n\n");
   renderGlyphTextPixels(placeholderGlyphNo, aFont, aOutputFile);
@@ -153,7 +160,8 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
   // UTF8 mappings
   typedef std::list<StringPair> GlyphMap;
   GlyphMap gm;
-  int g = 0;
+  int glyphHeight = -1;
+  int gh = 0;
   for (int g = 0; aGlyphStrings[g]!=nullptr; ++g) {
     const char* bs0 = aGlyphStrings[g];
     const char* bs = bs0;
@@ -166,13 +174,20 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
     int w = 0;
     string chr = "\"";
     while (*bs) {
+      // new glyph column
       w++;
-      uint8_t by = 0;
+      uint64_t pixmap = 0;
+      gh = 0;
       while (*bs && *bs!='\n') {
-        by = (by<<1) | (*bs!='.' && *bs!=' ' ? 0x01 : 0x00);
+        pixmap = (pixmap<<1) | (*bs!='.' && *bs!=' ' ? 0x01 : 0x00);
+        gh++;
         bs++;
       }
-      string_format_append(chr, "\\x%02x", by);
+      // first line determines height, all others must match
+      if (glyphHeight<0) glyphHeight = gh;
+      for (int i=(glyphHeight-1)>>3; i>=0; --i) {
+        string_format_append(chr, "\\x%02x", (unsigned int)(pixmap>>(i*8))&0xFF);
+      }
       if (*bs=='\n') bs++;
     }
     chr += "\"";
@@ -185,6 +200,11 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
       for (size_t i=0; i<code.size(); i++) string_format_append(codedesc, " %02X", (uint8_t)code[i]);
     }
     string chardef = string_format("  { %2d, %-42s },  // %-20s (input # %d", w, chr.c_str(), codedesc.c_str(), g);
+    if (gh!=glyphHeight) {
+      fprintf(aOutputFile, "#error incorrect pixel column height in character '%s', input glyph #%d", codedesc.c_str(), g);
+    }
+
+
     gm.push_back(make_pair(code,chardef));
   }
   // now sort by Code
@@ -231,7 +251,7 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
   // now the font head record
   fprintf(aOutputFile, "\nstatic const font_t %s = {\n", aFontName);
   fprintf(aOutputFile, "  .fontName = \"%s\",\n", aFontName);
-  fprintf(aOutputFile, "  .glyphHeight = 7,\n");
+  fprintf(aOutputFile, "  .glyphHeight = %d,\n", glyphHeight);
   fprintf(aOutputFile, "  .numGlyphs = %d,\n", gno);
   fprintf(aOutputFile, "  .glyphRanges = %s_ranges,\n", aFontName);
   fprintf(aOutputFile, "  .glyphs = %s_glyphs\n", aFontName);
@@ -254,8 +274,7 @@ static void generateFontSource(const font_t& aFont, const char** aGlyphStrings, 
   fprintf(aOutputFile, "// This is a file to be included from textview.cpp to define a font\n");
   fprintf(aOutputFile, "\n#ifdef GENERATE_FONT_SOURCE\n");
   fontAsGlyphStrings(aFont, aOutputFile);
-  fprintf(aOutputFile, "\n#endif GENERATE_FONT_SOURCE\n");
-  fprintf(aOutputFile, "\n\n// MARK: - generated font data\n");
+  fprintf(aOutputFile, "\n#endif // GENERATE_FONT_SOURCE\n");
   glyphStringsToFont(aGlyphStrings, aFont.fontName, aOutputFile);
 }
 
@@ -325,25 +344,26 @@ void TextView::setFont(const char* aFontName)
 
 void TextView::renderText()
 {
-  mTextPixelCols.clear();
+  mTextPixelData.clear();
+  int cols = 0;
   if (mFont) {
     if (mVisible) {
       // render
-      string glyphs;
-      size_t i = 0;
-      while (i<mText.size()) {
-        int glyphNo = glyphNoFromText(*mFont, i, mText.c_str());
+      int colbytes = (mFont->glyphHeight+7)>>3;
+      size_t textIdx = 0;
+      while (textIdx<mText.size()) {
+        int glyphNo = glyphNoFromText(*mFont, textIdx, mText.c_str());
         const glyph_t &g = mFont->glyphs[glyphNo];
-        for (int j = 0; j<g.width; ++j) {
-          mTextPixelCols.append(1, g.cols[j]);
-        }
-        for (int j = 0; j<mTextSpacing; ++j) {
-          mTextPixelCols.append(1, 0);
-        }
+        // append glyph data
+        mTextPixelData.append(g.coldata, g.width*colbytes);
+        cols += g.width;
+        // add spacing
+        mTextPixelData.append(mTextSpacing*colbytes, 0);
+        cols += mTextSpacing;
       }
     }
     // set content size
-    setContentSize({(int)mTextPixelCols.size(), mFont->glyphHeight});
+    setContentSize({cols, mFont->glyphHeight});
     makeDirty();
   }
 }
@@ -368,13 +388,18 @@ PixelColor TextView::contentColorAt(PixelPoint aPt)
 {
   if (mFont) {
     if (isInContentSize(aPt)) {
-      uint8_t col = mTextPixelCols[aPt.x];
-      if (aPt.y<mFont->glyphHeight && aPt.y>=0 && (col & (1<<(mFont->glyphHeight-1-aPt.y)))) {
-        if (!mGradientPixels.empty()) {
-          // horizontally gradiated text
-          return gradientPixel(aPt.x);
+      if (aPt.y<mFont->glyphHeight && aPt.y>=0) {
+        int colbytes = (mFont->glyphHeight+7)>>3;
+        int colbit = mFont->glyphHeight-1-aPt.y; // bit 0 = topmost bit in text rendering
+        size_t dataIdx = (aPt.x+1)*colbytes -1 - (colbit>>3); // bytes in pixeldata are MSB first
+        if (dataIdx<mTextPixelData.size() && ((uint8_t)mTextPixelData[dataIdx] & (1<<(colbit&0x07)))) {
+          // text pixel is set
+          if (!mGradientPixels.empty()) {
+            // horizontally gradiated text
+            return gradientPixel(aPt.x);
+          }
+          return mForegroundColor;
         }
-        return mForegroundColor;
       }
     }
   }
