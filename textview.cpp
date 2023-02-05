@@ -28,8 +28,8 @@ using namespace p44;
 // MARK: fonts
 
 // font generator
-//#define GENERATE_FONT_SOURCE font_5x7
-#define GLYPHSTRINGS_VAR font_5x7_glyphstrings
+//#define GENERATE_FONT_SOURCE font_9x16
+#define GLYPHSTRINGS_VAR font_9x16_glyphstrings
 
 #ifdef GENERATE_FONT_SOURCE
 #if !defined(DEBUG) || !defined(__APPLE__)
@@ -45,11 +45,13 @@ using namespace p44;
 // Font data includes
 #include "fonts/font_5x7.cpp"
 #include "fonts/font_5x8.cpp"
+#include "fonts/font_9x16.cpp"
 
 // Font table
 const font_t* fonts[] {
   &font_5x7,
   &font_5x8,
+  &font_9x16,
   nullptr
 };
 
