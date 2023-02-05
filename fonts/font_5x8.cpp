@@ -1022,7 +1022,7 @@ static const GlyphRange font_5x8_ranges[] = {
 
 static const font_t font_5x8 = {
   .fontName = "font_5x8",
-  .glyphHeight = 7,
+  .glyphHeight = 8,
   .numGlyphs = 114,
   .glyphRanges = font_5x8_ranges,
   .glyphs = font_5x8_glyphs
