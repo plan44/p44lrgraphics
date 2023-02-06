@@ -248,7 +248,7 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
       rangedesc.clear();
     }
   }
-  fprintf(aOutputFile, "  { NULL, 0, 0}\n");
+  fprintf(aOutputFile, "  { NULL, 0, 0, 0 }\n");
   fprintf(aOutputFile, "};\n");
   // now the font head record
   fprintf(aOutputFile, "\nstatic const font_t %s = {\n", aFontName);
@@ -328,20 +328,18 @@ void TextView::setVisible(bool aVisible)
 /// set font
 void TextView::setFont(const char* aFontName)
 {
-  const font_t* fP = fonts[0];
-  while (fP) {
-    if (strucmp(aFontName, fP->fontName)==0) {
+  const font_t** fPP = fonts;
+  while (*fPP) {
+    if (strucmp(aFontName, (*fPP)->fontName)==0) {
       // found, set it
-      mFont = fP;
+      mFont = *fPP;
       // re-render text
       renderText();
       return;
     }
-    fP++;
+    fPP++;
   }
 }
-
-
 
 
 void TextView::renderText()
@@ -364,9 +362,13 @@ void TextView::renderText()
         cols += mTextSpacing;
       }
     }
-    // set content size
+    // set content size according to rendered text
     setContentSize({cols, mFont->glyphHeight});
     makeDirty();
+  }
+  else {
+    // no content
+    setContentSize({0, 0});
   }
 }
 
