@@ -1240,7 +1240,7 @@ static JsonObjectPtr viewConfigFromArg(ScriptObjPtr aArg, ErrorPtr &aErr)
 
 
 // configure(jsonconfig|filename)
-static const BuiltInArgDesc configure_args[] = { { text|json|object } };
+static const BuiltInArgDesc configure_args[] = { { text|object } };
 static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
 static void configure_func(BuiltinFunctionContextPtr f)
 {
@@ -1375,7 +1375,7 @@ static const BuiltinMemberDescriptor viewFunctions[] = {
   { "stopanimations", executable|object, 0, NULL, &stopanimations_func },
   #endif
   #if ENABLE_VIEWSTATUS
-  { "status", executable|json|object, 0, NULL, &status_func },
+  { "status", executable|object, 0, NULL, &status_func },
   #endif
   { NULL } // terminator
 };
@@ -1414,7 +1414,7 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 
 
 // makeview(jsonconfig|filename)
-static const BuiltInArgDesc makeview_args[] = { { text|json|object } };
+static const BuiltInArgDesc makeview_args[] = { { text|object } };
 static const size_t makeview_numargs = sizeof(makeview_args)/sizeof(BuiltInArgDesc);
 static void makeview_func(BuiltinFunctionContextPtr f)
 {
