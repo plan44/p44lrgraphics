@@ -739,7 +739,39 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "...X..."   // 08
   "\n"   "....X.." , // 04
 
-  "Ä" /* UTF-8 C3 84 - Glyph 96 */
+  " " /* UTF-8 C2 A0 - Glyph 96 */
+
+  "\n"   "......."   // 00
+  "\n"   "......."   // 00
+  "\n"   "......."   // 00
+  "\n"   "......."   // 00
+  "\n"   "......." , // 00
+
+  "À" /* UTF-8 C3 80 - Glyph 97 */
+
+  "\n"   "XXXX..."   // 78
+  "\n"   "..X.X.X"   // 15
+  "\n"   "..X..X."   // 12
+  "\n"   "..X.X.."   // 14
+  "\n"   "XXXX..." , // 78
+
+  "Á" /* UTF-8 C3 81 - Glyph 98 */
+
+  "\n"   "XXXX..."   // 78
+  "\n"   "..X.X.."   // 14
+  "\n"   "..X..X."   // 12
+  "\n"   "..X.X.X"   // 15
+  "\n"   "XXXX..." , // 78
+
+  "Â" /* UTF-8 C3 82 - Glyph 99 */
+
+  "\n"   "XXXX..."   // 78
+  "\n"   "..X.XX."   // 16
+  "\n"   "..X..XX"   // 13
+  "\n"   "..X.XX."   // 16
+  "\n"   "XXXX..." , // 78
+
+  "Ä" /* UTF-8 C3 84 - Glyph 100 */
 
   "\n"   "XXXXX.X"   // 7D
   "\n"   "...X.X."   // 0A
@@ -747,7 +779,31 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "...X.X."   // 0A
   "\n"   "XXXXX.X" , // 7D
 
-  "Ö" /* UTF-8 C3 96 - Glyph 97 */
+  "È" /* UTF-8 C3 88 - Glyph 101 */
+
+  "\n"   "XXXXXX."   // 7E
+  "\n"   "X..X.XX"   // 4B
+  "\n"   "X..X.X."   // 4A
+  "\n"   "X....X."   // 42
+  "\n"   "X....X." , // 42
+
+  "É" /* UTF-8 C3 89 - Glyph 102 */
+
+  "\n"   "XXXXXX."   // 7E
+  "\n"   "X..X.X."   // 4A
+  "\n"   "X..X.X."   // 4A
+  "\n"   "X....XX"   // 43
+  "\n"   "X....X." , // 42
+
+  "Ê" /* UTF-8 C3 8A - Glyph 103 */
+
+  "\n"   "XXXXXX."   // 7E
+  "\n"   "X..X.XX"   // 4B
+  "\n"   "X..X.XX"   // 4B
+  "\n"   "X....XX"   // 43
+  "\n"   "X....X." , // 42
+
+  "Ö" /* UTF-8 C3 96 - Glyph 104 */
 
   "\n"   ".XXXX.X"   // 3D
   "\n"   "X....X."   // 42
@@ -755,7 +811,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X....X."   // 42
   "\n"   ".XXXX.X" , // 3D
 
-  "Ü" /* UTF-8 C3 9C - Glyph 98 */
+  "Ü" /* UTF-8 C3 9C - Glyph 105 */
 
   "\n"   ".XXXX.X"   // 3D
   "\n"   "X......"   // 40
@@ -763,7 +819,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X......"   // 40
   "\n"   ".XXXX.X" , // 3D
 
-  "à" /* UTF-8 C3 A0 - Glyph 99 */
+  "à" /* UTF-8 C3 A0 - Glyph 106 */
 
   "\n"   ".X....."   // 20
   "\n"   "X.X.X.X"   // 55
@@ -771,7 +827,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.X.."   // 54
   "\n"   "XXXX..." , // 78
 
-  "á" /* UTF-8 C3 A1 - Glyph 100 */
+  "á" /* UTF-8 C3 A1 - Glyph 107 */
 
   "\n"   ".X....."   // 20
   "\n"   "X.X.X.."   // 54
@@ -779,7 +835,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.X.X"   // 55
   "\n"   "XXXX..." , // 78
 
-  "â" /* UTF-8 C3 A2 - Glyph 101 */
+  "â" /* UTF-8 C3 A2 - Glyph 108 */
 
   "\n"   ".X....."   // 20
   "\n"   "X.X.XX."   // 56
@@ -787,7 +843,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.XX."   // 56
   "\n"   "XXXX..." , // 78
 
-  "ä" /* UTF-8 C3 A4 - Glyph 102 */
+  "ä" /* UTF-8 C3 A4 - Glyph 109 */
 
   "\n"   ".X....."   // 20
   "\n"   "X.X.X.X"   // 55
@@ -795,7 +851,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.X.X"   // 55
   "\n"   "XXXX..." , // 78
 
-  "ç" /* UTF-8 C3 A7 - Glyph 103 */
+  "ç" /* UTF-8 C3 A7 - Glyph 110 */
 
   "\n"   ".XXX..."   // 38
   "\n"   "X...X.."   // 44
@@ -803,7 +859,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X...X.."   // 44
   "\n"   "...X..." , // 08
 
-  "è" /* UTF-8 C3 A8 - Glyph 104 */
+  "è" /* UTF-8 C3 A8 - Glyph 111 */
 
   "\n"   ".XXX..."   // 38
   "\n"   "X.X.X.X"   // 55
@@ -811,7 +867,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.X.."   // 54
   "\n"   "..XX..." , // 18
 
-  "é" /* UTF-8 C3 A9 - Glyph 105 */
+  "é" /* UTF-8 C3 A9 - Glyph 112 */
 
   "\n"   ".XXX..."   // 38
   "\n"   "X.X.X.."   // 54
@@ -819,7 +875,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.X.X"   // 55
   "\n"   "..XX..." , // 18
 
-  "ê" /* UTF-8 C3 AA - Glyph 106 */
+  "ê" /* UTF-8 C3 AA - Glyph 113 */
 
   "\n"   ".XXX..."   // 38
   "\n"   "X.X.XX."   // 56
@@ -827,7 +883,7 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.XX."   // 56
   "\n"   "..XX..." , // 18
 
-  "ë" /* UTF-8 C3 AB - Glyph 107 */
+  "ë" /* UTF-8 C3 AB - Glyph 114 */
 
   "\n"   ".XXX..."   // 38
   "\n"   "X.X.X.X"   // 55
@@ -835,31 +891,31 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X.X.X.X"   // 55
   "\n"   "..XX..." , // 18
 
-  "ì" /* UTF-8 C3 AC - Glyph 108 */
+  "ì" /* UTF-8 C3 AC - Glyph 115 */
 
   "\n"   "X..X.X."   // 4A
   "\n"   "XXXX..."   // 78
   "\n"   "X....X." , // 42
 
-  "í" /* UTF-8 C3 AD - Glyph 109 */
+  "í" /* UTF-8 C3 AD - Glyph 116 */
 
   "\n"   "X..X.X."   // 4A
   "\n"   "XXXX..."   // 78
   "\n"   "X....X." , // 42
 
-  "î" /* UTF-8 C3 AE - Glyph 110 */
+  "î" /* UTF-8 C3 AE - Glyph 117 */
 
   "\n"   "X..X.X."   // 4A
   "\n"   "XXXX..X"   // 79
   "\n"   "X....X." , // 42
 
-  "ï" /* UTF-8 C3 AF - Glyph 111 */
+  "ï" /* UTF-8 C3 AF - Glyph 118 */
 
   "\n"   "X..X.X."   // 4A
   "\n"   "XXXX..."   // 78
   "\n"   "X....X." , // 42
 
-  "ö" /* UTF-8 C3 B6 - Glyph 112 */
+  "ö" /* UTF-8 C3 B6 - Glyph 119 */
 
   "\n"   ".XXX..."   // 38
   "\n"   "X...X.X"   // 45
@@ -867,13 +923,34 @@ static const char * font_5x7_glyphstrings[] = {
   "\n"   "X...X.X"   // 45
   "\n"   ".XXX..." , // 38
 
-  "ü" /* UTF-8 C3 BC - Glyph 113 */
+  "ü" /* UTF-8 C3 BC - Glyph 120 */
 
   "\n"   ".XXXX.."   // 3C
   "\n"   "X.....X"   // 41
   "\n"   "X......"   // 40
   "\n"   "X.....X"   // 41
   "\n"   "XXXXX.." , // 7C
+
+  "–" /* UTF-8 E2 80 93 - Glyph 121 */
+
+  "\n"   "......."   // 00
+  "\n"   "...X..."   // 08
+  "\n"   "...X..."   // 08
+  "\n"   "...X..."   // 08
+  "\n"   "...X..."   // 08
+  "\n"   "...X..."   // 08
+  "\n"   "...X..."   // 08
+  "\n"   "......." , // 00
+
+  "’" /* UTF-8 E2 80 99 - Glyph 122 */
+
+  "\n"   "....X.."   // 04
+  "\n"   ".....XX" , // 03
+
+  "•" /* UTF-8 E2 80 A2 - Glyph 123 */
+
+  "\n"   "..XX..."   // 18
+  "\n"   "..XX..." , // 18
 
   nullptr // terminator
 };
@@ -983,43 +1060,59 @@ static const glyph_t font_5x7_glyphs[] = {
   {  1, "\x7f"                                     },  // '|' UTF-8 7C         (input # 93 -> glyph # 93)
   {  3, "\x41\x36\x08"                             },  // '}' UTF-8 7D         (input # 94 -> glyph # 94)
   {  5, "\x04\x02\x04\x08\x04"                     },  // '~' UTF-8 7E         (input # 95 -> glyph # 95)
-  {  5, "\x7d\x0a\x09\x0a\x7d"                     },  // 'Ä' UTF-8 C3 84     (input # 96 -> glyph # 96)
-  {  5, "\x3d\x42\x42\x42\x3d"                     },  // 'Ö' UTF-8 C3 96     (input # 97 -> glyph # 97)
-  {  5, "\x3d\x40\x40\x40\x3d"                     },  // 'Ü' UTF-8 C3 9C     (input # 98 -> glyph # 98)
-  {  5, "\x20\x55\x56\x54\x78"                     },  // 'à' UTF-8 C3 A0     (input # 99 -> glyph # 99)
-  {  5, "\x20\x54\x56\x55\x78"                     },  // 'á' UTF-8 C3 A1     (input # 100 -> glyph # 100)
-  {  5, "\x20\x56\x55\x56\x78"                     },  // 'â' UTF-8 C3 A2     (input # 101 -> glyph # 101)
-  {  5, "\x20\x55\x54\x55\x78"                     },  // 'ä' UTF-8 C3 A4     (input # 102 -> glyph # 102)
-  {  5, "\x38\x44\x64\x44\x08"                     },  // 'ç' UTF-8 C3 A7     (input # 103 -> glyph # 103)
-  {  5, "\x38\x55\x56\x54\x18"                     },  // 'è' UTF-8 C3 A8     (input # 104 -> glyph # 104)
-  {  5, "\x38\x54\x56\x55\x18"                     },  // 'é' UTF-8 C3 A9     (input # 105 -> glyph # 105)
-  {  5, "\x38\x56\x55\x56\x18"                     },  // 'ê' UTF-8 C3 AA     (input # 106 -> glyph # 106)
-  {  5, "\x38\x55\x54\x55\x18"                     },  // 'ë' UTF-8 C3 AB     (input # 107 -> glyph # 107)
-  {  3, "\x4a\x78\x42"                             },  // 'ì' UTF-8 C3 AC     (input # 108 -> glyph # 108)
-  {  3, "\x4a\x78\x42"                             },  // 'í' UTF-8 C3 AD     (input # 109 -> glyph # 109)
-  {  3, "\x4a\x79\x42"                             },  // 'î' UTF-8 C3 AE     (input # 110 -> glyph # 110)
-  {  3, "\x4a\x78\x42"                             },  // 'ï' UTF-8 C3 AF     (input # 111 -> glyph # 111)
-  {  5, "\x38\x45\x44\x45\x38"                     },  // 'ö' UTF-8 C3 B6     (input # 112 -> glyph # 112)
-  {  5, "\x3c\x41\x40\x41\x7c"                     },  // 'ü' UTF-8 C3 BC     (input # 113 -> glyph # 113)
+  {  5, "\x00\x00\x00\x00\x00"                     },  // ' ' UTF-8 C2 A0     (input # 96 -> glyph # 96)
+  {  5, "\x78\x15\x12\x14\x78"                     },  // 'À' UTF-8 C3 80     (input # 97 -> glyph # 97)
+  {  5, "\x78\x14\x12\x15\x78"                     },  // 'Á' UTF-8 C3 81     (input # 98 -> glyph # 98)
+  {  5, "\x78\x16\x13\x16\x78"                     },  // 'Â' UTF-8 C3 82     (input # 99 -> glyph # 99)
+  {  5, "\x7d\x0a\x09\x0a\x7d"                     },  // 'Ä' UTF-8 C3 84     (input # 100 -> glyph # 100)
+  {  5, "\x7e\x4b\x4a\x42\x42"                     },  // 'È' UTF-8 C3 88     (input # 101 -> glyph # 101)
+  {  5, "\x7e\x4a\x4a\x43\x42"                     },  // 'É' UTF-8 C3 89     (input # 102 -> glyph # 102)
+  {  5, "\x7e\x4b\x4b\x43\x42"                     },  // 'Ê' UTF-8 C3 8A     (input # 103 -> glyph # 103)
+  {  5, "\x3d\x42\x42\x42\x3d"                     },  // 'Ö' UTF-8 C3 96     (input # 104 -> glyph # 104)
+  {  5, "\x3d\x40\x40\x40\x3d"                     },  // 'Ü' UTF-8 C3 9C     (input # 105 -> glyph # 105)
+  {  5, "\x20\x55\x56\x54\x78"                     },  // 'à' UTF-8 C3 A0     (input # 106 -> glyph # 106)
+  {  5, "\x20\x54\x56\x55\x78"                     },  // 'á' UTF-8 C3 A1     (input # 107 -> glyph # 107)
+  {  5, "\x20\x56\x55\x56\x78"                     },  // 'â' UTF-8 C3 A2     (input # 108 -> glyph # 108)
+  {  5, "\x20\x55\x54\x55\x78"                     },  // 'ä' UTF-8 C3 A4     (input # 109 -> glyph # 109)
+  {  5, "\x38\x44\x64\x44\x08"                     },  // 'ç' UTF-8 C3 A7     (input # 110 -> glyph # 110)
+  {  5, "\x38\x55\x56\x54\x18"                     },  // 'è' UTF-8 C3 A8     (input # 111 -> glyph # 111)
+  {  5, "\x38\x54\x56\x55\x18"                     },  // 'é' UTF-8 C3 A9     (input # 112 -> glyph # 112)
+  {  5, "\x38\x56\x55\x56\x18"                     },  // 'ê' UTF-8 C3 AA     (input # 113 -> glyph # 113)
+  {  5, "\x38\x55\x54\x55\x18"                     },  // 'ë' UTF-8 C3 AB     (input # 114 -> glyph # 114)
+  {  3, "\x4a\x78\x42"                             },  // 'ì' UTF-8 C3 AC     (input # 115 -> glyph # 115)
+  {  3, "\x4a\x78\x42"                             },  // 'í' UTF-8 C3 AD     (input # 116 -> glyph # 116)
+  {  3, "\x4a\x79\x42"                             },  // 'î' UTF-8 C3 AE     (input # 117 -> glyph # 117)
+  {  3, "\x4a\x78\x42"                             },  // 'ï' UTF-8 C3 AF     (input # 118 -> glyph # 118)
+  {  5, "\x38\x45\x44\x45\x38"                     },  // 'ö' UTF-8 C3 B6     (input # 119 -> glyph # 119)
+  {  5, "\x3c\x41\x40\x41\x7c"                     },  // 'ü' UTF-8 C3 BC     (input # 120 -> glyph # 120)
+  {  8, "\x00\x08\x08\x08\x08\x08\x08\x00"         },  // '–' UTF-8 E2 80 93 (input # 121 -> glyph # 121)
+  {  2, "\x04\x03"                                 },  // '’' UTF-8 E2 80 99 (input # 122 -> glyph # 122)
+  {  2, "\x18\x18"                                 },  // '•' UTF-8 E2 80 A2 (input # 123 -> glyph # 123)
 };
 
 static const GlyphRange font_5x7_ranges[] = {
   { "", 0x20, 0x7E, 1 }, //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-  { "\xc3", 0x84, 0x84, 96 }, // Ä
-  { "\xc3", 0x96, 0x96, 97 }, // Ö
-  { "\xc3", 0x9C, 0x9C, 98 }, // Ü
-  { "\xc3", 0xA0, 0xA2, 99 }, // àáâ
-  { "\xc3", 0xA4, 0xA4, 102 }, // ä
-  { "\xc3", 0xA7, 0xAF, 103 }, // çèéêëìíîï
-  { "\xc3", 0xB6, 0xB6, 112 }, // ö
-  { "\xc3", 0xBC, 0xBC, 113 }, // ü
-  { NULL, 0, 0}
+  { "\xc2", 0xA0, 0xA0, 96 }, //
+  { "\xc3", 0x80, 0x82, 97 }, // ÀÁÂ
+  { "\xc3", 0x84, 0x84, 100 }, // Ä
+  { "\xc3", 0x88, 0x8A, 101 }, // ÈÉÊ
+  { "\xc3", 0x96, 0x96, 104 }, // Ö
+  { "\xc3", 0x9C, 0x9C, 105 }, // Ü
+  { "\xc3", 0xA0, 0xA2, 106 }, // àáâ
+  { "\xc3", 0xA4, 0xA4, 109 }, // ä
+  { "\xc3", 0xA7, 0xAF, 110 }, // çèéêëìíîï
+  { "\xc3", 0xB6, 0xB6, 119 }, // ö
+  { "\xc3", 0xBC, 0xBC, 120 }, // ü
+  { "\xe2\x80", 0x93, 0x93, 121 }, // –
+  { "\xe2\x80", 0x99, 0x99, 122 }, // ’
+  { "\xe2\x80", 0xA2, 0xA2, 123 }, // •
+  { NULL, 0, 0, 0 }
 };
 
 static const font_t font_5x7 = {
   .fontName = "font_5x7",
   .glyphHeight = 7,
-  .numGlyphs = 114,
+  .numGlyphs = 124,
   .glyphRanges = font_5x7_ranges,
   .glyphs = font_5x7_glyphs
 };
