@@ -92,6 +92,23 @@ PixelColor P44View::contentColorAt(PixelPoint aPt)
 }
 
 
+void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
+{
+  aLedRGB.reserve(aArea.dx*aArea.dy*6+1); // one extra for a message terminator
+  // pixel data row by row
+  for (int y=0; y<aArea.dy; ++y) {
+    for (int x=0; x<aArea.dx; ++x) {
+      PixelColor pix = colorAt({
+        aArea.x+x,
+        aArea.y+y
+      });
+      dimPixel(pix, pix.a);
+      string_format_append(aLedRGB, "%02X%02X%02X", pix.r, pix.g, pix.b);
+    }
+  }
+}
+
+
 void P44View::geometryChange(bool aStart)
 {
   if (aStart){

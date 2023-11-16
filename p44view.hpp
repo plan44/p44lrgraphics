@@ -400,6 +400,12 @@ namespace p44 {
     /// @param aPt point to get in frame coordinates
     PixelColor colorAt(PixelPoint aPt);
 
+    /// get the LED rrggbb data string
+    /// @param aRawRgb will be filled to contain the raw RGB data as specified by aArea
+    /// @param aArea the area to get data for
+    /// @return hex string in rrggbb format, no separator, as many as there are LEDs defined
+    void ledRGBdata(string& aLedRGB, PixelRect aArea);
+
     /// clear contents of this view
     /// @note base class just resets content size to zero, subclasses might NOT want to do that
     ///   and thus choose NOT to call inherited.
