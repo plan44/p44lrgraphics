@@ -126,7 +126,7 @@ void P44View::geometryChange(bool aStart)
       if (mGeometryChanging==0) {
         if (mChangedGeometry) {
           FOCUSLOG("View '%s' changed geometry: frame=(%d,%d,%d,%d)->(%d,%d,%d,%d), content=(%d,%d,%d,%d)->(%d,%d,%d,%d)",
-            mLabel.c_str(),
+            getLabel().c_str(),
             mPreviousFrame.x, mPreviousFrame.y, mPreviousFrame.dx, mPreviousFrame.dy,
             mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
             mPreviousContent.x, mPreviousContent.y, mPreviousContent.dx, mPreviousContent.dy,
@@ -322,7 +322,7 @@ void P44View::contentRectAsViewCoord(PixelRect &aRect)
   aRect.y = c1.y + mFrame.y;
   aRect.dy = c2.y-c1.y+inset.y;
   FOCUSLOG("View '%s' frame=(%d,%d,%d,%d), content rect as view coords=(%d,%d,%d,%d)",
-    mLabel.c_str(),
+    getLabel().c_str(),
     mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
     aRect.x, aRect.y, aRect.dx, aRect.dy
   );
@@ -894,9 +894,9 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-P44ViewPtr P44View::getView(const string aLabel)
+P44ViewPtr P44View::getView(const string aLabelOrId)
 {
-  if (aLabel==mLabel) {
+  if (aLabelOrId==mLabel || aLabelOrId==getId()) {
     return P44ViewPtr(this); // that's me
   }
   return P44ViewPtr(); // not found
@@ -956,12 +956,26 @@ string P44View::orientationToText(P44View::Orientation aOrientation)
 }
 
 
+string P44View::getLabel() const
+{
+  if (!mLabel.empty()) return mLabel;
+  return "untitled";
+}
+
+
+string P44View::getId() const
+{
+  if (!mLabel.empty()) return mLabel;
+  return string_format("V_%08lx", (uint32_t)(intptr_t)this);
+}
+
 
 JsonObjectPtr P44View::viewStatus()
 {
   JsonObjectPtr status = JsonObject::newObj();
   status->add("type", JsonObject::newString(viewTypeName()));
-  if (!mLabel.empty()) status->add("label", JsonObject::newString(mLabel));
+  status->add("label", JsonObject::newString(getLabel()));
+  status->add("id", JsonObject::newString(getId()));
   status->add("x", JsonObject::newInt32(mFrame.x));
   status->add("y", JsonObject::newInt32(mFrame.y));
   status->add("dx", JsonObject::newInt32(mFrame.dx));

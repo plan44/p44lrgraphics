@@ -55,7 +55,7 @@ namespace p44 {
     virtual ~LifeView();
 
     static const char* staticTypeName() { return "life"; };
-    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set generation interval
     /// @param aInterval time between generations, Never = stopped

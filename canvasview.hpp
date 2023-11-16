@@ -41,7 +41,7 @@ namespace p44 {
     virtual ~CanvasView();
 
     static const char* staticTypeName() { return "canvas"; };
-    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// clear the content to all pixels transparent
     virtual void clear() P44_OVERRIDE;

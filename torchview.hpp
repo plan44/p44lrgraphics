@@ -79,7 +79,7 @@ namespace p44 {
     virtual ~TorchView();
 
     static const char* staticTypeName() { return "torch"; };
-    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// clear
     virtual void clear() P44_OVERRIDE;

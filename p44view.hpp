@@ -238,7 +238,7 @@ namespace p44 {
     virtual ~P44View();
 
     static const char* staticTypeName() { return "plain"; };
-    virtual const char* viewTypeName() { return staticTypeName(); }
+    virtual const char* viewTypeName() const { return staticTypeName(); }
 
     /// set the frame within the parent coordinate system
     /// @param aFrame the new frame for the view
@@ -297,6 +297,12 @@ namespace p44 {
     /// @note this is for referencing views in reconfigure operations
     /// @param aLabel the new label
     void setLabel(const string aLabel) { mLabel = aLabel; }
+
+    /// @return the label if one if set, or a generated unique default label otherwise
+    string getLabel() const;
+
+    /// @return an unique (but volatile) ID
+    string getId() const;
 
     /// set default view label (i.e. set label only if the view does have an empty label so far)
     /// @param aLabel the new label
@@ -462,9 +468,9 @@ namespace p44 {
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig);
 
     /// get view by label
-    /// @param aLabel label of view to find
+    /// @param aLabelOrId label or Id of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual P44ViewPtr getView(const string aLabel);
+    virtual P44ViewPtr getView(const string aLabelOrId);
 
     #if ENABLE_JSON_APPLICATION
 

@@ -43,7 +43,7 @@ namespace p44 {
     virtual ~ViewStack();
 
     static const char* staticTypeName() { return "stack"; };
-    virtual const char* viewTypeName() P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set the positioning, purging and autosizing mode
     /// @param aPositioningMode where to append or purge views. Using wrapMode constants as follows:

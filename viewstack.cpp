@@ -90,15 +90,15 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
       aView->mFrame.y = r.y-aView->mFrame.dy-aSpacing;
     }
     if ((aView->getWrapMode()&clipXY)==0) {
-      LOG(LOG_WARNING, "ViewStack '%s', pushed view '%s' is not clipped, probably will obscure neigbours!", mLabel.c_str(), aView->mLabel.c_str());
+      LOG(LOG_WARNING, "ViewStack '%s', pushed view '%s' is not clipped, probably will obscure neigbours!", getLabel().c_str(), aView->getLabel().c_str());
     }
     if (!mSizeToContent && !fill) {
-      LOG(LOG_WARNING, "ViewStack '%s' does not size to content, autopositioned view '%s' might be outside frame and thus invisible!", mLabel.c_str(), aView->mLabel.c_str());
+      LOG(LOG_WARNING, "ViewStack '%s' does not size to content, autopositioned view '%s' might be outside frame and thus invisible!", getLabel().c_str(), aView->getLabel().c_str());
     }
   }
   mViewStack.push_back(aView);
   FOCUSLOG("+++ ViewStack '%s' pushes subview #%zu with frame=(%d,%d,%d,%d) - frame coords are relative to content origin",
-    mLabel.c_str(),
+    getLabel().c_str(),
     mViewStack.size(),
     aView->mFrame.x, aView->mFrame.y, aView->mFrame.dx, aView->mFrame.dy
   );
@@ -134,7 +134,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
   }
   // now purge views
   FOCUSLOG("ViewStack '%s' purges with keep rectangle=(%d,%d,%d,%d)",
-    mLabel.c_str(),
+    getLabel().c_str(),
     r.x, r.y, r.dx, r.dy
   );
   ViewsList::iterator pos = mViewStack.begin();
@@ -226,7 +226,7 @@ void ViewStack::getEnclosingContentRect(PixelRect &aBounds)
   aBounds.y = minY;
   aBounds.dx = maxX-minX; if (aBounds.dx<0) aBounds.dx = 0;
   aBounds.dy = maxY-minY; if (aBounds.dy<0) aBounds.dy = 0;
-  FOCUSLOG("ViewStack '%s': enclosingContentRect=(%d,%d,%d,%d)", mLabel.c_str(), aBounds.x, aBounds.y, aBounds.dx, aBounds.dy);
+  FOCUSLOG("ViewStack '%s': enclosingContentRect=(%d,%d,%d,%d)", getLabel().c_str(), aBounds.x, aBounds.y, aBounds.dx, aBounds.dy);
 }
 
 

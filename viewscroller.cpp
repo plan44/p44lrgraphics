@@ -179,7 +179,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
           if (FOCUSLOGENABLED) {
             PixelRect sf = mScrolledView->getFrame();
             FOCUSLOG("*** Scroller '%s' needs new content: scrollX = %.2f, scrollY=%.2f, frame=(%d,%d,%d,%d) scrolledframe=(%d,%d,%d,%d)",
-              mLabel.c_str(),
+              getLabel().c_str(),
               (double)mScrollOffsetX_milli/1000, (double)mScrollOffsetY_milli/1000,
               mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
               sf.x, sf.y, sf.dx, sf.dy

@@ -62,7 +62,6 @@ namespace p44 {
   ErrorPtr createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView);
   #endif // ENABLE_JSON_APPLICATION
 
-
 } // namespace p44
 
 
