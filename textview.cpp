@@ -289,6 +289,8 @@ static void generateFontSource(const font_t& aFont, const char** aGlyphStrings, 
 TextView::TextView()
 {
   mTextSpacing = 2;
+  mStretch = 0;
+  mBolden = 0;
   mVisible = true;
   mFont = &DEFAULT_FONT;
   #ifdef GENERATE_FONT_SOURCE
@@ -355,8 +357,30 @@ void TextView::renderText()
         int glyphNo = glyphNoFromText(*mFont, textIdx, mText.c_str());
         const glyph_t &g = mFont->glyphs[glyphNo];
         // append glyph data
-        mTextPixelData.append(g.coldata, g.width*colbytes);
-        cols += g.width;
+        if (mStretch || mBolden) {
+          // with effects, process col by col
+          for(int cidx=0; cidx<g.width+mBolden; cidx++) {
+            int startat = cidx>=mBolden ? cidx-mBolden : 0;
+            int endbefore = cidx<g.width ? cidx+1 : g.width;
+            string col;
+            col.assign(colbytes, '\x00');
+            for (int i=startat; i<endbefore; i++) {
+              for (int j=0; j<colbytes; j++) {
+                col[j] |= g.coldata[i*colbytes+j];
+              }
+            }
+            // then added (mStretch+1 times)
+            for (int j=0; j<=mStretch; j++) {
+              mTextPixelData += col;
+              cols += 1;
+            }
+          }
+        }
+        else {
+          // simple
+          mTextPixelData.append(g.coldata, g.width*colbytes);
+          cols += g.width;
+        }
         // add spacing
         mTextPixelData.append(mTextSpacing*colbytes, 0);
         cols += mTextSpacing;
@@ -432,6 +456,12 @@ ErrorPtr TextView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("spacing", o)) {
       setTextSpacing(o->int32Value());
     }
+    if (aViewConfig->get("stretch", o)) {
+      setStretch(o->int32Value());
+    }
+    if (aViewConfig->get("bolden", o)) {
+      setBolden(o->int32Value());
+    }
   }
   return err;
 }
@@ -448,6 +478,8 @@ JsonObjectPtr TextView::viewStatus()
   status->add("font", mFont ? JsonObject::newString(mFont->fontName) : JsonObject::newNull());
   status->add("visible", JsonObject::newBool(mVisible));
   status->add("spacing", JsonObject::newInt32(mTextSpacing));
+  status->add("stretch", JsonObject::newInt32(mStretch));
+  status->add("bolden", JsonObject::newInt32(mBolden));
   return status;
 }
 

@@ -56,6 +56,8 @@ namespace p44 {
     string mText; ///< internal representation of text
     bool mVisible; ///< if not set, text view is reduced to zero width
     int mTextSpacing; ///< pixels between characters
+    int mStretch; ///< pixels between characters
+    int mBolden; ///< how many shifted overlays
     string mTextPixelData; ///< string of text column data (might be multiple bytes per columnt for fonts with dy>8)
     const font_t* mFont; ///< the font to use
 
@@ -83,8 +85,14 @@ namespace p44 {
     /// set character spacing
     void setTextSpacing(int aTextSpacing) { mTextSpacing = aTextSpacing; renderText(); }
 
-    /// get text color
+    /// get character spacing
     int getTextSpacing() const { return mTextSpacing; }
+
+    /// set bolden effect
+    void setBolden(int aBolden) { mBolden = aBolden; renderText(); }
+
+    /// set stretch effect
+    void setStretch(int aStretch) { mStretch = aStretch; renderText(); }
 
     /// clear contents of this view
     virtual void clear() P44_OVERRIDE;
