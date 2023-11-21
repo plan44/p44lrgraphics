@@ -310,8 +310,8 @@ JsonObjectPtr TorchView::viewStatus()
   status->add("side_rad", JsonObject::newInt32(mSideRad));
   status->add("heat_cap", JsonObject::newInt32(mHeatCap));
   status->add("hotspark_min", JsonObject::newInt32(mHotsparkMin));
-  status->add("hotsparkinc", JsonObject::newString(pixelToWebColor(mHotsparkColorInc)));
-  status->add("hotsparkcolor", JsonObject::newString(pixelToWebColor(mHotsparkColor)));
+  status->add("hotsparkinc", JsonObject::newString(pixelToWebColor(mHotsparkColorInc, true)));
+  status->add("hotsparkcolor", JsonObject::newString(pixelToWebColor(mHotsparkColor, true)));
   status->add("cycletime", JsonObject::newDouble((double)mCycleTime/Second));
 
   return status;

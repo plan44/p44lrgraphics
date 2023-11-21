@@ -985,8 +985,8 @@ JsonObjectPtr P44View::viewStatus()
   status->add("content_dx", JsonObject::newInt32(mContent.dx));
   status->add("content_dy", JsonObject::newInt32(mContent.dy));
   status->add("rotation", JsonObject::newDouble(mContentRotation));
-  status->add("color", JsonObject::newString(pixelToWebColor(mForegroundColor)));
-  status->add("bgcolor", JsonObject::newString(pixelToWebColor(mBackgroundColor)));
+  status->add("color", JsonObject::newString(pixelToWebColor(mForegroundColor, true)));
+  status->add("bgcolor", JsonObject::newString(pixelToWebColor(mBackgroundColor, true)));
   status->add("alpha", JsonObject::newInt32(getAlpha()));
   status->add("z_order", JsonObject::newInt32(getZOrder()));
   status->add("orientation", JsonObject::newString(orientationToText(mContentOrientation)));
@@ -1440,7 +1440,7 @@ static void hsv_func(BuiltinFunctionContextPtr f)
     }
   }
   PixelColor p = hsbToPixel(h, s, b);
-  f->finish(new StringValue(pixelToWebColor(p)));
+  f->finish(new StringValue(pixelToWebColor(p, false)));
 }
 
 
