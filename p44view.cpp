@@ -1252,7 +1252,7 @@ static void addview_func(BuiltinFunctionContextPtr f)
 static JsonObjectPtr viewConfigFromArg(ScriptObjPtr aArg, ErrorPtr &aErr)
 {
   #if SCRIPTING_JSON_SUPPORT
-  if (aArg->hasType(json)) {
+  if (aArg->hasType(structured)) {
     // is already a JSON value, use it as-is
     return aArg->jsonValue();
   }
@@ -1300,7 +1300,7 @@ static void status_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  f->finish(new JsonValue(v->view()->viewStatus()));
+  f->finish(ScriptObj::valueFromJSON(v->view()->viewStatus()));
 }
 
 #endif

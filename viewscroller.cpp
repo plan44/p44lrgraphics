@@ -501,10 +501,10 @@ static void remainingpixels_func(BuiltinFunctionContextPtr f)
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
   PixelPoint rem = v->scroller()->remainingPixelsToScroll();
-  JsonObjectPtr r = JsonObject::newObj();
-  r->add("x", rem.x==INT_MAX ? JsonObject::newNull() : JsonObject::newInt32(rem.x));
-  r->add("y", rem.y==INT_MAX ? JsonObject::newNull() : JsonObject::newInt32(rem.y));
-  f->finish(new JsonValue(r));
+  ObjectValue* r = new ObjectValue();
+  r->setMemberByName("x", rem.x==INT_MAX ? new ScriptObj() : new IntegerValue(rem.x));
+  r->setMemberByName("y", rem.y==INT_MAX ? new ScriptObj() : new IntegerValue(rem.y));
+  f->finish(r);
 }
 
 
