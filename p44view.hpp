@@ -39,6 +39,24 @@
 
 #define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
+
+// macros for synthesizing property accessors
+#define ACC_DECL(field, types, prop) \
+  { field, builtinmember|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&PROPERTY_ACCESSOR }
+
+#define ACC_IMPL(prop, getter, constructor) \
+  static ScriptObjPtr access_##prop(P44View& aView, ScriptObjPtr aToWrite) \
+  { \
+    if (!aToWrite) return new constructor(aView.get##prop()); \
+    aView.set##prop(aToWrite->getter()); \
+    return aToWrite; /* reflect back to indicate writable */ \
+  }
+#define ACC_IMPL_STR(prop) ACC_IMPL(prop, stringValue, StringValue)
+#define ACC_IMPL_DBL(prop) ACC_IMPL(prop, doubleValue, NumericValue)
+#define ACC_IMPL_INT(prop) ACC_IMPL(prop, intValue, IntegerValue)
+
+
+
 namespace p44 {
 
   typedef int PixelCoord;
@@ -136,6 +154,8 @@ namespace p44 {
     };
     typedef uint8_t WrapMode;
 
+    /// announce/finish geometry change
+    void geometryChange(bool aStart);
 
   protected:
 
@@ -171,9 +191,6 @@ namespace p44 {
     double mRotCos;
 
     string mLabel; ///< label of the view for addressing it
-
-    /// announce/finish geometry change
-    void geometryChange(bool aStart);
 
     /// change rect and trigger geometry change when actually changed
     void changeGeometryRect(PixelRect &aRect, PixelRect aNewRect);
@@ -246,6 +263,14 @@ namespace p44 {
 
     /// @return current frame rect
     PixelRect getFrame() { return mFrame; };
+
+    /// @name property getter/setter
+    /// @{
+    inline PixelCoord getX() { return mFrame.x; }; inline void setX(PixelCoord aVal) { mFrame.x = aVal; mChangedGeometry = true; };
+    inline PixelCoord getY() { return mFrame.y; }; inline void setY(PixelCoord aVal) { mFrame.y = aVal; mChangedGeometry = true; };
+    inline PixelCoord getDx() { return mFrame.dx; }; inline void setDx(PixelCoord aVal) { mFrame.dx = aVal; mChangedGeometry = true; };
+    inline PixelCoord getDy() { return mFrame.dy; }; inline void setDy(PixelCoord aVal) { mFrame.dy = aVal; mChangedGeometry = true; };
+    /// @}
 
     /// @return current content rect
     PixelRect getContent() { return mContent; };
@@ -461,16 +486,19 @@ namespace p44 {
     /// get text from wrap mode
     static string wrapModeToText(WrapMode aWrapMode, bool aForPositioning);
 
-    /// configure view from JSON
-    /// @param aViewConfig JSON for configuring view and subviews
-    /// @return ok or error in case of real errors (image not found etc., but minor
-    ///   issues like unknown properties usually don't cause error)
-    virtual ErrorPtr configureView(JsonObjectPtr aViewConfig);
-
     /// get view by label
     /// @param aLabelOrId label or Id of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
     virtual P44ViewPtr getView(const string aLabelOrId);
+
+    //#if !ENABLE_P44SCRIPT
+    virtual // Note: with P44Script, we use property access to generically implement this at the P44View level
+    //#endif
+    /// configure view from JSON
+    /// @param aViewConfig JSON for configuring view and subviews
+    /// @return ok or error in case of real errors (image not found etc., but minor
+    ///   issues like unknown properties usually don't cause error)
+    ErrorPtr configureView(JsonObjectPtr aViewConfig);
 
     #if ENABLE_JSON_APPLICATION
 
@@ -485,8 +513,11 @@ namespace p44 {
     #endif // ENABLE_VIEWCONFIG
 
     #if ENABLE_VIEWSTATUS
+    //#if !ENABLE_P44SCRIPT
+    virtual // Note: with P44Script, we use property access to generically implement this at the P44View level
+    //#endif
     /// @return the current status of the view, in the same format as accepted by configure()
-    virtual JsonObjectPtr viewStatus();
+    JsonObjectPtr viewStatus();
     #endif // ENABLE_VIEWSTATUS
 
   public:
@@ -500,11 +531,12 @@ namespace p44 {
     /// call to request an update if needed (i.e. the view is dirty)
     void requestUpdateIfNeeded();
 
-    #if P44SCRIPT_FULL_SUPPORT
+    #if ENABLE_P44SCRIPT
+
     /// @return ScriptObj representing this view
     virtual P44Script::ScriptObjPtr newViewObj();
-    #endif
 
+    #endif
 
     #if ENABLE_ANIMATION
 
@@ -539,12 +571,14 @@ namespace p44 {
     ValueSetterCB getDerivedColorComponentSetter(int aHSBIndex, PixelColor &aPixelColor, double &aCurrentValue);
     void derivedColorComponentSetter(int aHSBIndex, PixelColor *aPixelColorP, double aNewValue);
 
+    void configureAnimation(JsonObjectPtr aAnimationCfg);
+
     #endif // ENABLE_ANIMATION
 
   };
 
 
-  #if P44SCRIPT_FULL_SUPPORT
+  #if ENABLE_P44SCRIPT
 
   namespace P44Script {
 
@@ -571,7 +605,7 @@ namespace p44 {
 
   } // namespace P44Script
 
-  #endif // P44SCRIPT_FULL_SUPPORT
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 

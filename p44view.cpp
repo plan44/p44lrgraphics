@@ -733,10 +733,58 @@ P44View::WrapMode P44View::textToWrapMode(const char *aWrapModeText)
 }
 
 
-
-
-
 // MARK: ===== view configuration
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+/// property accessor
+/// @param aView the P44View
+/// @param aToWrite if null, this is a read access, otherwise it is the value to write
+/// @return on read, the property value - on write null if the property is not writable, the
+///   written value (usually aToWrite) when write was successful
+typedef ScriptObjPtr (*AccFn)(P44View& aView, ScriptObjPtr aToWrite);
+
+ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
+{
+  geometryChange(true);
+  aViewConfig->resetKeyIteration();
+  string name;
+  JsonObjectPtr val;
+  ScriptObjPtr vo = newViewObj();
+  while (aViewConfig->nextKeyValue(name, val)) {
+    // catch special procedural cases
+    if (name=="clear" && val->boolValue()) {
+      clear();
+    }
+    else if (name=="fullframe" && val->boolValue()) {
+      setFullFrameContent();
+    }
+    else if (name=="fullframe" && val->boolValue()) {
+      setFullFrameContent();
+    }
+    else if (name=="stopanimations" && val->boolValue()) {
+      stopAnimations();
+    }
+    else if (name=="animate") {
+      configureAnimation(val);
+    }
+    else {
+      // normal member access
+      vo->setMemberByName(name, ScriptObj::valueFromJSON(val));
+    }
+  }
+  if (mChangedGeometry && mSizeToContent) {
+    moveFrameToContent(true);
+  }
+  geometryChange(false);
+  return ErrorPtr();
+}
+
+#else
+
+// legacy configure
 
 ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 {
@@ -850,48 +898,15 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   #if ENABLE_ANIMATION
   if (aViewConfig->get("animate", o)) {
-    JsonObjectPtr a = o;
-    if (!a->isType(json_type_array)) {
-      a = JsonObject::newArray();
-      a->arrayAppend(o);
-    }
-    ValueAnimatorPtr referenceAnimation;
-    for (int i=0; i<a->arrayLength(); i++) {
-      o = a->arrayGet(i);
-      JsonObjectPtr p;
-      ValueAnimatorPtr animator;
-      if (o->get("property", p)) {
-        animator = animatorFor(p->stringValue());
-        if (o->get("to", p)) {
-          double to = p->doubleValue();
-          if (o->get("time", p)) {
-            MLMicroSeconds duration = p->doubleValue()*Second;
-            // optional params
-            bool autoreverse = false;
-            int cycles = 1;
-            MLMicroSeconds minsteptime = 0;
-            double stepsize = 0;
-            animator->function(ValueAnimator::easeInOut)->param(3);
-            if (o->get("minsteptime", p)) minsteptime = p->doubleValue()*Second;
-            if (o->get("stepsize", p)) stepsize = p->doubleValue();
-            if (o->get("autoreverse", p)) autoreverse = p->boolValue();
-            if (o->get("cycles", p)) cycles = p->int32Value();
-            if (o->get("from", p)) animator->from(p->doubleValue());
-            if (o->get("function", p)) animator->function(p->stringValue());
-            if (o->get("param", p)) animator->param(p->doubleValue());
-            if (o->get("delay", p)) animator->startDelay(p->doubleValue()*Second);
-            if (o->get("afteranchor", p) && p->boolValue()) animator->runAfter(referenceAnimation);
-            if (o->get("makeanchor", p) && p->boolValue()) referenceAnimation = animator;
-            animator->repeat(autoreverse, cycles)->stepParams(minsteptime, stepsize)->animate(to, duration, NoOP);
-          }
-        }
-      }
-    }
+    configureAnimation(o);
   }
   #endif
   geometryChange(false);
   return ErrorPtr();
 }
+
+
+#endif // legacy configure w/o ENABLE_P44SCRIPT
 
 
 P44ViewPtr P44View::getView(const string aLabelOrId)
@@ -966,9 +981,29 @@ string P44View::getLabel() const
 string P44View::getId() const
 {
   if (!mLabel.empty()) return mLabel;
-  return string_format("V_%08lx", (uint32_t)(intptr_t)this);
+  return string_format("V_%08x", (uint32_t)(intptr_t)this);
 }
 
+
+#if ENABLE_P44SCRIPT
+
+JsonObjectPtr P44View::viewStatus()
+{
+  JsonObjectPtr status = JsonObject::newObj();
+  ScriptObjPtr vo = newViewObj();
+  ValueIteratorPtr iter = vo->newIterator(jsonrepresentable);
+  ScriptObjPtr name;
+  while((name = iter->obtainKey(false))) {
+    ScriptObjPtr m = iter->obtainValue(jsonrepresentable);
+    if (m) status->add(name->stringValue().c_str(), m->jsonValue());
+    iter->next();
+  }
+  return status;
+}
+
+#else
+
+// legacy implementation
 
 JsonObjectPtr P44View::viewStatus()
 {
@@ -1000,10 +1035,54 @@ JsonObjectPtr P44View::viewStatus()
   return status;
 }
 
+#endif // legacy configure w/o ENABLE_P44SCRIPT
+
 #endif // ENABLE_VIEWSTATUS
 
 
 #if ENABLE_ANIMATION
+
+void P44View::configureAnimation(JsonObjectPtr aAnimationCfg)
+{
+  JsonObjectPtr o;
+  JsonObjectPtr a = aAnimationCfg;
+  if (!a->isType(json_type_array)) {
+    a = JsonObject::newArray();
+    a->arrayAppend(aAnimationCfg);
+  }
+  ValueAnimatorPtr referenceAnimation;
+  for (int i=0; i<a->arrayLength(); i++) {
+    o = a->arrayGet(i);
+    JsonObjectPtr p;
+    ValueAnimatorPtr animator;
+    if (o->get("property", p)) {
+      animator = animatorFor(p->stringValue());
+      if (o->get("to", p)) {
+        double to = p->doubleValue();
+        if (o->get("time", p)) {
+          MLMicroSeconds duration = p->doubleValue()*Second;
+          // optional params
+          bool autoreverse = false;
+          int cycles = 1;
+          MLMicroSeconds minsteptime = 0;
+          double stepsize = 0;
+          animator->function(ValueAnimator::easeInOut)->param(3);
+          if (o->get("minsteptime", p)) minsteptime = p->doubleValue()*Second;
+          if (o->get("stepsize", p)) stepsize = p->doubleValue();
+          if (o->get("autoreverse", p)) autoreverse = p->boolValue();
+          if (o->get("cycles", p)) cycles = p->int32Value();
+          if (o->get("from", p)) animator->from(p->doubleValue());
+          if (o->get("function", p)) animator->function(p->stringValue());
+          if (o->get("param", p)) animator->param(p->doubleValue());
+          if (o->get("delay", p)) animator->startDelay(p->doubleValue()*Second);
+          if (o->get("afteranchor", p) && p->boolValue()) animator->runAfter(referenceAnimation);
+          if (o->get("makeanchor", p) && p->boolValue()) referenceAnimation = animator;
+          animator->repeat(autoreverse, cycles)->stepParams(minsteptime, stepsize)->animate(to, duration, NoOP);
+        }
+      }
+    }
+  }
+}
 
 
 void P44View::geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
@@ -1201,7 +1280,7 @@ void P44View::stopAnimations()
 
 // MARK: - script support
 
-#if P44SCRIPT_FULL_SUPPORT
+#if ENABLE_P44SCRIPT
 
 #include "viewfactory.hpp"
 
@@ -1212,6 +1291,8 @@ ScriptObjPtr P44View::newViewObj()
   // base class with standard functionality
   return new P44lrgViewObj(this);
 }
+
+#if P44SCRIPT_FULL_SUPPORT
 
 // findview(viewlabel)
 static const BuiltInArgDesc findview_args[] = { { text } };
@@ -1230,7 +1311,7 @@ static void findview_func(BuiltinFunctionContextPtr f)
 
 
 // addview(view)
-static const BuiltInArgDesc addview_args[] = { { object } };
+static const BuiltInArgDesc addview_args[] = { { structured } };
 static const size_t addview_numargs = sizeof(addview_args)/sizeof(BuiltInArgDesc);
 static void addview_func(BuiltinFunctionContextPtr f)
 {
@@ -1389,10 +1470,32 @@ static void animator_func(BuiltinFunctionContextPtr f)
   f->finish(new ValueAnimatorObj(v->view()->animatorFor(f->arg(0)->stringValue())));
 }
 
-#endif
+#endif // ENABLE_ANIMATION
+
+#endif // P44SCRIPT_FULL_SUPPORT
 
 
-static const BuiltinMemberDescriptor viewFunctions[] = {
+#define PROPERTY_ACCESSOR p44view_accessor
+
+ScriptObjPtr PROPERTY_ACCESSOR(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  P44ViewPtr view = reinterpret_cast<P44lrgViewObj*>(aParentObj.get())->view();
+  AccFn acc = reinterpret_cast<AccFn>(aMemberDescriptor->memberAccessInfo);
+  view->geometryChange(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->geometryChange(false);
+  return res;
+}
+
+ACC_IMPL_STR(Label)
+ACC_IMPL_INT(X)
+ACC_IMPL_INT(Y)
+ACC_IMPL_INT(Dx)
+ACC_IMPL_INT(Dy)
+
+
+static const BuiltinMemberDescriptor viewMembers[] = {
+  #if P44SCRIPT_FULL_SUPPORT
   { "findview", executable|object, findview_numargs, findview_args, &findview_func },
   { "addview", executable|object, addview_numargs, addview_args, &addview_func },
   { "configure", executable|object, configure_numargs, configure_args, &configure_func },
@@ -1404,10 +1507,17 @@ static const BuiltinMemberDescriptor viewFunctions[] = {
   #if ENABLE_ANIMATION
   { "animator", executable|object, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|object, 0, NULL, &stopanimations_func },
-  #endif
+  #endif // ENABLE_ANIMATION
   #if ENABLE_VIEWSTATUS
   { "status", executable|object, 0, NULL, &status_func },
-  #endif
+  #endif // ENABLE_VIEWSTATUS
+  #endif // P44SCRIPT_FULL_SUPPORT
+  // property accessors
+  ACC_DECL("label", text|lvalue, Label),
+  ACC_DECL("x", numeric|lvalue, X),
+  ACC_DECL("y", numeric|lvalue, Y),
+  ACC_DECL("dx", numeric|lvalue, Dx),
+  ACC_DECL("dy", numeric|lvalue, Dy),
   { NULL } // terminator
 };
 
@@ -1417,7 +1527,7 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
   mView(aView)
 {
   if (sharedViewFunctionLookupP==NULL) {
-    sharedViewFunctionLookupP = new BuiltInMemberLookup(viewFunctions);
+    sharedViewFunctionLookupP = new BuiltInMemberLookup(viewMembers);
     sharedViewFunctionLookupP->isMemberVariable(); // disable refcounting
   }
   registerMemberLookup(sharedViewFunctionLookupP);
@@ -1464,7 +1574,7 @@ static void makeview_func(BuiltinFunctionContextPtr f)
 
 
 
-static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite)
+static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, BuiltinMemberDescriptor*)
 {
   P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
   P44ViewPtr rv = l->rootView();
@@ -1487,4 +1597,4 @@ P44lrgLookup::P44lrgLookup(P44ViewPtr *aRootViewPtrP) :
 {
 }
 
-#endif // P44SCRIPT_FULL_SUPPORT
+#endif // ENABLE_P44SCRIPT
