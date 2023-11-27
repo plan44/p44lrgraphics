@@ -1352,7 +1352,7 @@ static JsonObjectPtr viewConfigFromArg(ScriptObjPtr aArg, ErrorPtr &aErr)
 
 
 // configure(jsonconfig|filename)
-static const BuiltInArgDesc configure_args[] = { { text|object } };
+static const BuiltInArgDesc configure_args[] = { { text|objectvalue } };
 static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
 static void configure_func(BuiltinFunctionContextPtr f)
 {
@@ -1496,20 +1496,20 @@ ACC_IMPL_INT(Dy)
 
 static const BuiltinMemberDescriptor viewMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "findview", executable|object, findview_numargs, findview_args, &findview_func },
-  { "addview", executable|object, addview_numargs, addview_args, &addview_func },
-  { "configure", executable|object, configure_numargs, configure_args, &configure_func },
-  { "set", executable|object, set_numargs, set_args, &set_func },
-  { "render", executable|object, 0, NULL, &render_func },
+  { "findview", executable|objectvalue, findview_numargs, findview_args, &findview_func },
+  { "addview", executable|objectvalue, addview_numargs, addview_args, &addview_func },
+  { "configure", executable|objectvalue, configure_numargs, configure_args, &configure_func },
+  { "set", executable|objectvalue, set_numargs, set_args, &set_func },
+  { "render", executable|objectvalue, 0, NULL, &render_func },
   { "remove", executable|numeric, 0, NULL, &remove_func },
-  { "parent", executable|object, 0, NULL, &parent_func },
-  { "clear", executable|object, 0, NULL, &clear_func },
+  { "parent", executable|objectvalue, 0, NULL, &parent_func },
+  { "clear", executable|objectvalue, 0, NULL, &clear_func },
   #if ENABLE_ANIMATION
-  { "animator", executable|object, animator_numargs, animator_args, &animator_func },
-  { "stopanimations", executable|object, 0, NULL, &stopanimations_func },
+  { "animator", executable|objectvalue, animator_numargs, animator_args, &animator_func },
+  { "stopanimations", executable|objectvalue, 0, NULL, &stopanimations_func },
   #endif // ENABLE_ANIMATION
   #if ENABLE_VIEWSTATUS
-  { "status", executable|object, 0, NULL, &status_func },
+  { "status", executable|objectvalue, 0, NULL, &status_func },
   #endif // ENABLE_VIEWSTATUS
   #endif // P44SCRIPT_FULL_SUPPORT
   // property accessors
@@ -1555,7 +1555,7 @@ static void hsv_func(BuiltinFunctionContextPtr f)
 
 
 // makeview(jsonconfig|filename)
-static const BuiltInArgDesc makeview_args[] = { { text|object } };
+static const BuiltInArgDesc makeview_args[] = { { text|objectvalue } };
 static const size_t makeview_numargs = sizeof(makeview_args)/sizeof(BuiltInArgDesc);
 static void makeview_func(BuiltinFunctionContextPtr f)
 {
@@ -1584,7 +1584,7 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
-  { "makeview", executable|object, makeview_numargs, makeview_args, &makeview_func },
+  { "makeview", executable|objectvalue, makeview_numargs, makeview_args, &makeview_func },
   { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
   { "hsv", executable|text, hsv_numargs, hsv_args, &hsv_func },
   { NULL } // terminator

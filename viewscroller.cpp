@@ -539,11 +539,11 @@ static void alertempty_func(BuiltinFunctionContextPtr f)
 }
 
 static const BuiltinMemberDescriptor scrollerFunctions[] = {
-  { "empty", executable|object, 0, NULL, &empty_func },
-  { "remainingpixels", executable|object, 0, NULL, &remainingpixels_func },
+  { "empty", executable|objectvalue, 0, NULL, &empty_func },
+  { "remainingpixels", executable|objectvalue, 0, NULL, &remainingpixels_func },
   { "remainingtime", executable|numeric, 0, NULL, &remainingtime_func },
-  { "alertempty", executable|object, alertempty_numargs, alertempty_args, &alertempty_func },
-  { "purge", executable|object, 0, NULL, &purge_func },
+  { "alertempty", executable|objectvalue, alertempty_numargs, alertempty_args, &alertempty_func },
+  { "purge", executable|objectvalue, 0, NULL, &purge_func },
   { NULL } // terminator
 };
 
