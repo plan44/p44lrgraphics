@@ -1306,7 +1306,7 @@ static void status_func(BuiltinFunctionContextPtr f)
 #endif
 
 // set(propertyname, newvalue)   convenience function to set a single property
-static const BuiltInArgDesc set_args[] = { { text }, { any } };
+static const BuiltInArgDesc set_args[] = { { text }, { anyvalid } };
 static const size_t set_numargs = sizeof(set_args)/sizeof(BuiltInArgDesc);
 static void set_func(BuiltinFunctionContextPtr f)
 {
