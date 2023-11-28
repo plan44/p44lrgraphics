@@ -1552,6 +1552,20 @@ static void fullframe_func(BuiltinFunctionContextPtr f)
 }
 
 
+// get(x,y)
+static const BuiltInArgDesc get_args[] = { { numeric|undefres }, { numeric|undefres } };
+static const size_t get_numargs = sizeof(get_args)/sizeof(BuiltInArgDesc);
+static void get_func(BuiltinFunctionContextPtr f)
+{
+  CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
+  assert(v);
+  PixelPoint pt;
+  pt.x = f->arg(0)->intValue();
+  pt.y = f->arg(1)->intValue();
+  PixelColor pix = v->view()->colorAt(pt);
+  f->finish(new StringValue(pixelToWebColor(pix, true)));
+}
+
 
 #if ENABLE_ANIMATION
 
@@ -1620,8 +1634,6 @@ static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
 }
 
 
-
-
 static const BuiltinMemberDescriptor viewMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
   { "findview", executable|objectvalue, findview_numargs, findview_args, &findview_func },
@@ -1634,6 +1646,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   { "clear", executable|objectvalue, 0, NULL, &clear_func },
   { "fullframe", executable|objectvalue, 0, NULL, &fullframe_func },
   { "content_position", executable|objectvalue, content_position_numargs, content_position_args, &content_position_func },
+  { "get", executable|text, get_numargs, get_args, &get_func },
   #if ENABLE_ANIMATION
   { "animator", executable|objectvalue, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|objectvalue, 0, NULL, &stopanimations_func },
@@ -1682,23 +1695,74 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
 
 
 // hsv(hue, sat, bri) // convert to webcolor string
-static const BuiltInArgDesc hsv_args[] = { { numeric }, { numeric+optionalarg }, { numeric+optionalarg } };
-static const size_t hsv_numargs = sizeof(hsv_args)/sizeof(BuiltInArgDesc);
-static void hsv_func(BuiltinFunctionContextPtr f)
+// hsv(obj)
+// rgb(red, green, blue, alpha) // convert to webcolor string
+// rgb(obj) // convert to webcolor string
+// hsv(webcolor) // convert webcolor to hsv obj
+// rgb(webcolor) // convert webcolor to rgb obj
+static const BuiltInArgDesc col_args[] = { { numeric|text }, { numeric+optionalarg }, { numeric+optionalarg } };
+static const size_t col_numargs = sizeof(col_args)/sizeof(BuiltInArgDesc);
+static const char* colnames[2][4] = {
+  { "r", "g", "b", "a" },
+  { "hue", "saturation", "brightness", "a" }
+};
+static void color_conversion(BuiltinFunctionContextPtr f, bool aHSV)
 {
-  // hsv(hue, sat, bri) // convert to webcolor string
-  double h = f->arg(0)->doubleValue();
-  double s = 1.0;
-  double b = 1.0;
-  if (f->numArgs()>1) {
-    s = f->arg(1)->doubleValue();
-    if (f->numArgs()>2) {
-      b = f->arg(2)->doubleValue();
+  double c[4];
+  PixelColor pix;
+  if (f->arg(0)->hasType(text)) {
+    // conversion FROM textcolor
+    pix = webColorToPixel(f->arg(0)->stringValue());
+    ObjectValuePtr r = new ObjectValue();
+    c[3] = (double)pix.a/255;
+    if (aHSV) {
+      pixelToHsb(pix, c[0], c[1], c[2]);
     }
+    else {
+      c[0] = (double)pix.r/255;
+      c[1] = (double)pix.g/255;
+      c[2] = (double)pix.b/255;
+    }
+    for (int i=0; i<4; i++) {
+      r->setMemberByName(colnames[aHSV][i], new NumericValue(c[i]));
+    }
+    f->finish(r);
   }
-  PixelColor p = hsbToPixel(h, s, b);
-  f->finish(new StringValue(pixelToWebColor(p, false)));
+  else {
+    // conversion TO textcolor
+    // - defaults
+    c[0] = aHSV ? 0 : 1.0;
+    c[1] = 1.0;
+    c[2] = 1.0;
+    c[3] = 1.0;
+    // - params
+    if (f->arg(0)->hasType(objectvalue)) {
+      // components from object fields
+      for (int i=0; i<4; i++) {
+        ScriptObjPtr co = f->arg(0)->memberByName(colnames[aHSV][i], none);
+        if (co) c[i] = co->doubleValue();
+      }
+    }
+    else {
+      // components from function params
+      for (int i=0; i<4; i++) {
+        if (f->arg(i)->defined()) c[i] = f->arg(i)->doubleValue();
+      }
+    }
+    if (aHSV) {
+      pix = hsbToPixel(c[0], c[1], c[2]);
+    }
+    else {
+      pix.r = c[3]*255;
+      pix.g = c[3]*255;
+      pix.b = c[3]*255;
+    }
+    pix.a = c[3]*255;
+  }
+  f->finish(new StringValue(pixelToWebColor(pix, true)));
 }
+static void hsv_func(BuiltinFunctionContextPtr f) { return color_conversion(f, true); }
+static void rgb_func(BuiltinFunctionContextPtr f) { return color_conversion(f, false); }
 
 
 // makeview(jsonconfig|filename)
@@ -1733,7 +1797,8 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 static const BuiltinMemberDescriptor lrgGlobals[] = {
   { "makeview", executable|objectvalue, makeview_numargs, makeview_args, &makeview_func },
   { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
-  { "hsv", executable|text, hsv_numargs, hsv_args, &hsv_func },
+  { "hsv", executable|text|objectvalue, col_numargs, col_args, &hsv_func },
+  { "rgb", executable|text|objectvalue, col_numargs, col_args, &rgb_func },
   { NULL } // terminator
 };
 

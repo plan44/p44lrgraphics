@@ -217,7 +217,7 @@ namespace p44 {
 
     /// get content pixel color
     /// @param aPt content coordinate
-    /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
+    /// @note aPt is NOT required to be within actual content as defined by contentSize
     ///   implementation must check this!
     /// @note this default base class implementation shows the foreground color on all pixels within contentSize, background otherwise
     /// @note subclasses should not call inherited normally, but directly return foreground or background colors (or calculated other colors)
