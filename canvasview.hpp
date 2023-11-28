@@ -50,18 +50,22 @@ namespace p44 {
     void setPixel(PixelColor aColor, PixelCoord aPixelIndex);
     void setPixel(PixelColor aColor, PixelPoint aPixelPoint);
 
+
+    /// @name trivial property getters/setters
+    /// @{
     size_t getNumPixels() { return mNumPixels; }
+    size_t getCanvasBytes() { return mNumPixels*sizeof(PixelColor); }
+    /// @}
 
-    #if ENABLE_VIEWCONFIG
-
+    #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
     /// configure view from JSON
-    /// @param aViewConfig JSON for configuring view and subviews
-    /// @return ok or error in case of real errors (image not found etc., but minor
-    ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
+    #endif // ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
-
 
   protected:
 
@@ -79,6 +83,23 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<CanvasView> CanvasViewPtr;
 
+
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a CanvasView
+    class CanvasViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      CanvasViewObj(P44ViewPtr aView);
+      CanvasViewPtr canvas() { return boost::static_pointer_cast<CanvasView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 

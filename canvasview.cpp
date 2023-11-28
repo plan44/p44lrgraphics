@@ -105,6 +105,7 @@ void CanvasView::setPixel(PixelColor aColor, PixelCoord aPixelIndex)
 {
   if (!mCanvasBuffer || aPixelIndex<0 || aPixelIndex>=mNumPixels) return;
   mCanvasBuffer[aPixelIndex] = aColor;
+  makeDirty();
 }
 
 
@@ -114,7 +115,7 @@ void CanvasView::setPixel(PixelColor aColor, PixelPoint aPixelPoint)
 }
 
 
-#if ENABLE_VIEWCONFIG
+#if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
 ErrorPtr CanvasView::configureView(JsonObjectPtr aViewConfig)
 {
@@ -140,6 +141,75 @@ ErrorPtr CanvasView::configureView(JsonObjectPtr aViewConfig)
   return err;
 }
 
-#endif // ENABLE_VIEWCONFIG
+#endif // ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr CanvasView::newViewObj()
+{
+  return new CanvasViewObj(this);
+}
+
+#if P44SCRIPT_FULL_SUPPORT
+
+// dot(x,y)
+static const BuiltInArgDesc dot_args[] = { { numeric|undefres }, { numeric|undefres } };
+static const size_t dot_numargs = sizeof(dot_args)/sizeof(BuiltInArgDesc);
+static void dot_func(BuiltinFunctionContextPtr f)
+{
+  CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
+  assert(v);
+  PixelPoint pt;
+  pt.x = f->arg(0)->intValue();
+  pt.y = f->arg(1)->intValue();
+  v->canvas()->setPixel(v->canvas()->getForegroundColor(), pt);
+  f->finish(v); // allow chaining
+}
+
+#endif // P44SCRIPT_FULL_SUPPORT
+
+#define ACCESSOR_CLASS CanvasView
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  CanvasViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<CanvasViewObj*>(aParentObj.get())->canvas().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_RO_INT(CanvasBytes);
+ACC_IMPL_RO_INT(NumPixels);
+
+static const BuiltinMemberDescriptor canvasViewMembers[] = {
+  #if P44SCRIPT_FULL_SUPPORT
+  { "dot", executable|null, dot_numargs, dot_args, &dot_func },
+//  { "line", executable|null, line_numargs, line_args, &line_func },
+//  { "rect", executable|null, rect_numargs, rect_args, &rect_func },
+//  { "oval", executable|null, oval_numargs, oval_args, &oval_func },
+  #endif
+  // property accessors
+  ACC_DECL("bytes", numeric, CanvasBytes),
+  ACC_DECL("pixels", numeric, NumPixels),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedCanvasMemberLookupP = NULL;
+
+CanvasViewObj::CanvasViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedCanvasMemberLookupP==NULL) {
+    sharedCanvasMemberLookupP = new BuiltInMemberLookup(canvasViewMembers);
+    sharedCanvasMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedCanvasMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT
 
