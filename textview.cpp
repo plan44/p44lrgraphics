@@ -291,7 +291,7 @@ TextView::TextView()
   mTextSpacing = 2;
   mStretch = 0;
   mBolden = 0;
-  mVisible = true;
+  mCollapsed = false;
   mFont = &DEFAULT_FONT;
   #ifdef GENERATE_FONT_SOURCE
   generateFontSource(GENERATE_FONT_SOURCE, GLYPHSTRINGS_VAR, stdout);
@@ -304,7 +304,7 @@ void TextView::clear()
 {
   stopAnimations();
   setText("");
-  mVisible = true;
+  mCollapsed = true;
 }
 
 
@@ -313,17 +313,14 @@ TextView::~TextView()
 }
 
 
-void TextView::setText(const string aText)
+void TextView::finalizeChanges()
 {
-  mText = aText;
-  renderText();
-}
-
-
-void TextView::setVisible(bool aVisible)
-{
-  mVisible = aVisible;
-  renderText();
+  inherited::finalizeChanges();
+  if (mTextChanges) {
+    FOCUSLOG("View '%s' changed text setting", getLabel().c_str());
+    renderText();
+    mTextChanges = false;
+  }
 }
 
 
@@ -331,16 +328,18 @@ void TextView::setVisible(bool aVisible)
 void TextView::setFont(const char* aFontName)
 {
   const font_t** fPP = fonts;
-  while (*fPP) {
+  while (*fPP && aFontName) {
     if (strucmp(aFontName, (*fPP)->fontName)==0) {
       // found, set it
       mFont = *fPP;
       // re-render text
-      renderText();
+      flagTextChange();
       return;
     }
     fPP++;
   }
+  // font not found
+  mFont = nullptr;
 }
 
 
@@ -349,7 +348,7 @@ void TextView::renderText()
   mTextPixelData.clear();
   int cols = 0;
   if (mFont) {
-    if (mVisible) {
+    if (!mCollapsed) {
       // render
       int colbytes = (mFont->glyphHeight+7)>>3;
       size_t textIdx = 0;
@@ -391,7 +390,7 @@ void TextView::renderText()
     makeDirty();
   }
   else {
-    // no content
+    // collapse to no content
     setContentSize({0, 0});
   }
 }
@@ -435,7 +434,7 @@ PixelColor TextView::contentColorAt(PixelPoint aPt)
 }
 
 
-#if ENABLE_VIEWCONFIG
+#if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
 // MARK: ===== view configuration
 
@@ -450,7 +449,7 @@ ErrorPtr TextView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("text", o)) {
       setText(o->stringValue());
     }
-    if (aViewConfig->get("visible", o)) {
+    if (aViewConfig->get("collapsed", o)) {
       setVisible(o->boolValue());
     }
     if (aViewConfig->get("spacing", o)) {
@@ -466,21 +465,78 @@ ErrorPtr TextView::configureView(JsonObjectPtr aViewConfig)
   return err;
 }
 
-#endif // ENABLE_VIEWCONFIG
+#endif // ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 JsonObjectPtr TextView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("text", JsonObject::newString(mText));
-  status->add("font", mFont ? JsonObject::newString(mFont->fontName) : JsonObject::newNull());
-  status->add("visible", JsonObject::newBool(mVisible));
-  status->add("spacing", JsonObject::newInt32(mTextSpacing));
-  status->add("stretch", JsonObject::newInt32(mStretch));
-  status->add("bolden", JsonObject::newInt32(mBolden));
+  status->add("text", JsonObject::newString(getText()));
+  status->add("font", getFont() ? JsonObject::newString(getFont()) : JsonObject::newNull());
+  status->add("collapsed", JsonObject::newBool(getCollapsed()));
+  status->add("spacing", JsonObject::newInt32(getTextSpacing()));
+  status->add("stretch", JsonObject::newInt32(getStretch()));
+  status->add("bolden", JsonObject::newInt32(getBolden()));
   return status;
 }
 
-#endif // ENABLE_VIEWSTATUS
+#endif // ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
+
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr TextView::newViewObj()
+{
+  return new TextViewObj(this);
+}
+
+
+#define ACCESSOR_CLASS TextView
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  TextViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<TextViewObj*>(aParentObj.get())->text().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_STR(Text);
+ACC_IMPL_CSTR(Font);
+ACC_IMPL_INT(TextSpacing);
+ACC_IMPL_INT(Bolden);
+ACC_IMPL_INT(Stretch);
+ACC_IMPL_BOOL(Collapsed);
+
+
+static const BuiltinMemberDescriptor textViewMembers[] = {
+  // property accessors
+  ACC_DECL("text", text|lvalue, Text),
+  ACC_DECL("font", text|lvalue, Font),
+  ACC_DECL("collapsed", numeric|lvalue, Collapsed),
+  ACC_DECL("spacing", numeric|lvalue, TextSpacing),
+  ACC_DECL("stretch", numeric|lvalue, Stretch),
+  ACC_DECL("bolden", numeric|lvalue, Bolden),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedTextMemberLookupP = NULL;
+
+TextViewObj::TextViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedTextMemberLookupP==NULL) {
+    sharedTextMemberLookupP = new BuiltInMemberLookup(textViewMembers);
+    sharedTextMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedTextMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT

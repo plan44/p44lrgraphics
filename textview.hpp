@@ -54,12 +54,13 @@ namespace p44 {
 
     // text rendering
     string mText; ///< internal representation of text
-    bool mVisible; ///< if not set, text view is reduced to zero width
+    bool mCollapsed; ///< if not set, text view is reduced to zero width
     int mTextSpacing; ///< pixels between characters
     int mStretch; ///< pixels between characters
     int mBolden; ///< how many shifted overlays
     string mTextPixelData; ///< string of text column data (might be multiple bytes per columnt for fonts with dy>8)
     const font_t* mFont; ///< the font to use
+    bool mTextChanges;
 
   public :
 
@@ -69,43 +70,52 @@ namespace p44 {
     static const char* staticTypeName() { return "text"; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
-    /// set new text
-    /// @note sets the content size of the view according to the text
-    void setText(const string aText);
+    virtual void beginChanges() P44_OVERRIDE { inherited::beginChanges(); mTextChanges = false; }
+    virtual void finalizeChanges() P44_OVERRIDE;
 
-    /// set visibility
-    void setVisible(bool aVisible);
+    void flagTextChange() { flagChange(mTextChanges); }
+
+    /// get font
+    const char* getFont() const { return mFont ? mFont->fontName : nullptr; };
 
     /// set font
     void setFont(const char* aFontName);
 
-    /// get current text
+    /// @name trivial property getters/setters
+    /// @{
+    // - text
     string getText() const { return mText; }
-
-    /// set character spacing
-    void setTextSpacing(int aTextSpacing) { mTextSpacing = aTextSpacing; renderText(); }
-
-    /// get character spacing
+    void setText(const string aVal) { mText = aVal; flagTextChange(); } ;
+    // - spacing
     int getTextSpacing() const { return mTextSpacing; }
-
-    /// set bolden effect
-    void setBolden(int aBolden) { mBolden = aBolden; renderText(); }
-
-    /// set stretch effect
-    void setStretch(int aStretch) { mStretch = aStretch; renderText(); }
+    void setTextSpacing(int aVal) { mTextSpacing = aVal; flagTextChange(); }
+    // - effects
+    int getBolden() const { return mBolden; }
+    void setBolden(int aVal) { mBolden = aVal; flagTextChange(); }
+    int getStretch() const { return mStretch; }
+    void setStretch(int aVal) { mStretch = aVal; flagTextChange(); }
+    // - flags
+    bool getCollapsed() const { return mCollapsed; }
+    void setCollapsed(bool aVal) { mCollapsed = aVal; flagTextChange(); }
+    /// @}
 
     /// clear contents of this view
     virtual void clear() P44_OVERRIDE;
 
-    #if ENABLE_VIEWCONFIG
+    #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
     /// configure view from JSON
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
+
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this scroller
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
 
   protected:
 
@@ -125,6 +135,22 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<TextView> TextViewPtr;
 
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a TextView
+    class TextViewObj : public ColorEffectViewObj
+    {
+      typedef ColorEffectViewObj inherited;
+    public:
+      TextViewObj(P44ViewPtr aView);
+      TextViewPtr text() { return boost::static_pointer_cast<TextView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 

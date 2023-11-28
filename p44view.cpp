@@ -41,8 +41,9 @@ P44View::P44View() :
   mDirty(false),
   mUpdateRequested(false),
   mMinUpdateInterval(0),
-  mGeometryChanging(0),
+  mChangeTrackingLevel(0),
   mChangedGeometry(false),
+  mChangedColoring(false),
   mSizeToContent(false),
   mContentRotation(0),
   mRotCos(1.0),
@@ -112,18 +113,37 @@ void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 void P44View::announceChanges(bool aStart)
 {
   if (aStart){
-    if (mGeometryChanging<=0) {
+    if (mChangeTrackingLevel<=0) {
       beginChanges();
     }
-    mGeometryChanging++;
+    mChangeTrackingLevel++;
   }
   else {
-    if (mGeometryChanging>0) {
-      mGeometryChanging--;
-      if (mGeometryChanging==0) {
+    if (mChangeTrackingLevel>0) {
+      mChangeTrackingLevel--;
+      if (mChangeTrackingLevel==0) {
         finalizeChanges();
       }
     }
+  }
+}
+
+
+void P44View::flagChange(bool &aChangeFlag)
+{
+  if (mChangeTrackingLevel>0) {
+    // just set the flag
+    aChangeFlag = true;
+    return;
+  }
+  // No change tracking in progress -> this is a singular change
+  // Note: if the change flag is already set, this can only mean we are called
+  //   from finalizeChanges(), so DO NOT RECURSE here
+  if (!aChangeFlag) {
+    aChangeFlag = true;
+    // no change bracket open - singular change that needs finalisation right now
+    finalizeChanges();
+    aChangeFlag = false; // just to make sure, finalizing should reset the flag
   }
 }
 
@@ -158,6 +178,7 @@ void P44View::finalizeChanges()
     mChangedGeometry = false;
   }
   if (mChangedColoring) {
+    FOCUSLOG("View '%s' changed coloring", getLabel().c_str());
     makeColorDirty();
     mChangedColoring = false;
   }
@@ -206,20 +227,20 @@ void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 void P44View::changeGeometryRect(PixelRect &aRect, PixelRect aNewRect)
 {
   if (aNewRect.x!=aRect.x) {
-    mChangedGeometry = true;
     aRect.x = aNewRect.x;
+    flagGeometryChange();
   }
   if (aNewRect.y!=aRect.y) {
-    mChangedGeometry = true;
     aRect.y = aNewRect.y;
+    flagGeometryChange();
   }
   if (aNewRect.dx!=aRect.dx) {
-    mChangedGeometry = true;
     aRect.dx = aNewRect.dx;
+    flagGeometryChange();
   }
   if (aNewRect.dy!=aRect.dy) {
-    mChangedGeometry = true;
     aRect.dy = aNewRect.dy;
+    flagGeometryChange();
   }
 }
 
@@ -539,7 +560,7 @@ void P44View::setZOrder(int aZOrder)
   announceChanges(true);
   if (mZOrder!=aZOrder) {
     mZOrder = aZOrder;
-    mChangedGeometry = true;
+    flagGeometryChange();
   }
   announceChanges(false);
 }
@@ -876,20 +897,16 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   }
   // modification of content rect
   if (aViewConfig->get("content_x", o)) {
-    mContent.x = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setContentX(o->int32Value());
   }
   if (aViewConfig->get("content_y", o)) {
-    mContent.y = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setContentY(o->int32Value());
   }
   if (aViewConfig->get("content_dx", o)) {
-    mContent.dx = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setContentDx(o->int32Value());
   }
   if (aViewConfig->get("content_dy", o)) {
-    mContent.dy = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setContentDy(o->int32Value());
   }
   if (aViewConfig->get("rel_content_x", o)) {
     setRelativeContentOriginX(o->doubleValue(), false);
@@ -1117,7 +1134,7 @@ void P44View::geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
   if (newValue!=*aPixelCoordP) {
     announceChanges(true);
     *aPixelCoordP = newValue;
-    mChangedGeometry = true;
+    flagGeometryChange();
     if (mSizeToContent) moveFrameToContent(true);
     announceChanges(false);
   }
@@ -1554,9 +1571,8 @@ static void animator_func(BuiltinFunctionContextPtr f)
 
 
 #define ACCESSOR_CLASS P44View
-#include "p44view_access_macros.hpp"
 
-ScriptObjPtr P44View_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
 {
   ACCFN_DEF
   P44ViewPtr view = reinterpret_cast<P44lrgViewObj*>(aParentObj.get())->view();
@@ -1592,7 +1608,7 @@ static ScriptObjPtr access_WrapMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite
   if (!aToWrite) return new StringValue(P44View::wrapModeToText(aView.getWrapMode(), false));
   if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
   else aView.setWrapMode(P44View::textToWrapMode(aToWrite->stringValue().c_str()));
-  return aToWrite; /* reflect back to indicate writable */ \
+  return aToWrite; /* reflect back to indicate writable */
 }
 
 static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
@@ -1600,7 +1616,7 @@ static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
   if (!aToWrite) return new StringValue(P44View::orientationToText(aView.getOrientation()));
   if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
   else aView.setWrapMode(P44View::textToWrapMode(aToWrite->stringValue().c_str()));
-  return aToWrite; /* reflect back to indicate writable */ \
+  return aToWrite; /* reflect back to indicate writable */
 }
 
 

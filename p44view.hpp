@@ -80,8 +80,10 @@ namespace p44 {
     TimerCB mNeedUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
     MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
-    int mGeometryChanging;
+    int mChangeTrackingLevel;
     bool mChangedGeometry;
+    bool mChangedColoring;
+
     PixelRect mPreviousFrame;
     PixelRect mPreviousContent;
 
@@ -139,14 +141,25 @@ namespace p44 {
     /// announce/finish sequence of changes that might need finalisation
     void announceChanges(bool aStart);
 
+    /// sets the change flag and if we are NOT within a announceChanges() bracketed change series,
+    /// immediately call finalizeChanges()
+    /// @param aChangeTrackingFlag a bool that is set, which should be reset by beginChanges()
+    ///   and checked/cleared by finalizeChanges()
+    void flagChange(bool &aChangeTrackingFlag);
+
+    /// flag a coloring change
+    void flagColorChange() { flagChange(mChangedColoring); }
+
+    /// flag a coloring change
+    void flagGeometryChange() { flagChange(mChangedGeometry); }
+
+
   protected:
 
     /// called from announceChanges() before first change
     virtual void beginChanges();
     /// called from announceChanges() when all changes are done
     virtual void finalizeChanges();
-
-    bool mChangedColoring; ///< can be set by subclasses when coloring changes withing begin/finalizeChanges()
 
     // parent view (pointer only, to avoid retain cycles)
     // Containers must make sure their children's parent pointer gets reset before parent goes away
@@ -254,26 +267,26 @@ namespace p44 {
     /// @return current frame rect
     PixelRect getFrame() { return mFrame; };
 
-    /// @name property getter/setter
+    /// @name trivial property getters/setters
     /// @{
     // frame coords
     PixelCoord getX() { return mFrame.x; };
-    void setX(PixelCoord aVal) { mFrame.x = aVal; makeDirty(); mChangedGeometry = true; };
+    void setX(PixelCoord aVal) { mFrame.x = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getY() { return mFrame.y; };
-    void setY(PixelCoord aVal) { mFrame.y = aVal; makeDirty(); mChangedGeometry = true; };
+    void setY(PixelCoord aVal) { mFrame.y = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getDx() { return mFrame.dx; };
-    void setDx(PixelCoord aVal) { mFrame.dx = aVal; makeDirty(); mChangedGeometry = true; };
+    void setDx(PixelCoord aVal) { mFrame.dx = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getDy() { return mFrame.dy; };
-    void setDy(PixelCoord aVal) { mFrame.dy = aVal; makeDirty(); mChangedGeometry = true; };
+    void setDy(PixelCoord aVal) { mFrame.dy = aVal; makeDirty(); flagGeometryChange(); };
     // content coords
     PixelCoord getContentX() { return mContent.x; };
-    void setContentX(PixelCoord aVal) { mContent.x = aVal; makeDirty(); mChangedGeometry = true; };
+    void setContentX(PixelCoord aVal) { mContent.x = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getContentY() { return mContent.y; };
-    void setContentY(PixelCoord aVal) { mContent.y = aVal; makeDirty(); mChangedGeometry = true; };
+    void setContentY(PixelCoord aVal) { mContent.y = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getContentDx() { return mContent.dx; };
-    void setContentDx(PixelCoord aVal) { mContent.dx = aVal; makeDirty(); mChangedGeometry = true; };
+    void setContentDx(PixelCoord aVal) { mContent.dx = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getContentDy() { return mContent.dy; };
-    void setContentDy(PixelCoord aVal) { mContent.dy = aVal; makeDirty(); mChangedGeometry = true; };
+    void setContentDy(PixelCoord aVal) { mContent.dy = aVal; makeDirty(); flagGeometryChange(); };
     // colors as text
     string getBgcolor() { return pixelToWebColor(getBackgroundColor(), true); };
     void setBgcolor(string aVal) { setBackgroundColor(webColorToPixel(aVal)); };
@@ -632,8 +645,59 @@ namespace p44 {
 
   } // namespace P44Script
 
+  // macros for synthesizing property accessors
+  // ACCESSOR_CLASS must be defined
+  // definition of the class-specific access function type
+  #define ACCFN ACCESSOR_CLASS##_AccFn
+  #define ACCFN_DEF typedef P44Script::ScriptObjPtr (*ACCFN)(ACCESSOR_CLASS& aView, P44Script::ScriptObjPtr aToWrite);
+  // member declaration
+  #define ACC_DECL(field, types, prop) \
+    { field, builtinmember|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&property_accessor }
+  // member access implementation
+  // - read/write
+  #define ACC_IMPL(prop, getter, constructor) \
+    static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
+    { \
+      if (!aToWrite) return new constructor(aView.get##prop()); \
+      aView.set##prop(aToWrite->getter()); \
+      return aToWrite; /* reflect back to indicate writable */ \
+    }
+  // - readonly
+  #define ACC_IMPL_RO(prop, constructor) \
+    static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
+    { \
+      if (!aToWrite) return new constructor(aView.get##prop()); \
+      return nullptr; /* null to indicate readonly */ \
+    }
+  #define ACC_IMPL_CSTR(prop) \
+  static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
+  { \
+    if (!aToWrite) { \
+      if (aView.get##prop()) return new StringValue(aView.get##prop()); \
+      return new AnnotatedNullValue("none"); \
+    } \
+    aView.set##prop(aToWrite->defined() ? aToWrite->stringValue().c_str() : nullptr); \
+    return aToWrite; /* reflect back to indicate writable */ \
+  }
+  #define ACC_IMPL_RO_CSTR(prop) \
+  static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
+  { \
+    if (!aToWrite) return aView.get##prop() ? new StringValue(aView.get##prop()) : new AnnotatedNull("none"); \
+    return nullptr; /* null to indicate readonly */ \
+  }
+
+  // - type variants
+  #define ACC_IMPL_STR(prop) ACC_IMPL(prop, stringValue, StringValue)
+  #define ACC_IMPL_DBL(prop) ACC_IMPL(prop, doubleValue, NumericValue)
+  #define ACC_IMPL_INT(prop) ACC_IMPL(prop, intValue, IntegerValue)
+  #define ACC_IMPL_BOOL(prop) ACC_IMPL(prop, boolValue, BoolValue)
+  #define ACC_IMPL_RO_STR(prop) ACC_IMPL_RO(prop, StringValue)
+  #define ACC_IMPL_RO_DBL(prop) ACC_IMPL_RO(prop, NumericValue)
+  #define ACC_IMPL_RO_INT(prop) ACC_IMPL_RO(prop, IntegerValue)
+
   #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
+
 
 #endif /* _p44lrgraphics_view_hpp__ */

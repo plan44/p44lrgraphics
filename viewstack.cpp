@@ -152,7 +152,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
         v->mFrame.x, v->mFrame.y, v->mFrame.dx, v->mFrame.dy
       );
       pos = mViewStack.erase(pos);
-      mChangedGeometry = true;
+      flagGeometryChange();
     }
     else {
       // test next
@@ -245,7 +245,7 @@ void ViewStack::popView()
   if (!mViewStack.empty()) {
     mViewStack.back()->setParent(NULL);
     mViewStack.pop_back();
-    mChangedGeometry = true;
+    flagGeometryChange();
   }
   announceChanges(false);
 }
@@ -259,7 +259,7 @@ bool ViewStack::removeView(P44ViewPtr aView)
     if ((*pos)==aView) {
       (*pos)->setParent(NULL);
       mViewStack.erase(pos);
-      mChangedGeometry = true;
+      flagGeometryChange();
       removed = true;
       break;
     }
@@ -277,7 +277,7 @@ void ViewStack::clear()
     if (pos==mViewStack.end()) break;
     (*pos)->setParent(NULL);
     mViewStack.erase(pos);
-    mChangedGeometry = true;
+    flagGeometryChange();
   }
   announceChanges(false);
   inherited::clear();
@@ -317,7 +317,7 @@ void ViewStack::updated()
 
 void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent)
 {
-  if (mGeometryChanging==0) {
+  if (mChangeTrackingLevel==0) {
     // only if not already in process of changing
     //if ((positioningMode&clipXY)==0) {
     if (mSizeToContent) {

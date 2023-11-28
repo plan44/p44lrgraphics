@@ -581,9 +581,8 @@ static void stopscroll_func(BuiltinFunctionContextPtr f)
 
 
 #define ACCESSOR_CLASS ViewScroller
-#include "p44view_access_macros.hpp"
 
-ScriptObjPtr ViewScroller_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
 {
   ACCFN_DEF
   ViewScrollerPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ScrollerViewObj*>(aParentObj.get())->view().get());
@@ -605,7 +604,7 @@ ACC_IMPL_RO_INT(RemainingSteps)
 
 static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
-  if (!aToWrite) return aView.getScrolledView()->newViewObj();
+  if (!aToWrite) return aView.getScrolledView() ? aView.getScrolledView()->newViewObj() : new AnnotatedNullValue("no scrolled view set");
   P44lrgViewObj* vo = dynamic_cast<P44lrgViewObj*>(aToWrite.get());
   if (vo) {
     aView.setScrolledView(vo->view());

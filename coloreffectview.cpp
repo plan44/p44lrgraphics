@@ -92,7 +92,7 @@ void ColorEffectView::setRelativeExtent(double aRelativeExtent)
 
 double ColorEffectView::gradientCycles(double aValue, GradientMode aMode)
 {
-  aMode &= gradient_repeat_mask;
+  aMode = (GradientMode)(aMode & gradient_repeat_mask);
   switch (aMode) {
     case gradient_repeat_cyclic:
       return aValue-floor(aValue);
@@ -176,80 +176,149 @@ PixelColor ColorEffectView::gradientPixel(int aPixelIndex)
 
 // MARK: ===== view configuration
 
-#if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
+#if ENABLE_VIEWCONFIG
 
+#if !ENABLE_P44SCRIPT
+
+// legacy implementation
 ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
 {
   JsonObjectPtr o;
   ErrorPtr err = inherited::configureView(aViewConfig);
+  announceChanges(true);
   if (Error::isOK(err)) {
     bool colsChanged = false;
     if (aViewConfig->get("brightness_gradient", o)) {
-      mBriGradient = o->doubleValue();
-      colsChanged = true;
+      setBriGradient(o->doubleValue());
     }
     if (aViewConfig->get("hue_gradient", o)) {
-      mHueGradient = o->doubleValue();
-      colsChanged = true;
+      setHueGradient(o->doubleValue());
     }
     if (aViewConfig->get("saturation_gradient", o)) {
-      mSatGradient = o->doubleValue();
-      colsChanged = true;
+      setSatGradient(o->doubleValue());
     }
     if (aViewConfig->get("brightness_mode", o)) {
-      mBriMode = o->int32Value();
-      colsChanged = true;
+      if (o->isType(json_type_string)) {
+        setBriMode(textToGradientMode(o->c_strValue()));
+      }
+      else {
+        setBriMode((GradientMode)(o->int32Value()));
+      }
     }
     if (aViewConfig->get("hue_mode", o)) {
-      mHueMode = o->int32Value();
-      colsChanged = true;
+      if (o->isType(json_type_string)) {
+        setHueMode(textToGradientMode(o->c_strValue()));
+      }
+      else {
+        setHueMode((GradientMode)(o->int32Value()));
+      }
     }
     if (aViewConfig->get("saturation_mode", o)) {
-      mSatMode = o->int32Value();
-      colsChanged = true;
+      if (o->isType(json_type_string)) {
+        setSatMode(textToGradientMode(o->c_strValue()));
+      }
+      else {
+        setSatMode((GradientMode)(o->int32Value()));
+      }
     }
     if (aViewConfig->get("radial", o)) {
-      mRadial = o->boolValue();
-      colsChanged = true;
-    }
-    if (colsChanged) {
-      makeColorDirty();
+      setRadial(o->boolValue());
     }
     if (aViewConfig->get("extent_x", o)) {
-      mExtent.x = o->doubleValue();
-      makeDirty();
+      setExtentX(o->doubleValue());
     }
     if (aViewConfig->get("extent_y", o)) {
-      mExtent.y = o->doubleValue();
-      makeDirty();
+      setExtentY(o->doubleValue());
     }
     if (aViewConfig->get("rel_extent", o)) {
       setRelativeExtent(o->doubleValue());
     }
   }
+  announceChanges(false);
   return err;
 }
 
-#endif // ENABLE_VIEWCONFIG  && !ENABLE_P44SCRIPT
+#endif
 
-#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
+typedef struct {
+  GradientMode mode;
+  GradientMode mask;
+  const char *name;
+} GradientModeDesc;
+static const GradientModeDesc gradientModeDesc[] = {
+  { gradient_none, (GradientMode)(~0), "none" },
+  { gradient_curve_square, gradient_curve_mask, "square" },
+  { gradient_curve_lin, gradient_curve_mask, "linear" },
+  { gradient_curve_sin, gradient_curve_mask, "sin" },
+  { gradient_curve_cos, gradient_curve_mask, "cos" },
+  { gradient_curve_log, gradient_curve_mask, "log" },
+  { gradient_curve_exp, gradient_curve_mask, "exp" },
+  { gradient_repeat_none, gradient_repeat_mask, "norepeat" },
+  { gradient_repeat_cyclic, gradient_repeat_mask, "cyclic" },
+  { gradient_repeat_oscillating, gradient_repeat_mask, "oscillating" },
+  { gradient_repeat_oscillating, gradient_repeat_mask, "unlimited" },
+  { (GradientMode)0, (GradientMode)0, nullptr }
+};
+
+
+GradientMode ColorEffectView::textToGradientMode(const char *aGradientText)
+{
+  GradientMode g = gradient_none;
+  while (aGradientText) {
+    size_t n = 0;
+    while (aGradientText[n] && aGradientText[n]!='|') n++;
+    for (const GradientModeDesc *gd = gradientModeDesc; gd->name; gd++) {
+      if (strucmp(aGradientText, gd->name, n)==0) {
+        g = (GradientMode)(g | gd->mode);
+        break;
+      }
+    }
+    aGradientText += n;
+    if (*aGradientText==0) break;
+    aGradientText++; // skip |
+  }
+  return g;
+}
+
+#endif // ENABLE_VIEWCONFIG
+
+#if ENABLE_VIEWSTATUS
+
+string ColorEffectView::gradientModeToText(GradientMode aMode)
+{
+  const GradientModeDesc *gd = gradientModeDesc;
+  string modes;
+  while (gd->name) {
+    if ((aMode & gd->mask) == gd->mode) {
+      if (!modes.empty()) modes += "|";
+      modes += gd->name;
+      if (aMode==0) break; // no gradient at all - do not consult curves and repeat modes
+    }
+    gd++;
+  }
+  return modes;
+}
+
+#if !ENABLE_P44SCRIPT
 
 JsonObjectPtr ColorEffectView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("brightness_gradient", JsonObject::newDouble(mBriGradient));
-  status->add("hue_gradient", JsonObject::newDouble(mHueGradient));
-  status->add("saturation_gradient", JsonObject::newDouble(mSatGradient));
-  status->add("brightness_mode", JsonObject::newInt32(mBriMode));
-  status->add("hu_mode", JsonObject::newInt32(mHueMode));
-  status->add("saturation_mode", JsonObject::newInt32(mSatMode));
-  status->add("radial", JsonObject::newBool(mRadial));
-  status->add("extent_x", JsonObject::newDouble(mExtent.x));
-  status->add("extent_y", JsonObject::newDouble(mExtent.y));
+  status->add("brightness_gradient", JsonObject::newDouble(getBriGradient()));
+  status->add("hue_gradient", JsonObject::newDouble(getHueGradient()));
+  status->add("saturation_gradient", JsonObject::newDouble(getSatGradient()));
+  status->add("brightness_mode", JsonObject::newString(gradientModeToText(mBriMode)));
+  status->add("hu_mode", JsonObject::newString(gradientModeToText(mHueMode)));
+  status->add("saturation_mode", JsonObject::newString(gradientModeToText(mSatMode)));
+  status->add("radial", JsonObject::newBool(getRadial()));
+  status->add("extent_x", JsonObject::newDouble(getExtentX()));
+  status->add("extent_y", JsonObject::newDouble(getExtentY()));
   return status;
 }
 
-#endif // ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
+#endif // !ENABLE_P44SCRIPT
+
+#endif // ENABLE_VIEWSTATUS
 
 
 #if ENABLE_ANIMATION
@@ -299,7 +368,6 @@ ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double&
 
 using namespace P44Script;
 
-
 ScriptObjPtr ColorEffectView::newViewObj()
 {
   // base class with standard functionality
@@ -308,9 +376,8 @@ ScriptObjPtr ColorEffectView::newViewObj()
 
 
 #define ACCESSOR_CLASS ColorEffectView
-#include "p44view_access_macros.hpp"
 
-ScriptObjPtr ColorEffectView_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
 {
   ACCFN_DEF
   ColorEffectViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ColorEffectViewObj*>(aParentObj.get())->colorEffect().get());
@@ -321,24 +388,36 @@ ScriptObjPtr ColorEffectView_accessor(BuiltInMemberLookup& aMemberLookup, Script
   return res;
 }
 
+#define ACC_IMPL_GMODE(prop) \
+  static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
+  { \
+    if (!aToWrite) return new StringValue(ACCESSOR_CLASS::gradientModeToText(aView.get##prop())); \
+    if (aToWrite->hasType(numeric)) aView.set##prop((GradientMode)(aToWrite->intValue())); \
+    else aView.set##prop(ACCESSOR_CLASS::textToGradientMode(aToWrite->stringValue().c_str())); \
+    return aToWrite; /* reflect back to indicate writable */ \
+  }
+
 ACC_IMPL_DBL(BriGradient);
 ACC_IMPL_DBL(HueGradient);
 ACC_IMPL_DBL(SatGradient);
-//ACC_IMPL_INT(BriMode);
-//ACC_IMPL_INT(HueMode);
-//ACC_IMPL_INT(SatMode);
+ACC_IMPL_GMODE(BriMode);
+ACC_IMPL_GMODE(HueMode);
+ACC_IMPL_GMODE(SatMode);
 ACC_IMPL_DBL(ExtentX);
 ACC_IMPL_DBL(ExtentY);
 ACC_IMPL_BOOL(Radial);
+
+
+
 
 static const BuiltinMemberDescriptor colorEffectMembers[] = {
   // property accessors
   ACC_DECL("brightness_gradient", numeric|lvalue, BriGradient),
   ACC_DECL("hue_gradient", numeric|lvalue, HueGradient),
   ACC_DECL("saturation_gradient", numeric|lvalue, SatGradient),
-//  ACC_DECL("brightness_mode", numeric|lvalue, BriMode),
-//  ACC_DECL("hue_mode", numeric|lvalue, HueMode),
-//  ACC_DECL("saturation_mode", numeric|lvalue, SatMode),
+  ACC_DECL("brightness_mode", numeric|lvalue, BriMode),
+  ACC_DECL("hue_mode", numeric|lvalue, HueMode),
+  ACC_DECL("saturation_mode", numeric|lvalue, SatMode),
   ACC_DECL("extent_x", numeric|lvalue, ExtentX),
   ACC_DECL("extent_y", numeric|lvalue, ExtentY),
   ACC_DECL("radial", numeric|lvalue, Radial),

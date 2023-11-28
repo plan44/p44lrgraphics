@@ -28,7 +28,7 @@
 
 namespace p44 {
 
-  typedef enum {
+  typedef enum : uint8_t {
     gradient_none = 0,
     // curves
     gradient_curve_mask = 0x0F,
@@ -44,8 +44,7 @@ namespace p44 {
     gradient_repeat_cyclic = 0x10,
     gradient_repeat_oscillating = 0x20,
     gradient_unlimited = 0x30,
-  } GradientModeEnum;
-  typedef uint8_t GradientMode;
+  } GradientMode;
 
 
   class ColorEffectView : public P44View
@@ -84,25 +83,31 @@ namespace p44 {
       bool aRadial
     );
 
-
-    /// @name property getter/setter
+    /// @name trivial property getters/setters
     /// @{
+    // - gradients
     double getBriGradient() { return mBriGradient; };
-    void setBriGradient(double aVal) { mBriGradient = aVal; mChangedColoring = true; };
+    void setBriGradient(double aVal) { mBriGradient = aVal; flagColorChange(); };
     double getHueGradient() { return mHueGradient; };
-    void setHueGradient(double aVal) { mHueGradient = aVal; mChangedColoring = true; };
+    void setHueGradient(double aVal) { mHueGradient = aVal; flagColorChange(); };
     double getSatGradient() { return mSatGradient; };
-    void setSatGradient(double aVal) { mSatGradient = aVal; mChangedColoring = true; };
-
+    void setSatGradient(double aVal) { mSatGradient = aVal; flagColorChange(); };
+    // - gradient modes
+    GradientMode getBriMode() { return mBriMode; };
+    void setBriMode(GradientMode aVal) { mBriMode = aVal; flagColorChange(); };
+    GradientMode getHueMode() { return mHueMode; };
+    void setHueMode(GradientMode aVal) { mHueMode = aVal; flagColorChange(); };
+    GradientMode getSatMode() { return mSatMode; };
+    void setSatMode(GradientMode aVal) { mSatMode = aVal; flagColorChange(); };
+    // - extent
     double getExtentX() { return mExtent.x; };
     void setExtentX(double aVal) { mExtent.x = aVal;  makeDirty(); };
     double getExtentY() { return mExtent.y; };
     void setExtentY(double aVal) { mExtent.y = aVal;  makeDirty(); };
+    // - flags
     bool getRadial() { return mRadial; };
     void setRadial(bool aVal) { mRadial = aVal; makeColorDirty(); };
     /// @}
-
-
 
     /// set extent (how many pixels the light field reaches out around the center)
     /// @param aExtent the extent radii of the light in x and y direction
@@ -120,7 +125,12 @@ namespace p44 {
 
     void calculateGradient(int aNumGradientPixels, int aExtentPixels);
 
-    #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
+    #if ENABLE_VIEWCONFIG
+
+    /// convert from text to gradient mode
+    static GradientMode textToGradientMode(const char *aGradientText);
+
+    #if !ENABLE_P44SCRIPT
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
     /// @return ok or error in case of real errors (image not found etc., but minor
@@ -128,9 +138,18 @@ namespace p44 {
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
     #endif
 
-    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
+    #endif
+
+    #if ENABLE_VIEWSTATUS
+
+    /// convert from gradient mode to text
+    static string gradientModeToText(GradientMode aMode);
+
+    #if !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
+    #endif
+
     #endif // ENABLE_VIEWSTATUS
 
     #if ENABLE_ANIMATION
@@ -141,17 +160,17 @@ namespace p44 {
     /// @return the setter to be used by the animator
     virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue) P44_OVERRIDE;
 
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this scroller
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
+
   private:
 
     // generic coloring param (e.g. gradient) setter
     void coloringPropertySetter(double &aColoringParam, double aNewValue);
 
     #endif // ENABLE_ANIMATION
-
-    #if ENABLE_P44SCRIPT
-    /// @return ScriptObj representing this scroller
-    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
-    #endif
 
   protected:
 
