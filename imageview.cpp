@@ -154,6 +154,78 @@ ErrorPtr ImageView::configureView(JsonObjectPtr aViewConfig)
 
 #endif // ENABLE_VIEWCONFIG
 
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr ImageView::newViewObj()
+{
+  return new ImageViewObj(this);
+}
+
+#if P44SCRIPT_FULL_SUPPORT
+
+// loadimage(filepath)
+static const BuiltInArgDesc loadimage_args[] = { { text|undefres } };
+static const size_t loadimage_numargs = sizeof(loadimage_args)/sizeof(BuiltInArgDesc);
+static void loadimage_func(BuiltinFunctionContextPtr f)
+{
+  ImageViewObj* v = dynamic_cast<ImageViewObj*>(f->thisObj().get());
+  assert(v);
+  // if no dx or dy is set when loading a new image, auto-enable sizeToContent
+  if (v->image()->getDx()==0 && v->image()->getDy()==0) v->image()->setSizeToContent(true);
+  ErrorPtr err = v->image()->loadPNG(Application::sharedApplication()->resourcePath(f->arg(0)->stringValue()));
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
+    return;
+  }
+  f->finish();
+}
+
+#endif // P44SCRIPT_FULL_SUPPORT
+
+#define ACCESSOR_CLASS ImageView
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  ImageViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ImageViewObj*>(aParentObj.get())->image().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_RO_INT(ImageDx);
+ACC_IMPL_RO_INT(ImageDy);
+ACC_IMPL_RO_INT(ImageBytes);
+
+static const BuiltinMemberDescriptor imageViewMembers[] = {
+  #if P44SCRIPT_FULL_SUPPORT
+  { "loadimage", executable|null|error, loadimage_numargs, loadimage_args, &loadimage_func },
+  #endif
+  // property accessors
+  ACC_DECL("image_dx", numeric, ImageDx),
+  ACC_DECL("image_dy", numeric, ImageDy),
+  ACC_DECL("bytes", numeric, ImageBytes),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedImageMemberLookupP = NULL;
+
+ImageViewObj::ImageViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedImageMemberLookupP==NULL) {
+    sharedImageMemberLookupP = new BuiltInMemberLookup(imageViewMembers);
+    sharedImageMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedImageMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT
+
 #endif // ENABLE_IMAGE_SUPPORT
 
 

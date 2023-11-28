@@ -52,9 +52,21 @@ namespace p44 {
     /// load PNG image
     ErrorPtr loadPNG(const string aPNGFileName);
 
+    /// @name trivial property getters/setters
+    /// @{
+    PixelCoord getImageDx() { return mPngImage.width; }
+    PixelCoord getImageDy() { return mPngImage.height; }
+    size_t getImageBytes() { return PNG_IMAGE_SIZE(mPngImage); }
+    /// @}
+
     #if ENABLE_VIEWCONFIG
     /// configure view from JSON
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
+    #endif
+
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this scroller
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
   protected:
@@ -64,6 +76,25 @@ namespace p44 {
 
   };
   typedef boost::intrusive_ptr<ImageView> ImageViewPtr;
+
+
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a ImageView
+    class ImageViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      ImageViewObj(P44ViewPtr aView);
+      ImageViewPtr image() { return boost::static_pointer_cast<ImageView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
+
 
 
 } // namespace p44
