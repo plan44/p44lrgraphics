@@ -67,7 +67,7 @@ namespace p44 {
     virtual ~TextView();
 
     static const char* staticTypeName() { return "text"; };
-    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set new text
     /// @note sets the content size of the view according to the text

@@ -39,23 +39,32 @@
 
 #define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
+#if ENABLE_P44SCRIPT
+  // macros for synthesizing property accessors
+  #define ACC_DECL(field, types, prop) \
+    { field, builtinmember|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&PROPERTY_ACCESSOR }
 
-// macros for synthesizing property accessors
-#define ACC_DECL(field, types, prop) \
-  { field, builtinmember|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&PROPERTY_ACCESSOR }
-
-#define ACC_IMPL(prop, getter, constructor) \
-  static ScriptObjPtr access_##prop(P44View& aView, ScriptObjPtr aToWrite) \
-  { \
-    if (!aToWrite) return new constructor(aView.get##prop()); \
-    aView.set##prop(aToWrite->getter()); \
-    return aToWrite; /* reflect back to indicate writable */ \
-  }
-#define ACC_IMPL_STR(prop) ACC_IMPL(prop, stringValue, StringValue)
-#define ACC_IMPL_DBL(prop) ACC_IMPL(prop, doubleValue, NumericValue)
-#define ACC_IMPL_INT(prop) ACC_IMPL(prop, intValue, IntegerValue)
-
-
+  #define ACC_IMPL(prop, getter, constructor) \
+    static ScriptObjPtr access_##prop(P44View& aView, ScriptObjPtr aToWrite) \
+    { \
+      if (!aToWrite) return new constructor(aView.get##prop()); \
+      aView.set##prop(aToWrite->getter()); \
+      return aToWrite; /* reflect back to indicate writable */ \
+    }
+  #define ACC_IMPL_RO(prop, constructor) \
+    static ScriptObjPtr access_##prop(P44View& aView, ScriptObjPtr aToWrite) \
+    { \
+      if (!aToWrite) return new constructor(aView.get##prop()); \
+      return nullptr; /* null to indicate readonly */ \
+    }
+  #define ACC_IMPL_STR(prop) ACC_IMPL(prop, stringValue, StringValue)
+  #define ACC_IMPL_DBL(prop) ACC_IMPL(prop, doubleValue, NumericValue)
+  #define ACC_IMPL_INT(prop) ACC_IMPL(prop, intValue, IntegerValue)
+  #define ACC_IMPL_BOOL(prop) ACC_IMPL(prop, boolValue, BoolValue)
+  #define ACC_IMPL_RO_STR(prop) ACC_IMPL_RO(prop, StringValue)
+  #define ACC_IMPL_RO_DBL(prop) ACC_IMPL_RO(prop, NumericValue)
+  #define ACC_IMPL_RO_INT(prop) ACC_IMPL_RO(prop, IntegerValue)
+#endif // ENABLE_P44SCRIPT
 
 namespace p44 {
 
@@ -255,7 +264,8 @@ namespace p44 {
     virtual ~P44View();
 
     static const char* staticTypeName() { return "plain"; };
-    virtual const char* viewTypeName() const { return staticTypeName(); }
+    
+    virtual const char* getTypeName() const { return staticTypeName(); }
 
     /// set the frame within the parent coordinate system
     /// @param aFrame the new frame for the view
@@ -266,10 +276,38 @@ namespace p44 {
 
     /// @name property getter/setter
     /// @{
-    inline PixelCoord getX() { return mFrame.x; }; inline void setX(PixelCoord aVal) { mFrame.x = aVal; mChangedGeometry = true; };
-    inline PixelCoord getY() { return mFrame.y; }; inline void setY(PixelCoord aVal) { mFrame.y = aVal; mChangedGeometry = true; };
-    inline PixelCoord getDx() { return mFrame.dx; }; inline void setDx(PixelCoord aVal) { mFrame.dx = aVal; mChangedGeometry = true; };
-    inline PixelCoord getDy() { return mFrame.dy; }; inline void setDy(PixelCoord aVal) { mFrame.dy = aVal; mChangedGeometry = true; };
+    // frame coords
+    PixelCoord getX() { return mFrame.x; };
+    void setX(PixelCoord aVal) { mFrame.x = aVal; makeDirty(); mChangedGeometry = true; };
+    PixelCoord getY() { return mFrame.y; };
+    void setY(PixelCoord aVal) { mFrame.y = aVal; makeDirty(); mChangedGeometry = true; };
+    PixelCoord getDx() { return mFrame.dx; };
+    void setDx(PixelCoord aVal) { mFrame.dx = aVal; makeDirty(); mChangedGeometry = true; };
+    PixelCoord getDy() { return mFrame.dy; };
+    void setDy(PixelCoord aVal) { mFrame.dy = aVal; makeDirty(); mChangedGeometry = true; };
+    // content coords
+    PixelCoord getContentX() { return mContent.x; };
+    void setContentX(PixelCoord aVal) { mContent.x = aVal; makeDirty(); mChangedGeometry = true; };
+    PixelCoord getContentY() { return mContent.y; };
+    void setContentY(PixelCoord aVal) { mContent.y = aVal; makeDirty(); mChangedGeometry = true; };
+    PixelCoord getContentDx() { return mContent.dx; };
+    void setContentDx(PixelCoord aVal) { mContent.dx = aVal; makeDirty(); mChangedGeometry = true; };
+    PixelCoord getContentDy() { return mContent.dy; };
+    void setContentDy(PixelCoord aVal) { mContent.dy = aVal; makeDirty(); mChangedGeometry = true; };
+    // colors as text
+    string getBgcolor() { return pixelToWebColor(getBackgroundColor(), true); };
+    void setBgcolor(string aVal) { setBackgroundColor(webColorToPixel(aVal)); };
+    string getColor() { return pixelToWebColor(getForegroundColor(), true); };
+    void setColor(string aVal) { setForegroundColor(webColorToPixel(aVal)); };
+    // flags
+    bool getContentIsMask() { return mContentIsMask; };
+    void setContentIsMask(bool aVal) { mContentIsMask = aVal; makeDirty(); };
+    bool getInvertAlpha() { return mInvertAlpha; };
+    void setInvertAlpha(bool aVal) { mInvertAlpha = aVal; makeDirty(); };
+    bool getSizeToContent() { return mSizeToContent; };
+    void setSizeToContent(bool aVal) { mSizeToContent = aVal; };
+    bool getLocalTimingPriority() { return mLocalTimingPriority; };
+    void setLocalTimingPriority(bool aVal) { mLocalTimingPriority = aVal; };
     /// @}
 
     /// @return current content rect
@@ -353,7 +391,7 @@ namespace p44 {
 
     /// Check if something of this view is potentially visible (can still consist of transparent pixels only)
     /// @return true if visible
-    bool isVisible() { return getAlpha()!=0; }
+    bool getVisible() { return getAlpha()!=0; }
 
     /// @return Z-Order (e.g. in a viewstack, highest is frontmost)
     int getZOrder() { return mZOrder; };
@@ -364,9 +402,15 @@ namespace p44 {
     /// @param aOrientation the orientation of the content in the frame
     void setOrientation(Orientation aOrientation) { mContentOrientation = aOrientation; makeDirty(); }
 
+    /// @return the orientation of the content in the frame
+    Orientation getOrientation() { return mContentOrientation; }
+
     /// set content rotation around content origin
     /// @param aRotation content rotation in degrees CCW
     void setContentRotation(double aRotation);
+
+    /// @return content rotation around content origin
+    double getContentRotation() { return mContentRotation; }
 
     /// set content size and offset (relative to frame origin, but in content coordinates, i.e. possibly orientation translated!)
     void setContent(PixelRect aContent);
@@ -386,14 +430,15 @@ namespace p44 {
     /// @note for clipped content, -1 or 1 means at least "out of the frame"
     void setRelativeContentOrigin(double aRelX, double aRelY, bool aCentered = true);
 
-    /// set content origin X relative to its own size and frame
+    /// set content origin X relative to its own size and the frame size
     /// @param aRelX relative X position
     /// @param aCentered if set, content origin 0 means center of the frame, otherwise the "normal" left of the frame
     /// - centered: 0 = center, -1 = max(framedx,contentdx) to the left/bottom, +1 to the right/top of the center
     /// - not centered: 0 = left, -1 = max(framedx,contentdx) to the left, +1 to the right
     /// @note for clipped content, -1 or 1 means at least "out of the frame"
     void setRelativeContentOriginX(double aRelX, bool aCentered = true);
-    /// set content origin Y relative to its own size and frame
+
+    /// set content origin Y relative to its own size and the frame size
     /// @param aRelY relative Y position
     /// @param aCentered if set, content origin 0 means center of the frame, otherwise the "normal" bottom of the frame
     /// - centered: 0 = center, -1 = max(framedy,contentdy) to the bottom, +1 to the top of the center
@@ -536,6 +581,9 @@ namespace p44 {
     /// @return ScriptObj representing this view
     virtual P44Script::ScriptObjPtr newViewObj();
 
+    /// @return ArrayValue containing all animators installed on this view
+    P44Script::ScriptObjPtr installedAnimators();
+
     #endif
 
     #if ENABLE_ANIMATION
@@ -579,6 +627,13 @@ namespace p44 {
 
 
   #if ENABLE_P44SCRIPT
+
+  /// property accessor
+  /// @param aView the P44View
+  /// @param aToWrite if null, this is a read access, otherwise it is the value to write
+  /// @return on read, the property value - on write null if the property is not writable, the
+  ///   written value (usually aToWrite) when write was successful
+  typedef P44Script::ScriptObjPtr (*AccFn)(P44View& aView, P44Script::ScriptObjPtr aToWrite);
 
   namespace P44Script {
 

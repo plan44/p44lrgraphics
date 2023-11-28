@@ -81,7 +81,7 @@ namespace p44 {
     virtual ~ViewScroller();
 
     static const char* staticTypeName() { return "scroller"; };
-    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set the to be scrolled view
     /// @param aScrolledView the view of which a part should be shown in this view.

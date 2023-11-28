@@ -739,42 +739,53 @@ P44View::WrapMode P44View::textToWrapMode(const char *aWrapModeText)
 
 using namespace P44Script;
 
-/// property accessor
-/// @param aView the P44View
-/// @param aToWrite if null, this is a read access, otherwise it is the value to write
-/// @return on read, the property value - on write null if the property is not writable, the
-///   written value (usually aToWrite) when write was successful
-typedef ScriptObjPtr (*AccFn)(P44View& aView, ScriptObjPtr aToWrite);
-
 ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 {
   geometryChange(true);
-  aViewConfig->resetKeyIteration();
   string name;
   JsonObjectPtr val;
   ScriptObjPtr vo = newViewObj();
+  // these must be postponed to after reading other properties
+  bool fullFrameContent = false;
+  JsonObjectPtr animationCfg;
+  // now
+  aViewConfig->resetKeyIteration();
   while (aViewConfig->nextKeyValue(name, val)) {
     // catch special procedural cases
     if (name=="clear" && val->boolValue()) {
       clear();
     }
     else if (name=="fullframe" && val->boolValue()) {
-      setFullFrameContent();
-    }
-    else if (name=="fullframe" && val->boolValue()) {
-      setFullFrameContent();
+      fullFrameContent = true;
     }
     else if (name=="stopanimations" && val->boolValue()) {
       stopAnimations();
     }
     else if (name=="animate") {
-      configureAnimation(val);
+      animationCfg = val;
+    }
+    // write-onlys for backward compatibility
+    else if (name=="rel_content_x") {
+      setRelativeContentOriginX(val->doubleValue(), false);
+    }
+    else if (name=="rel_content_y") {
+      setRelativeContentOriginY(val->doubleValue(), false);
+    }
+    else if (name=="rel_center_x") {
+      setRelativeContentOriginX(val->doubleValue(), true);
+    }
+    else if (name=="rel_center_y") {
+      setRelativeContentOriginY(val->doubleValue(), true);
     }
     else {
       // normal member access
-      vo->setMemberByName(name, ScriptObj::valueFromJSON(val));
+      ScriptObjPtr lv = vo->memberByName(name, lvalue);
+      if (lv) lv->assignLValue(NoOP, ScriptObj::valueFromJSON(val));
     }
   }
+  // now apply postponed ones
+  if (fullFrameContent) setFullFrameContent();
+  if (animationCfg) configureAnimation(animationCfg);
   if (mChangedGeometry && mSizeToContent) {
     moveFrameToContent(true);
   }
@@ -791,32 +802,28 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   JsonObjectPtr o;
   geometryChange(true);
   if (aViewConfig->get("label", o)) {
-    mLabel = o->stringValue();
+    setLabel(o->stringValue());
   }
   if (aViewConfig->get("clear", o)) {
     if(o->boolValue()) clear();
   }
   if (aViewConfig->get("x", o)) {
-    mFrame.x = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setX(o->int32Value());
   }
   if (aViewConfig->get("y", o)) {
-    mFrame.y = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setY(o->int32Value());
   }
   if (aViewConfig->get("dx", o)) {
-    mFrame.dx = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setDx(o->int32Value());
   }
   if (aViewConfig->get("dy", o)) {
-    mFrame.dy = o->int32Value(); makeDirty();
-    mChangedGeometry = true;
+    setDy(o->int32Value());
   }
   if (aViewConfig->get("bgcolor", o)) {
-    mBackgroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
+    setBgcolor(o->stringValue());
   }
   if (aViewConfig->get("color", o)) {
-    mForegroundColor = webColorToPixel(o->stringValue()); makeColorDirty();
+    setColor(o->stringValue());
   }
   if (aViewConfig->get("alpha", o)) {
     setAlpha(o->int32Value());
@@ -833,12 +840,10 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     }
   }
   if (aViewConfig->get("mask", o)) {
-    mContentIsMask = o->boolValue();
-    makeDirty();
+    setContentIsMask(o->boolValue());
   }
   if (aViewConfig->get("invertalpha", o)) {
-    mInvertAlpha = o->boolValue();
-    makeDirty();
+    setInvertAlpha(o->boolValue());
   }
   // frame rect should be defined here (unless we'll use sizetocontent below), so we can check the content related props now
   if (aViewConfig->get("orientation", o)) {
@@ -885,10 +890,10 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     setContentRotation(o->doubleValue());
   }
   if (aViewConfig->get("timingpriority", o)) {
-    mLocalTimingPriority = o->boolValue();
+    setLocalTimingPriority(o->boolValue());
   }
   if (aViewConfig->get("sizetocontent", o)) {
-    mSizeToContent = o->boolValue();
+    setSizeToContent(o->boolValue());
   }
   if (mChangedGeometry && mSizeToContent) {
     moveFrameToContent(true);
@@ -904,7 +909,6 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   geometryChange(false);
   return ErrorPtr();
 }
-
 
 #endif // legacy configure w/o ENABLE_P44SCRIPT
 
@@ -981,7 +985,7 @@ string P44View::getLabel() const
 string P44View::getId() const
 {
   if (!mLabel.empty()) return mLabel;
-  return string_format("V_%08x", (uint32_t)(intptr_t)this);
+  return string_format("V_%08X", (uint32_t)(intptr_t)this);
 }
 
 
@@ -998,6 +1002,10 @@ JsonObjectPtr P44View::viewStatus()
     if (m) status->add(name->stringValue().c_str(), m->jsonValue());
     iter->next();
   }
+  #if ENABLE_ANIMATION
+  // there is no p44script property for this
+  status->add("animations", JsonObject::newInt64(mAnimations.size()));
+  #endif
   return status;
 }
 
@@ -1008,27 +1016,28 @@ JsonObjectPtr P44View::viewStatus()
 JsonObjectPtr P44View::viewStatus()
 {
   JsonObjectPtr status = JsonObject::newObj();
-  status->add("type", JsonObject::newString(viewTypeName()));
+  status->add("type", JsonObject::newString(getTypeName()));
   status->add("label", JsonObject::newString(getLabel()));
   status->add("id", JsonObject::newString(getId()));
-  status->add("x", JsonObject::newInt32(mFrame.x));
-  status->add("y", JsonObject::newInt32(mFrame.y));
-  status->add("dx", JsonObject::newInt32(mFrame.dx));
-  status->add("dy", JsonObject::newInt32(mFrame.dy));
-  status->add("content_x", JsonObject::newInt32(mContent.x));
-  status->add("content_y", JsonObject::newInt32(mContent.y));
-  status->add("content_dx", JsonObject::newInt32(mContent.dx));
-  status->add("content_dy", JsonObject::newInt32(mContent.dy));
-  status->add("rotation", JsonObject::newDouble(mContentRotation));
-  status->add("color", JsonObject::newString(pixelToWebColor(mForegroundColor, true)));
-  status->add("bgcolor", JsonObject::newString(pixelToWebColor(mBackgroundColor, true)));
+  status->add("x", JsonObject::newInt32(getX()));
+  status->add("y", JsonObject::newInt32(getY()));
+  status->add("dx", JsonObject::newInt32(getDx()));
+  status->add("dy", JsonObject::newInt32(getDx()));
+  status->add("content_x", JsonObject::newInt32(getContentX()));
+  status->add("content_y", JsonObject::newInt32(getContentY()));
+  status->add("content_dx", JsonObject::newInt32(getContentDx()));
+  status->add("content_dy", JsonObject::newInt32(getContentDy()));
+  status->add("rotation", JsonObject::newDouble(getContentRotation()));
+  status->add("color", JsonObject::newString(getColor()));
+  status->add("bgcolor", JsonObject::newString(getBgcolor()));
   status->add("alpha", JsonObject::newInt32(getAlpha()));
+  status->add("visible", JsonObject::newBool(getVisible()));
   status->add("z_order", JsonObject::newInt32(getZOrder()));
   status->add("orientation", JsonObject::newString(orientationToText(mContentOrientation)));
   status->add("wrapmode", JsonObject::newString(wrapModeToText(getWrapMode(), false)));
-  status->add("mask", JsonObject::newBool(mContentIsMask));
-  status->add("invertalpha", JsonObject::newBool(mInvertAlpha));
-  status->add("timingpriority", JsonObject::newBool(mLocalTimingPriority));
+  status->add("mask", JsonObject::newBool(getContentIsMask()));
+  status->add("invertalpha", JsonObject::newBool(getInvertAlpha()));
+  status->add("timingpriority", JsonObject::newBool(getLocalTimingPriority()));
   #if ENABLE_ANIMATION
   status->add("animations", JsonObject::newInt64(mAnimations.size()));
   #endif
@@ -1292,6 +1301,19 @@ ScriptObjPtr P44View::newViewObj()
   return new P44lrgViewObj(this);
 }
 
+
+ScriptObjPtr P44View::installedAnimators()
+{
+  ArrayValuePtr a = new ArrayValue();
+  #if ENABLE_ANIMATION
+  for (AnimationsList::iterator pos = mAnimations.begin(); pos!=mAnimations.end(); ++pos) {
+    a->appendMember(new ValueAnimatorObj(*pos)); // wrap with access object
+  }
+  #endif
+  return a;
+}
+
+
 #if P44SCRIPT_FULL_SUPPORT
 
 // findview(viewlabel)
@@ -1374,6 +1396,26 @@ static void configure_func(BuiltinFunctionContextPtr f)
 }
 
 
+// content_position(x,y,centered)
+static const BuiltInArgDesc content_position_args[] = { { numeric|null }, { numeric|null }, { numeric|optionalarg } };
+static const size_t content_position_numargs = sizeof(content_position_args)/sizeof(BuiltInArgDesc);
+static void content_position_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  bool centered = f->arg(2)->boolValue();
+  if (f->arg(0)->defined()) {
+    v->view()->setRelativeContentOriginX(f->arg(0)->doubleValue(), centered);
+  }
+  if (f->arg(1)->defined()) {
+    v->view()->setRelativeContentOriginY(f->arg(1)->doubleValue(), centered);
+  }
+  f->finish(v); // return view itself to allow chaining
+}
+
+
+
+
 #if ENABLE_VIEWSTATUS
 
 // status()
@@ -1409,6 +1451,15 @@ static void stopanimations_func(BuiltinFunctionContextPtr f)
   assert(v);
   v->view()->stopAnimations();
   f->finish(v); // return view itself to allow chaining
+}
+
+
+// animations()   list of running animations
+static void animations_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  f->finish(v->view()->installedAnimators());
 }
 
 
@@ -1457,6 +1508,16 @@ static void clear_func(BuiltinFunctionContextPtr f)
 }
 
 
+// fullframe()     make content fill frame
+static void fullframe_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  v->view()->setFullFrameContent(); // to make sure changes are applied
+  f->finish(v); // return view itself to allow chaining
+}
+
+
 
 #if ENABLE_ANIMATION
 
@@ -1487,11 +1548,43 @@ ScriptObjPtr PROPERTY_ACCESSOR(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr 
   return res;
 }
 
+ACC_IMPL_RO_STR(TypeName)
+ACC_IMPL_RO_STR(Id)
 ACC_IMPL_STR(Label)
 ACC_IMPL_INT(X)
 ACC_IMPL_INT(Y)
 ACC_IMPL_INT(Dx)
 ACC_IMPL_INT(Dy)
+ACC_IMPL_INT(ContentX)
+ACC_IMPL_INT(ContentY)
+ACC_IMPL_INT(ContentDx)
+ACC_IMPL_INT(ContentDy)
+ACC_IMPL_DBL(ContentRotation)
+ACC_IMPL_STR(Color)
+ACC_IMPL_STR(Bgcolor)
+ACC_IMPL_INT(Alpha)
+ACC_IMPL_BOOL(Visible)
+ACC_IMPL_INT(ZOrder)
+ACC_IMPL_BOOL(SizeToContent)
+ACC_IMPL_BOOL(LocalTimingPriority)
+
+static ScriptObjPtr access_WrapMode(P44View& aView, ScriptObjPtr aToWrite)
+{
+  if (!aToWrite) return new StringValue(P44View::wrapModeToText(aView.getWrapMode(), false));
+  if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
+  else aView.setWrapMode(P44View::textToWrapMode(aToWrite->stringValue().c_str()));
+  return aToWrite; /* reflect back to indicate writable */ \
+}
+
+static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
+{
+  if (!aToWrite) return new StringValue(P44View::orientationToText(aView.getOrientation()));
+  if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
+  else aView.setWrapMode(P44View::textToWrapMode(aToWrite->stringValue().c_str()));
+  return aToWrite; /* reflect back to indicate writable */ \
+}
+
+
 
 
 static const BuiltinMemberDescriptor viewMembers[] = {
@@ -1504,20 +1597,39 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   { "remove", executable|numeric, 0, NULL, &remove_func },
   { "parent", executable|objectvalue, 0, NULL, &parent_func },
   { "clear", executable|objectvalue, 0, NULL, &clear_func },
+  { "fullframe", executable|objectvalue, 0, NULL, &fullframe_func },
+  { "content_position", executable|objectvalue, content_position_numargs, content_position_args, &content_position_func },
   #if ENABLE_ANIMATION
   { "animator", executable|objectvalue, animator_numargs, animator_args, &animator_func },
   { "stopanimations", executable|objectvalue, 0, NULL, &stopanimations_func },
+  { "animations", executable|arrayvalue, 0, NULL, &animations_func },
   #endif // ENABLE_ANIMATION
   #if ENABLE_VIEWSTATUS
   { "status", executable|objectvalue, 0, NULL, &status_func },
   #endif // ENABLE_VIEWSTATUS
   #endif // P44SCRIPT_FULL_SUPPORT
   // property accessors
+  ACC_DECL("type", text, TypeName),
+  ACC_DECL("id", text, Id),
   ACC_DECL("label", text|lvalue, Label),
   ACC_DECL("x", numeric|lvalue, X),
   ACC_DECL("y", numeric|lvalue, Y),
   ACC_DECL("dx", numeric|lvalue, Dx),
   ACC_DECL("dy", numeric|lvalue, Dy),
+  ACC_DECL("content_x", numeric|lvalue, ContentX),
+  ACC_DECL("content_y", numeric|lvalue, ContentY),
+  ACC_DECL("content_dx", numeric|lvalue, ContentDx),
+  ACC_DECL("content_dy", numeric|lvalue, ContentDy),
+  ACC_DECL("rotation", numeric|lvalue, ContentRotation),
+  ACC_DECL("color", text|lvalue, Color),
+  ACC_DECL("bgcolor", text|lvalue, Bgcolor),
+  ACC_DECL("alpha", numeric|lvalue, Alpha),
+  ACC_DECL("visible", numeric|lvalue, Visible),
+  ACC_DECL("z_order", numeric|lvalue, ZOrder),
+  ACC_DECL("wrapmode", text|numeric|lvalue, WrapMode),
+  ACC_DECL("orientation", text|numeric|lvalue, Orientation),
+  ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
+  ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
   { NULL } // terminator
 };
 

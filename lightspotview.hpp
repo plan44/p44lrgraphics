@@ -40,7 +40,7 @@ namespace p44 {
     virtual ~LightSpotView();
 
     static const char* staticTypeName() { return "lightspot"; };
-    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
   protected:
 

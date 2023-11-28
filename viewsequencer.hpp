@@ -65,7 +65,7 @@ namespace p44 {
     virtual ~ViewSequencer();
 
     static const char* staticTypeName() { return "sequencer"; };
-    virtual const char* viewTypeName() const P44_OVERRIDE { return staticTypeName(); }
+    virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// add animation step view to list of animation steps
     /// @param aView the view to add
