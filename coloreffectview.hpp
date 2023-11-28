@@ -84,6 +84,26 @@ namespace p44 {
       bool aRadial
     );
 
+
+    /// @name property getter/setter
+    /// @{
+    double getBriGradient() { return mBriGradient; };
+    void setBriGradient(double aVal) { mBriGradient = aVal; mChangedColoring = true; };
+    double getHueGradient() { return mHueGradient; };
+    void setHueGradient(double aVal) { mHueGradient = aVal; mChangedColoring = true; };
+    double getSatGradient() { return mSatGradient; };
+    void setSatGradient(double aVal) { mSatGradient = aVal; mChangedColoring = true; };
+
+    double getExtentX() { return mExtent.x; };
+    void setExtentX(double aVal) { mExtent.x = aVal;  makeDirty(); };
+    double getExtentY() { return mExtent.y; };
+    void setExtentY(double aVal) { mExtent.y = aVal;  makeDirty(); };
+    bool getRadial() { return mRadial; };
+    void setRadial(bool aVal) { mRadial = aVal; makeColorDirty(); };
+    /// @}
+
+
+
     /// set extent (how many pixels the light field reaches out around the center)
     /// @param aExtent the extent radii of the light in x and y direction
     /// @note extent(0,0) means single pixel at the center
@@ -100,17 +120,15 @@ namespace p44 {
 
     void calculateGradient(int aNumGradientPixels, int aExtentPixels);
 
-    #if ENABLE_VIEWCONFIG
-
+    #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
     /// @return ok or error in case of real errors (image not found etc., but minor
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
-
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
@@ -130,6 +148,10 @@ namespace p44 {
 
     #endif // ENABLE_ANIMATION
 
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this scroller
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
 
   protected:
 
@@ -140,6 +162,23 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<ColorEffectView> ColorEffectViewPtr;
 
+
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a ColorEffectView
+    class ColorEffectViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      ColorEffectViewObj(P44ViewPtr aView);
+      ColorEffectViewPtr colorEffect() { return boost::static_pointer_cast<ColorEffectView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 
 } // namespace p44

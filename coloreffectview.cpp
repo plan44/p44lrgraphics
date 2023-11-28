@@ -174,11 +174,9 @@ PixelColor ColorEffectView::gradientPixel(int aPixelIndex)
   return mGradientPixels[aPixelIndex];
 }
 
-
-
-#if ENABLE_VIEWCONFIG
-
 // MARK: ===== view configuration
+
+#if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
 ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
 {
@@ -232,9 +230,9 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
   return err;
 }
 
-#endif // ENABLE_VIEWCONFIG
+#endif // ENABLE_VIEWCONFIG  && !ENABLE_P44SCRIPT
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 JsonObjectPtr ColorEffectView::viewStatus()
 {
@@ -251,7 +249,7 @@ JsonObjectPtr ColorEffectView::viewStatus()
   return status;
 }
 
-#endif // ENABLE_VIEWSTATUS
+#endif // ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 
 #if ENABLE_ANIMATION
@@ -294,6 +292,69 @@ ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double&
   return inherited::getPropertySetter(aProperty, aCurrentValue);
 }
 
-
-
 #endif // ENABLE_ANIMATION
+
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+
+ScriptObjPtr ColorEffectView::newViewObj()
+{
+  // base class with standard functionality
+  return new ColorEffectViewObj(this);
+}
+
+
+#define ACCESSOR_CLASS ColorEffectView
+#include "p44view_access_macros.hpp"
+
+ScriptObjPtr ColorEffectView_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  ColorEffectViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ColorEffectViewObj*>(aParentObj.get())->colorEffect().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_DBL(BriGradient);
+ACC_IMPL_DBL(HueGradient);
+ACC_IMPL_DBL(SatGradient);
+//ACC_IMPL_INT(BriMode);
+//ACC_IMPL_INT(HueMode);
+//ACC_IMPL_INT(SatMode);
+ACC_IMPL_DBL(ExtentX);
+ACC_IMPL_DBL(ExtentY);
+ACC_IMPL_BOOL(Radial);
+
+static const BuiltinMemberDescriptor colorEffectMembers[] = {
+  // property accessors
+  ACC_DECL("brightness_gradient", numeric|lvalue, BriGradient),
+  ACC_DECL("hue_gradient", numeric|lvalue, HueGradient),
+  ACC_DECL("saturation_gradient", numeric|lvalue, SatGradient),
+//  ACC_DECL("brightness_mode", numeric|lvalue, BriMode),
+//  ACC_DECL("hue_mode", numeric|lvalue, HueMode),
+//  ACC_DECL("saturation_mode", numeric|lvalue, SatMode),
+  ACC_DECL("extent_x", numeric|lvalue, ExtentX),
+  ACC_DECL("extent_y", numeric|lvalue, ExtentY),
+  ACC_DECL("radial", numeric|lvalue, Radial),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedColorEffectMemberLookupP = NULL;
+
+ColorEffectViewObj::ColorEffectViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedColorEffectMemberLookupP==NULL) {
+    sharedColorEffectMemberLookupP = new BuiltInMemberLookup(colorEffectMembers);
+    sharedColorEffectMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedColorEffectMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT

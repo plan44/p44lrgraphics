@@ -39,33 +39,6 @@
 
 #define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
-#if ENABLE_P44SCRIPT
-  // macros for synthesizing property accessors
-  #define ACC_DECL(field, types, prop) \
-    { field, builtinmember|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&PROPERTY_ACCESSOR }
-
-  #define ACC_IMPL(prop, getter, constructor) \
-    static ScriptObjPtr access_##prop(P44View& aView, ScriptObjPtr aToWrite) \
-    { \
-      if (!aToWrite) return new constructor(aView.get##prop()); \
-      aView.set##prop(aToWrite->getter()); \
-      return aToWrite; /* reflect back to indicate writable */ \
-    }
-  #define ACC_IMPL_RO(prop, constructor) \
-    static ScriptObjPtr access_##prop(P44View& aView, ScriptObjPtr aToWrite) \
-    { \
-      if (!aToWrite) return new constructor(aView.get##prop()); \
-      return nullptr; /* null to indicate readonly */ \
-    }
-  #define ACC_IMPL_STR(prop) ACC_IMPL(prop, stringValue, StringValue)
-  #define ACC_IMPL_DBL(prop) ACC_IMPL(prop, doubleValue, NumericValue)
-  #define ACC_IMPL_INT(prop) ACC_IMPL(prop, intValue, IntegerValue)
-  #define ACC_IMPL_BOOL(prop) ACC_IMPL(prop, boolValue, BoolValue)
-  #define ACC_IMPL_RO_STR(prop) ACC_IMPL_RO(prop, StringValue)
-  #define ACC_IMPL_RO_DBL(prop) ACC_IMPL_RO(prop, NumericValue)
-  #define ACC_IMPL_RO_INT(prop) ACC_IMPL_RO(prop, IntegerValue)
-#endif // ENABLE_P44SCRIPT
-
 namespace p44 {
 
   typedef int PixelCoord;
@@ -163,10 +136,17 @@ namespace p44 {
     };
     typedef uint8_t WrapMode;
 
-    /// announce/finish geometry change
-    void geometryChange(bool aStart);
+    /// announce/finish sequence of changes that might need finalisation
+    void announceChanges(bool aStart);
 
   protected:
+
+    /// called from announceChanges() before first change
+    virtual void beginChanges();
+    /// called from announceChanges() when all changes are done
+    virtual void finalizeChanges();
+
+    bool mChangedColoring; ///< can be set by subclasses when coloring changes withing begin/finalizeChanges()
 
     // parent view (pointer only, to avoid retain cycles)
     // Containers must make sure their children's parent pointer gets reset before parent goes away
@@ -536,14 +516,13 @@ namespace p44 {
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
     virtual P44ViewPtr getView(const string aLabelOrId);
 
-    //#if !ENABLE_P44SCRIPT
-    virtual // Note: with P44Script, we use property access to generically implement this at the P44View level
-    //#endif
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
     /// @return ok or error in case of real errors (image not found etc., but minor
     ///   issues like unknown properties usually don't cause error)
-    ErrorPtr configureView(JsonObjectPtr aViewConfig);
+    /// @note: with P44Script, most of configuration works via properties, but some legacy pseudo-properties
+    ///   still need to be implemented in subclasses, thus this method must remain virtual
+    virtual ErrorPtr configureView(JsonObjectPtr aViewConfig);
 
     #if ENABLE_JSON_APPLICATION
 
@@ -628,13 +607,6 @@ namespace p44 {
 
   #if ENABLE_P44SCRIPT
 
-  /// property accessor
-  /// @param aView the P44View
-  /// @param aToWrite if null, this is a read access, otherwise it is the value to write
-  /// @return on read, the property value - on write null if the property is not writable, the
-  ///   written value (usually aToWrite) when write was successful
-  typedef P44Script::ScriptObjPtr (*AccFn)(P44View& aView, P44Script::ScriptObjPtr aToWrite);
-
   namespace P44Script {
 
     /// represents a view of a P44lrgraphics view hierarchy
@@ -663,7 +635,5 @@ namespace p44 {
   #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
-
-
 
 #endif /* _p44lrgraphics_view_hpp__ */

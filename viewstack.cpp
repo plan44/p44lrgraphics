@@ -57,7 +57,7 @@ ViewStack::~ViewStack()
 
 void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
 {
-  geometryChange(true);
+  announceChanges(true);
   // clip/noAdjust bits set means we don't want the content rect to get recalculated
   bool adjust = (mPositioningMode&noAdjust)==0;
   bool fill = false;
@@ -108,7 +108,7 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
   sortZOrder();
   aView->setParent(this);
   makeDirty();
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -138,7 +138,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
     r.x, r.y, r.dx, r.dy
   );
   ViewsList::iterator pos = mViewStack.begin();
-  geometryChange(true);
+  announceChanges(true);
   while (pos!=mViewStack.end()) {
     P44ViewPtr v = *pos;
     if (
@@ -162,7 +162,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
   if (mChangedGeometry && (mPositioningMode&clipXY)==0) {
     recalculateContentArea();
   }
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -191,7 +191,7 @@ void ViewStack::sortZOrder()
 
 void ViewStack::offsetSubviews(PixelPoint aOffset)
 {
-  geometryChange(true);
+  announceChanges(true);
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     P44ViewPtr v = *pos;
     PixelRect f = v->mFrame;
@@ -199,7 +199,7 @@ void ViewStack::offsetSubviews(PixelPoint aOffset)
     f.y += aOffset.y;
     v->setFrame(f);
   }
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -241,20 +241,20 @@ bool ViewStack::addSubView(P44ViewPtr aSubView)
 
 void ViewStack::popView()
 {
-  geometryChange(true);
+  announceChanges(true);
   if (!mViewStack.empty()) {
     mViewStack.back()->setParent(NULL);
     mViewStack.pop_back();
     mChangedGeometry = true;
   }
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
 bool ViewStack::removeView(P44ViewPtr aView)
 {
   bool removed = false;
-  geometryChange(true);
+  announceChanges(true);
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if ((*pos)==aView) {
       (*pos)->setParent(NULL);
@@ -264,14 +264,14 @@ bool ViewStack::removeView(P44ViewPtr aView)
       break;
     }
   }
-  geometryChange(false);
+  announceChanges(false);
   return removed;
 }
 
 
 void ViewStack::clear()
 {
-  geometryChange(true);
+  announceChanges(true);
   while (true) {
     ViewsList::iterator pos = mViewStack.begin();
     if (pos==mViewStack.end()) break;
@@ -279,7 +279,7 @@ void ViewStack::clear()
     mViewStack.erase(pos);
     mChangedGeometry = true;
   }
-  geometryChange(false);
+  announceChanges(false);
   inherited::clear();
 }
 

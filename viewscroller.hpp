@@ -108,12 +108,17 @@ namespace p44 {
     /// @return the current Y scroll offset
     double getOffsetY() const { return (double)mScrollOffsetY_milli/1000; };
 
+    bool getSyncScroll() { return mSyncScroll; };
+    void setSyncScroll(bool aVal) { mSyncScroll = aVal; };
+    bool getAutoPurge() { return mAutoPurge; };
+    void setAutoPurge(bool aVal) { mAutoPurge = aVal; };
+
     /// start scrolling
     /// @param aStepX scroll step in X direction
     /// @param aStepY scroll step in Y direction
     /// @param aInterval interval between scrolling steps
+    /// @param aRoundOffsets if set (default), current scroll offsets will be rounded to next aStepX,Y boundary first
     /// @param aNumSteps number of scroll steps, <0 = forever (until stopScroll() is called)
-    /// @param aRoundOffsets if set (default), current scroll offsets will be rouned to next aStepX,Y boundary first
     /// @param aStartTime time of first step in MainLoop::now() timescale. If ==Never, then now() is used
     /// @param aCompletedCB called when scroll ends because aNumSteps have been executed (but not when aborted via stopScroll())
     /// @note MainLoop::now() time is monotonic (CLOCK_MONOTONIC under Linux, but is adjusted by adjtime() from NTP
@@ -132,8 +137,11 @@ namespace p44 {
     /// @return the current Y scroll step
     double getStepY() const { return (double)mScrollStepY_milli/1000; }
 
-    /// @return the time interval between two scroll steps
-    MLMicroSeconds getScrollStepInterval() const { return mScrollStepInterval; }
+    /// @return the time interval between two scroll steps [in Seconds]
+    double getScrollStepIntervalS() const { return (double)mScrollStepInterval/Second; }
+
+    /// @return the remaining scroll steps
+    long getRemainingSteps() const { return mScrollSteps; }
 
     /// set handler to be called when new content is needed (current scrolledView does no longer provide content for scrolling further)
     /// @param aNeedContentCB handler to be called when content has scrolled so far that it no longer fills the frame
@@ -188,12 +196,12 @@ namespace p44 {
 
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
 
-    #if P44SCRIPT_FULL_SUPPORT
+    #if ENABLE_P44SCRIPT
     /// @return ScriptObj representing this scroller
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
@@ -201,9 +209,12 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<ViewScroller> ViewScrollerPtr;
 
-  #if P44SCRIPT_FULL_SUPPORT
+
+  #if ENABLE_P44SCRIPT
 
   namespace P44Script {
+
+    #if P44SCRIPT_FULL_SUPPORT
 
     /// represents scroller out-of-content event/flag
     class ContentNeededObj : public NumericValue
@@ -219,6 +230,8 @@ namespace p44 {
       virtual double doubleValue() const P44_OVERRIDE;
     };
 
+    #endif // P44SCRIPT_FULL_SUPPORT
+
     /// represents a ViewScroller
     class ScrollerViewObj : public P44lrgViewObj
     {
@@ -230,8 +243,7 @@ namespace p44 {
 
   } // namespace P44Script
 
-  #endif // P44SCRIPT_FULL_SUPPORT
-
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 

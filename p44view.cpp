@@ -68,7 +68,7 @@ P44View::P44View() :
 
 P44View::~P44View()
 {
-  geometryChange(true); // unbalanced, avoid any further dependency updates while finally deleting view
+  announceChanges(true); // unbalanced, avoid any further dependency updates while finally deleting view
   clear();
   removeFromParent();
 }
@@ -109,14 +109,11 @@ void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 }
 
 
-void P44View::geometryChange(bool aStart)
+void P44View::announceChanges(bool aStart)
 {
   if (aStart){
     if (mGeometryChanging<=0) {
-      // start tracking changes
-      mChangedGeometry = false;
-      mPreviousFrame = mFrame;
-      mPreviousContent = mContent;
+      beginChanges();
     }
     mGeometryChanging++;
   }
@@ -124,27 +121,47 @@ void P44View::geometryChange(bool aStart)
     if (mGeometryChanging>0) {
       mGeometryChanging--;
       if (mGeometryChanging==0) {
-        if (mChangedGeometry) {
-          FOCUSLOG("View '%s' changed geometry: frame=(%d,%d,%d,%d)->(%d,%d,%d,%d), content=(%d,%d,%d,%d)->(%d,%d,%d,%d)",
-            getLabel().c_str(),
-            mPreviousFrame.x, mPreviousFrame.y, mPreviousFrame.dx, mPreviousFrame.dy,
-            mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
-            mPreviousContent.x, mPreviousContent.y, mPreviousContent.dx, mPreviousContent.dy,
-            mContent.x, mContent.y, mContent.dx, mContent.dy
-          );
-          makeDirty();
-          geometryChanged(mPreviousFrame, mPreviousContent); // let subclasses know
-          if (mParentView) {
-            // Note: as we are passing in the frames, it is safe when the following calls recursively calls geometryChange again
-            //   except that it must not do so unconditionally to prevent endless recursion
-            mParentView->childGeometryChanged(this, mPreviousFrame, mPreviousContent);
-          }
-        }
+        finalizeChanges();
       }
     }
   }
 }
 
+
+void P44View::beginChanges()
+{
+  // start tracking changes
+  mChangedGeometry = false;
+  mChangedColoring = false;
+  mPreviousFrame = mFrame;
+  mPreviousContent = mContent;
+}
+
+
+void P44View::finalizeChanges()
+{
+  if (mChangedGeometry) {
+    FOCUSLOG("View '%s' changed geometry: frame=(%d,%d,%d,%d)->(%d,%d,%d,%d), content=(%d,%d,%d,%d)->(%d,%d,%d,%d)",
+      getLabel().c_str(),
+      mPreviousFrame.x, mPreviousFrame.y, mPreviousFrame.dx, mPreviousFrame.dy,
+      mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
+      mPreviousContent.x, mPreviousContent.y, mPreviousContent.dx, mPreviousContent.dy,
+      mContent.x, mContent.y, mContent.dx, mContent.dy
+    );
+    makeDirty();
+    geometryChanged(mPreviousFrame, mPreviousContent); // let subclasses know
+    if (mParentView) {
+      // Note: as we are passing in the frames, it is safe when the following calls recursively calls geometryChange again
+      //   except that it must not do so unconditionally to prevent endless recursion
+      mParentView->childGeometryChanged(this, mPreviousFrame, mPreviousContent);
+    }
+    mChangedGeometry = false;
+  }
+  if (mChangedColoring) {
+    makeColorDirty();
+    mChangedColoring = false;
+  }
+}
 
 
 void P44View::orientateCoord(PixelPoint &aCoord)
@@ -210,9 +227,9 @@ void P44View::changeGeometryRect(PixelRect &aRect, PixelRect aNewRect)
 
 void P44View::setFrame(PixelRect aFrame)
 {
-  geometryChange(true);
+  announceChanges(true);
   changeGeometryRect(mFrame, aFrame);
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -231,55 +248,55 @@ P44ViewPtr P44View::getParent()
 
 void P44View::setContent(PixelRect aContent)
 {
-  geometryChange(true);
+  announceChanges(true);
   changeGeometryRect(mContent, aContent);
   if (mSizeToContent) {
     moveFrameToContent(true);
   }
-  geometryChange(false);
+  announceChanges(false);
 };
 
 
 void P44View::setContentSize(PixelPoint aSize)
 {
-  geometryChange(true);
+  announceChanges(true);
   changeGeometryRect(mContent, { mContent.x, mContent.y, aSize.x, aSize.y });
   if (mChangedGeometry && mSizeToContent) moveFrameToContent(true);
-  geometryChange(false);
+  announceChanges(false);
 };
 
 
 void P44View::setContentOrigin(PixelPoint aOrigin)
 {
-  geometryChange(true);
+  announceChanges(true);
   changeGeometryRect(mContent, { aOrigin.x, aOrigin.y, mContent.dx, mContent.dy });
-  geometryChange(false);
+  announceChanges(false);
 };
 
 
 void P44View::setRelativeContentOrigin(double aRelX, double aRelY, bool aCentered)
 {
-  geometryChange(true);
+  announceChanges(true);
   setRelativeContentOriginX(aRelX, aCentered);
   setRelativeContentOriginY(aRelY, aCentered);
-  geometryChange(false);
+  announceChanges(false);
 }
 
 void P44View::setRelativeContentOriginX(double aRelX, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
-  geometryChange(true);
+  announceChanges(true);
   changeGeometryRect(mContent, { (int)(aRelX*max(mContent.dx,mFrame.dx)+(aCentered ? mFrame.dx/2 : 0)), mContent.y, mContent.dx, mContent.dy });
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
 void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
-  geometryChange(true);
+  announceChanges(true);
   changeGeometryRect(mContent, { mContent.x, (int)(aRelY*max(mContent.dy,mFrame.dy)+(aCentered ? mFrame.dy/2 : 0)), mContent.dx, mContent.dy });
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -333,7 +350,7 @@ void P44View::contentRectAsViewCoord(PixelRect &aRect)
 /// @note content does not move relative to view frame origin, but frame does
 void P44View::moveFrameToContent(bool aResize)
 {
-  geometryChange(true);
+  announceChanges(true);
   if (aResize) sizeFrameToContent();
   PixelRect f;
   contentRectAsViewCoord(f);
@@ -341,7 +358,7 @@ void P44View::moveFrameToContent(bool aResize)
   changeGeometryRect(mFrame, f);
   // ...which means that no content offset is needed any more (we've compensated it by moving the frame)
   mContent.x = 0; mContent.y = 0;
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -519,12 +536,12 @@ void P44View::setAlpha(PixelColorComponent aAlpha)
 
 void P44View::setZOrder(int aZOrder)
 {
-  geometryChange(true);
+  announceChanges(true);
   if (mZOrder!=aZOrder) {
     mZOrder = aZOrder;
     mChangedGeometry = true;
   }
-  geometryChange(false);
+  announceChanges(false);
 }
 
 
@@ -741,7 +758,7 @@ using namespace P44Script;
 
 ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 {
-  geometryChange(true);
+  announceChanges(true);
   string name;
   JsonObjectPtr val;
   ScriptObjPtr vo = newViewObj();
@@ -789,7 +806,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (mChangedGeometry && mSizeToContent) {
     moveFrameToContent(true);
   }
-  geometryChange(false);
+  announceChanges(false);
   return ErrorPtr();
 }
 
@@ -1098,11 +1115,11 @@ void P44View::geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
 {
   PixelCoord newValue = aNewValue;
   if (newValue!=*aPixelCoordP) {
-    geometryChange(true);
+    announceChanges(true);
     *aPixelCoordP = newValue;
     mChangedGeometry = true;
     if (mSizeToContent) moveFrameToContent(true);
-    geometryChange(false);
+    announceChanges(false);
   }
 }
 
@@ -1536,15 +1553,17 @@ static void animator_func(BuiltinFunctionContextPtr f)
 #endif // P44SCRIPT_FULL_SUPPORT
 
 
-#define PROPERTY_ACCESSOR p44view_accessor
+#define ACCESSOR_CLASS P44View
+#include "p44view_access_macros.hpp"
 
-ScriptObjPtr PROPERTY_ACCESSOR(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+ScriptObjPtr P44View_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
 {
+  ACCFN_DEF
   P44ViewPtr view = reinterpret_cast<P44lrgViewObj*>(aParentObj.get())->view();
-  AccFn acc = reinterpret_cast<AccFn>(aMemberDescriptor->memberAccessInfo);
-  view->geometryChange(true);
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->geometryChange(false);
+  view->announceChanges(false);
   return res;
 }
 
@@ -1568,7 +1587,7 @@ ACC_IMPL_INT(ZOrder)
 ACC_IMPL_BOOL(SizeToContent)
 ACC_IMPL_BOOL(LocalTimingPriority)
 
-static ScriptObjPtr access_WrapMode(P44View& aView, ScriptObjPtr aToWrite)
+static ScriptObjPtr access_WrapMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
   if (!aToWrite) return new StringValue(P44View::wrapModeToText(aView.getWrapMode(), false));
   if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
@@ -1633,16 +1652,16 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   { NULL } // terminator
 };
 
-static BuiltInMemberLookup* sharedViewFunctionLookupP = NULL;
+static BuiltInMemberLookup* sharedViewMemberLookupP = NULL;
 
 P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
   mView(aView)
 {
-  if (sharedViewFunctionLookupP==NULL) {
-    sharedViewFunctionLookupP = new BuiltInMemberLookup(viewMembers);
-    sharedViewFunctionLookupP->isMemberVariable(); // disable refcounting
+  if (sharedViewMemberLookupP==NULL) {
+    sharedViewMemberLookupP = new BuiltInMemberLookup(viewMembers);
+    sharedViewMemberLookupP->isMemberVariable(); // disable refcounting
   }
-  registerMemberLookup(sharedViewFunctionLookupP);
+  registerMemberLookup(sharedViewMemberLookupP);
 }
 
 

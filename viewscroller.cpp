@@ -349,6 +349,8 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     JsonObjectPtr o;
+    #if !ENABLE_P44SCRIPT
+    // Legacy implementation when we have no properties
     // view
     if (aViewConfig->get("scrolledview", o)) {
       err = p44::createViewFromConfig(o, mScrolledView, this);
@@ -367,7 +369,8 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("autopurge", o)) {
       mAutoPurge = o->boolValue();
     }
-    // scroll
+    #endif // !ENABLE_P44SCRIPT
+    // pseudo "properties" for starting scroll
     double stepX = 0;
     double stepY = 0;
     MLMicroSeconds interval = 50*MilliSecond;
@@ -414,7 +417,9 @@ P44ViewPtr ViewScroller::getView(const string aLabel)
 
 #endif // ENABLE_VIEWCONFIG
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
+
+// legacy implementation
 
 JsonObjectPtr ViewScroller::viewStatus()
 {
@@ -435,11 +440,11 @@ JsonObjectPtr ViewScroller::viewStatus()
   return status;
 }
 
-#endif // ENABLE_VIEWSTATUS
+#endif // ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 // MARK: - script support
 
-#if P44SCRIPT_FULL_SUPPORT
+#if ENABLE_P44SCRIPT
 
 using namespace P44Script;
 
@@ -450,6 +455,8 @@ ScriptObjPtr ViewScroller::newViewObj()
   return new ScrollerViewObj(this);
 }
 
+
+#if P44SCRIPT_FULL_SUPPORT
 
 ContentNeededObj::ContentNeededObj(ViewScrollerPtr aScroller) :
   inherited(false),
@@ -538,25 +545,111 @@ static void alertempty_func(BuiltinFunctionContextPtr f)
   f->finish(v);
 }
 
+
+// startscroll(stepX, stepY, interval, roundoffsets, numsteps=null, syncstart=0)
+static const BuiltInArgDesc startscroll_args[] = { { numeric }, { numeric }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg }  };
+static const size_t startscroll_numargs = sizeof(startscroll_args)/sizeof(BuiltInArgDesc);
+static void startscroll_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  double stepX = f->arg(0)->doubleValue();
+  double stepY = f->arg(1)->doubleValue();
+  MLMicroSeconds interval = f->arg(2)->doubleValue()*Second;
+  bool roundoffsets = f->arg(3)->undefined() || f->arg(3)->boolValue();
+  long numsteps = f->arg(4)->defined() ? f->arg(4)->intValue() : -1; // default to -1 = forever
+  MLMicroSeconds starttime = f->arg(5)->doubleValue()*Second; // optional synchronized start time, default to right now==0
+  if (starttime<Day) {
+    // roundup interval for synchronized start
+    starttime = ((MainLoop::now()+starttime-1)/starttime) * starttime;
+  }
+  v->scroller()->startScroll(stepX, stepY, interval, roundoffsets, numsteps, starttime);
+  f->finish(v); // allow chaining
+}
+
+
+// stopscroll()
+static void stopscroll_func(BuiltinFunctionContextPtr f)
+{
+  ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
+  assert(v);
+  v->scroller()->stopScroll();
+  f->finish(v);
+}
+
+#endif // P44SCRIPT_FULL_SUPPORT
+
+
+#define ACCESSOR_CLASS ViewScroller
+#include "p44view_access_macros.hpp"
+
+ScriptObjPtr ViewScroller_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  ViewScrollerPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ScrollerViewObj*>(aParentObj.get())->view().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_DBL(OffsetX)
+ACC_IMPL_DBL(OffsetY)
+ACC_IMPL_BOOL(SyncScroll)
+ACC_IMPL_BOOL(AutoPurge)
+ACC_IMPL_RO_DBL(StepX)
+ACC_IMPL_RO_DBL(StepY)
+ACC_IMPL_RO_DBL(ScrollStepIntervalS)
+ACC_IMPL_RO_INT(RemainingSteps)
+
+static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
+{
+  if (!aToWrite) return aView.getScrolledView()->newViewObj();
+  P44lrgViewObj* vo = dynamic_cast<P44lrgViewObj*>(aToWrite.get());
+  if (vo) {
+    aView.setScrolledView(vo->view());
+  }
+  else {
+    aToWrite = new ErrorValue(ScriptError::Invalid, "Can only assign a View object");
+  }
+  return aToWrite; /* reflect back to indicate writable or error */ \
+}
+
+
 static const BuiltinMemberDescriptor scrollerFunctions[] = {
+  #if P44SCRIPT_FULL_SUPPORT
   { "empty", executable|objectvalue, 0, NULL, &empty_func },
   { "remainingpixels", executable|objectvalue, 0, NULL, &remainingpixels_func },
   { "remainingtime", executable|numeric, 0, NULL, &remainingtime_func },
   { "alertempty", executable|objectvalue, alertempty_numargs, alertempty_args, &alertempty_func },
   { "purge", executable|objectvalue, 0, NULL, &purge_func },
+  { "startscroll", executable|objectvalue, startscroll_numargs, startscroll_args, &startscroll_func },
+  { "stopscroll", executable|objectvalue, 0, NULL, &stopscroll_func },
+  #endif
+  // property accessors
+  ACC_DECL("scrolledview", objectvalue|lvalue, ScrolledView),
+  ACC_DECL("offsetx", numeric|lvalue, OffsetX),
+  ACC_DECL("offsety", numeric|lvalue, OffsetY),
+  ACC_DECL("syncscroll", numeric|lvalue, SyncScroll),
+  ACC_DECL("autopurge", numeric|lvalue, AutoPurge),
+  ACC_DECL("stepx", numeric, StepX),
+  ACC_DECL("stepy", numeric, StepY),
+  ACC_DECL("interval", numeric, ScrollStepIntervalS),
+  ACC_DECL("steps", numeric, RemainingSteps),
   { NULL } // terminator
 };
 
-static BuiltInMemberLookup* sharedScrollerFunctionLookupP = NULL;
+static BuiltInMemberLookup* sharedScrollerMemberLookupP = NULL;
 
 ScrollerViewObj::ScrollerViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedScrollerFunctionLookupP==NULL) {
-    sharedScrollerFunctionLookupP = new BuiltInMemberLookup(scrollerFunctions);
-    sharedScrollerFunctionLookupP->isMemberVariable(); // disable refcounting
+  if (sharedScrollerMemberLookupP==NULL) {
+    sharedScrollerMemberLookupP = new BuiltInMemberLookup(scrollerFunctions);
+    sharedScrollerMemberLookupP->isMemberVariable(); // disable refcounting
   }
-  registerMemberLookup(sharedScrollerFunctionLookupP);
+  registerMemberLookup(sharedScrollerMemberLookupP);
 }
 
-#endif // P44SCRIPT_FULL_SUPPORT
+#endif // ENABLE_P44SCRIPT
