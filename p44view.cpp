@@ -573,79 +573,83 @@ void P44View::setZOrder(int aZOrder)
 PixelColor P44View::colorAt(PixelPoint aPt)
 {
   // default is background color
+  if (mAlpha==0) return transparent; // optimisation
+  // aPt is parent view coordinates
+  aPt.x -= mFrame.x;
+  aPt.y -= mFrame.y;
+  // aPt is relative to frame origin now
+  return colorInFrameAt(aPt);
+}
+
+
+PixelColor P44View::colorInFrameAt(PixelPoint aPt)
+{
+  if (mAlpha==0) return transparent; // optimisation
   PixelColor pc = mBackgroundColor;
-  if (mAlpha==0) {
-    pc.a = 0; // entire view is invisible
+  // optionally clip content to frame
+  if (mContentWrapMode&clipXY && (
+    ((mContentWrapMode&clipXmin) && aPt.x<0) ||
+    ((mContentWrapMode&clipXmax) && aPt.x>=mFrame.dx) ||
+    ((mContentWrapMode&clipYmin) && aPt.y<0) ||
+    ((mContentWrapMode&clipYmax) && aPt.y>=mFrame.dy)
+  )) {
+    // clip
+    pc.a = 0; // invisible
   }
   else {
-    // calculate coordinate relative to the frame's origin
-    aPt.x -= mFrame.x;
-    aPt.y -= mFrame.y;
-    // optionally clip content to frame
-    if (mContentWrapMode&clipXY && (
-      ((mContentWrapMode&clipXmin) && aPt.x<0) ||
-      ((mContentWrapMode&clipXmax) && aPt.x>=mFrame.dx) ||
-      ((mContentWrapMode&clipYmin) && aPt.y<0) ||
-      ((mContentWrapMode&clipYmax) && aPt.y>=mFrame.dy)
-    )) {
-      // clip
-      pc.a = 0; // invisible
+    // not clipped
+    // optionally wrap content (repeat frame contents in selected directions)
+    if (mFrame.dx>0) {
+      while ((mContentWrapMode&wrapXmin) && aPt.x<0) aPt.x+=mFrame.dx;
+      while ((mContentWrapMode&wrapXmax) && aPt.x>=mFrame.dx) aPt.x-=mFrame.dx;
+    }
+    if (mFrame.dy>0) {
+      while ((mContentWrapMode&wrapYmin) && aPt.y<0) aPt.y+=mFrame.dy;
+      while ((mContentWrapMode&wrapYmax) && aPt.y>=mFrame.dy) aPt.y-=mFrame.dy;
+    }
+    // translate into content coordinates
+    inFrameToContentCoord(aPt);
+    // now get content pixel in content coordinates
+    if (mContentRotation==0) {
+      // optimization: no rotation, get pixel
+      pc = contentColorAt(aPt);
     }
     else {
-      // not clipped
-      // optionally wrap content (repeat frame contents in selected directions)
-      if (mFrame.dx>0) {
-        while ((mContentWrapMode&wrapXmin) && aPt.x<0) aPt.x+=mFrame.dx;
-        while ((mContentWrapMode&wrapXmax) && aPt.x>=mFrame.dx) aPt.x-=mFrame.dx;
-      }
-      if (mFrame.dy>0) {
-        while ((mContentWrapMode&wrapYmin) && aPt.y<0) aPt.y+=mFrame.dy;
-        while ((mContentWrapMode&wrapYmax) && aPt.y>=mFrame.dy) aPt.y-=mFrame.dy;
-      }
-      // translate into content coordinates
-      inFrameToContentCoord(aPt);
-      // now get content pixel in content coordinates
-      if (mContentRotation==0) {
-        // optimization: no rotation, get pixel
-        pc = contentColorAt(aPt);
-      }
-      else {
-        // - rotate first
-        PixelPoint rpt;
-        rpt.x = aPt.x*mRotCos-aPt.y*mRotSin;
-        rpt.y = aPt.x*mRotSin+aPt.y*mRotCos;
-        pc = contentColorAt(rpt);
-      }
-      if (mInvertAlpha) {
-        pc.a = 255-pc.a;
-      }
-      if (mContentIsMask) {
-        // use only (possibly inverted) alpha of content, color comes from foregroundColor
-        pc.r = mForegroundColor.r;
-        pc.g = mForegroundColor.g;
-        pc.b = mForegroundColor.b;
-      }
-      #if SHOW_ORIGIN
-      if (aPt.x==0 && aPt.y==0) {
-        return { .r=255, .g=0, .b=0, .a=255 };
-      }
-      else if (aPt.x==1 && aPt.y==0) {
-        return { .r=0, .g=255, .b=0, .a=255 };
-      }
-      else if (aPt.x==0 && aPt.y==1) {
-        return { .r=0, .g=0, .b=255, .a=255 };
-      }
-      #endif
-      if (pc.a==0) {
-        // background is where content is fully transparent
-        pc = mBackgroundColor;
-        // Note: view background does NOT shine through semi-transparent content pixels!
-        //   Rather, non-fully-transparent content pixels directly are view pixels!
-      }
-      // factor in layer alpha
-      if (mAlpha!=255) {
-        pc.a = dimVal(pc.a, mAlpha);
-      }
+      // - rotate first
+      PixelPoint rpt;
+      rpt.x = aPt.x*mRotCos-aPt.y*mRotSin;
+      rpt.y = aPt.x*mRotSin+aPt.y*mRotCos;
+      pc = contentColorAt(rpt);
+    }
+    if (mInvertAlpha) {
+      pc.a = 255-pc.a;
+    }
+    if (mContentIsMask) {
+      // use only (possibly inverted) alpha of content, color comes from foregroundColor
+      pc.r = mForegroundColor.r;
+      pc.g = mForegroundColor.g;
+      pc.b = mForegroundColor.b;
+    }
+    #if SHOW_ORIGIN
+    if (aPt.x==0 && aPt.y==0) {
+      return { .r=255, .g=0, .b=0, .a=255 };
+    }
+    else if (aPt.x==1 && aPt.y==0) {
+      return { .r=0, .g=255, .b=0, .a=255 };
+    }
+    else if (aPt.x==0 && aPt.y==1) {
+      return { .r=0, .g=0, .b=255, .a=255 };
+    }
+    #endif
+    if (pc.a==0) {
+      // background is where content is fully transparent
+      pc = mBackgroundColor;
+      // Note: view background does NOT shine through semi-transparent content pixels!
+      //   Rather, non-fully-transparent content pixels directly are view pixels!
+    }
+    // factor in layer alpha
+    if (mAlpha!=255) {
+      pc.a = dimVal(pc.a, mAlpha);
     }
   }
   return pc;
@@ -1557,12 +1561,12 @@ static const BuiltInArgDesc get_args[] = { { numeric|undefres }, { numeric|undef
 static const size_t get_numargs = sizeof(get_args)/sizeof(BuiltInArgDesc);
 static void get_func(BuiltinFunctionContextPtr f)
 {
-  CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   PixelPoint pt;
   pt.x = f->arg(0)->intValue();
   pt.y = f->arg(1)->intValue();
-  PixelColor pix = v->view()->colorAt(pt);
+  PixelColor pix = v->view()->colorInFrameAt(pt);
   f->finish(new StringValue(pixelToWebColor(pix, true)));
 }
 
@@ -1628,8 +1632,8 @@ static ScriptObjPtr access_WrapMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite
 static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
 {
   if (!aToWrite) return new StringValue(P44View::orientationToText(aView.getOrientation()));
-  if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
-  else aView.setWrapMode(P44View::textToWrapMode(aToWrite->stringValue().c_str()));
+  if (aToWrite->hasType(numeric)) aView.setOrientation(aToWrite->intValue());
+  else aView.setOrientation(P44View::textToOrientation(aToWrite->stringValue().c_str()));
   return aToWrite; /* reflect back to indicate writable */
 }
 
@@ -1753,9 +1757,9 @@ static void color_conversion(BuiltinFunctionContextPtr f, bool aHSV)
       pix = hsbToPixel(c[0], c[1], c[2]);
     }
     else {
-      pix.r = c[3]*255;
-      pix.g = c[3]*255;
-      pix.b = c[3]*255;
+      pix.r = c[0]*255;
+      pix.g = c[1]*255;
+      pix.b = c[2]*255;
     }
     pix.a = c[3]*255;
   }

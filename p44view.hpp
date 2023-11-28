@@ -466,8 +466,12 @@ namespace p44 {
     virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) {};
 
     /// get color at X,Y
-    /// @param aPt point to get in frame coordinates
+    /// @param aPt point to get in frame's parent coordinates
     PixelColor colorAt(PixelPoint aPt);
+
+    /// get color at X,Y
+    /// @param aPt point to get relative to  frame's origin
+    PixelColor colorInFrameAt(PixelPoint aPt);
 
     /// get the LED rrggbb data string
     /// @param aRawRgb will be filled to contain the raw RGB data as specified by aArea
