@@ -65,7 +65,7 @@ namespace p44 {
     #endif
 
     #if ENABLE_P44SCRIPT
-    /// @return ScriptObj representing this scroller
+    /// @return ScriptObj representing this view
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 

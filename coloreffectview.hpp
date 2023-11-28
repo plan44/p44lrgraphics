@@ -161,7 +161,7 @@ namespace p44 {
     virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue) P44_OVERRIDE;
 
     #if ENABLE_P44SCRIPT
-    /// @return ScriptObj representing this scroller
+    /// @return ScriptObj representing this view
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
