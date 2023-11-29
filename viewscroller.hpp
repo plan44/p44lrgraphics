@@ -155,7 +155,7 @@ namespace p44 {
     void purgeScrolledOut();
 
     /// @return number of pixels in either direction to scroll until current content is exhausted.
-    ///   x/y are set to INT_MAX to signal "infinite" (if scrolled view's wrap mode is set in the scroll direction)
+    ///   x/y are set to INT_MAX to signal "infinite" (if scrolled view's framing mode is set in the scroll direction)
     PixelPoint remainingPixelsToScroll();
 
     /// @return true if remaining pixels in either direction are <0

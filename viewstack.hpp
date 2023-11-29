@@ -34,7 +34,7 @@ namespace p44 {
     typedef std::list<P44ViewPtr> ViewsList;
 
     ViewsList mViewStack;
-    WrapMode mPositioningMode; ///< mode for positioning views with pushView, purging with purgeView, and autoresizing on child changes
+    FramingMode mPositioningMode; ///< mode for positioning views with pushView, purging with purgeView, and autoresizing on child changes
 
   public :
 
@@ -46,15 +46,15 @@ namespace p44 {
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set the positioning, purging and autosizing mode
-    /// @param aPositioningMode where to append or purge views. Using wrapMode constants as follows:
-    /// - for pushView: wrapXmax means appending in positive X direction, wrapXmin means in negative X direction, etc.
-    /// - for pushView, purgeView and change of child view sizes: any clip bits set means *NO* automatic change of content bounds
-    /// - for purgeViews: wrapXmax means measuring new size from max X coordinate in negative X direction,
-    ///   wrapXmin means from min X coordinate in positive X direction, etc.
-    void setPositioningMode(WrapMode aPositioningMode) { mPositioningMode = aPositioningMode; }
+    /// @param aPositioningMode where to append or purge views. Using FramingMode constants as follows:
+    /// - for pushView: appendRight means appending in positive X direction, appendLeft means in negative X direction, etc.
+    /// - for pushView, purgeView and change of child view sizes: any clip bits set (noAdjust) means *NO* automatic change of content bounds
+    /// - for purgeViews: repeatXmax means measuring new size from max X coordinate in negative X direction,
+    ///   repeatXmin means from min X coordinate in positive X direction, etc.
+    void setPositioningMode(FramingMode aPositioningMode) { mPositioningMode = aPositioningMode; }
 
     /// get the current positioning mode as set by setPositioningMode()
-    WrapMode getPositioningMode() { return mPositioningMode; }
+    FramingMode getPositioningMode() { return mPositioningMode; }
 
     /// push view onto top of stack
     /// @param aView the view to push in front of all other views

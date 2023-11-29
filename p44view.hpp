@@ -103,22 +103,22 @@ namespace p44 {
       y_flip = 0x04,
       // directions of X axis
       right = 0, /// untransformed X goes left to right, Y goes up
-      down = xy_swap+x_flip, /// X goes down, Y goes right
+      up = xy_swap+x_flip, /// X goes up, Y goes left
       left = x_flip+y_flip, /// X goes left, Y goes down
-      up = xy_swap+y_flip, /// X goes down, Y goes right
+      down = xy_swap+y_flip, /// X goes down, Y goes right
     };
     typedef uint8_t Orientation;
 
     enum {
-      noWrap = 0, /// do not wrap
-      wrapXmin = 0x01, /// wrap in X direction for X<frame area
-      wrapXmax = 0x02, /// wrap in X direction for X>=frame area
-      wrapX = wrapXmin|wrapXmax, /// wrap in both X directions
-      wrapYmin = 0x04, /// wrap in Y direction for Y<frame area
-      wrapYmax = 0x08, /// wrap in Y direction for Y>=frame area
-      wrapY = wrapYmin|wrapYmax, /// wrap in both Y directions
-      wrapXY = wrapX|wrapY, /// wrap in all directions
-      wrapMask = wrapXY, /// mask for wrap bits
+      noFraming = 0, /// do not frame (contents spill out of frame, possibly infinitely)
+      repeatXmin = 0x01, /// repeat in X direction for X<frame area
+      repeatXmax = 0x02, /// repeat in X direction for X>=frame area
+      repeatX = repeatXmin|repeatXmax, /// repeat in both X directions
+      repeatYmin = 0x04, /// repeat in Y direction for Y<frame area
+      repeatYmax = 0x08, /// repeat in Y direction for Y>=frame area
+      repeatY = repeatYmin|repeatYmax, /// repeat in both Y directions
+      repeatXY = repeatX|repeatY, /// repeat in all directions
+      wrapMask = repeatXY, /// mask for repeat bits
       clipXmin = 0x10, /// clip content left of frame area
       clipXmax = 0x20, /// clip content right of frame area
       clipX = clipXmin|clipXmax, // clip content horizontally
@@ -128,15 +128,15 @@ namespace p44 {
       clipXY = clipX|clipY, // clip content
       clipMask = clipXY, // mask for clip bits
       noAdjust = clipXY, // for positioning: do not adjust content rectangle
-      appendLeft = wrapXmin, // for positioning: extend to the left
-      appendRight = wrapXmax, // for positioning: extend to the right
-      fillX = wrapXmin|wrapXmax, // for positioning: set frame size fill parent in X direction
-      appendBottom = wrapYmin, // for positioning: extend towards bottom
-      appendTop = wrapYmax, // for positioning: extend towards top
-      fillY = wrapYmin|wrapYmax, // for positioning: set frame size fill parent in Y direction
+      appendLeft = repeatXmin, // for positioning: extend to the left
+      appendRight = repeatXmax, // for positioning: extend to the right
+      fillX = repeatXmin|repeatXmax, // for positioning: set frame size fill parent in X direction
+      appendBottom = repeatYmin, // for positioning: extend towards bottom
+      appendTop = repeatYmax, // for positioning: extend towards top
+      fillY = repeatYmin|repeatYmax, // for positioning: set frame size fill parent in Y direction
       fillXY = fillX|fillY, // for positioning: set frame size fill parent frame
     };
-    typedef uint8_t WrapMode;
+    typedef uint8_t FramingMode;
 
     /// announce/finish sequence of changes that might need finalisation
     void announceChanges(bool aStart);
@@ -182,7 +182,7 @@ namespace p44 {
     // content
     PixelRect mContent; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation translated!)
     Orientation mContentOrientation; ///< orientation of content in frame
-    WrapMode mContentWrapMode; ///< content wrap mode in frame area
+    FramingMode mFramingMode; ///< content wrap mode in frame area
     bool mContentIsMask; ///< if set, only alpha of content is used on foreground color
     bool mInvertAlpha; ///< invert alpha provided by content
     bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
@@ -341,13 +341,13 @@ namespace p44 {
     /// get foreground color
     PixelColor getForegroundColor() const { return mForegroundColor; }
 
-    /// set content wrap mode
-    /// @param aWrapMode the new wrap mode
-    void setWrapMode(WrapMode aWrapMode) { mContentWrapMode = aWrapMode; makeDirty(); }
+    /// set frame mode (clipping, repeating, autopositioning)
+    /// @param aFramingMode the new framing mode
+    void setFramingMode(FramingMode aFramingMode) { mFramingMode = aFramingMode; makeDirty(); }
 
-    /// get current wrap mode
-    /// @return current wrap mode
-    WrapMode getWrapMode() { return mContentWrapMode; }
+    /// get current framing mode
+    /// @return current framing mode
+    FramingMode getFramingMode() { return mFramingMode; }
 
     /// set view label
     /// @note this is for referencing views in reconfigure operations
@@ -523,10 +523,10 @@ namespace p44 {
     static string orientationToText(Orientation aOrientation);
 
     /// get wrap mode from text
-    static WrapMode textToWrapMode(const char *aWrapModeText);
+    static FramingMode textToFramingMode(const char *aFramingModeText);
 
-    /// get text from wrap mode
-    static string wrapModeToText(WrapMode aWrapMode, bool aForPositioning);
+    /// get text for framing mode
+    static string framingModeToText(FramingMode aFramingMode, bool aForPositioning);
 
     /// get view by label
     /// @param aLabelOrId label or Id of view to find

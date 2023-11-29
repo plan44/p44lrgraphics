@@ -42,7 +42,7 @@ using namespace p44;
 
 ViewStack::ViewStack()
 {
-  mPositioningMode = noWrap+noAdjust;
+  mPositioningMode = noFraming+noAdjust;
 }
 
 
@@ -62,9 +62,9 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
   bool adjust = (mPositioningMode&noAdjust)==0;
   bool fill = false;
   // auto-positioning?
-  if (mPositioningMode & wrapXY) {
-    // wrap bits determine in which direction to position the view relative to those already present
-    // - wrapXmin = to the left, wrapXmax = to the right etc.
+  if (mPositioningMode & repeatXY) {
+    // repeat bits determine in which direction to position the view relative to those already present
+    // (note, sensible alias constants exist for appending: appendLeft/Right/Top/Bottom)
     PixelRect r;
     getEnclosingContentRect(r);
     // X auto positioning/sizing
@@ -72,10 +72,10 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
       aView->mFrame.dx = mContent.dx;
       fill = true;
     }
-    else if (mPositioningMode&wrapXmax) {
+    else if (mPositioningMode&appendRight) {
       aView->mFrame.x = r.x+r.dx+aSpacing;
     }
-    else if (mPositioningMode&wrapXmin) {
+    else if (mPositioningMode&appendLeft) {
       aView->mFrame.x = r.x-aView->mFrame.dx-aSpacing;
     }
     // Y auto positioning/sizing
@@ -83,13 +83,13 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
       aView->mFrame.dy = mContent.dy;
       fill = true;
     }
-    else if (mPositioningMode&wrapYmax) {
+    else if (mPositioningMode&appendTop) {
       aView->mFrame.y = r.y+r.dy+aSpacing;
     }
-    else if (mPositioningMode&wrapYmin) {
+    else if (mPositioningMode&appendBottom) {
       aView->mFrame.y = r.y-aView->mFrame.dy-aSpacing;
     }
-    if ((aView->getWrapMode()&clipXY)==0) {
+    if ((aView->getFramingMode()&clipXY)==0) {
       LOG(LOG_WARNING, "ViewStack '%s', pushed view '%s' is not clipped, probably will obscure neigbours!", getLabel().c_str(), aView->getLabel().c_str());
     }
     if (!mSizeToContent && !fill) {
@@ -114,22 +114,22 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
 
 void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
 {
-  if ((mPositioningMode&wrapXY)==0) return; // no positioning -> NOP
+  if ((mPositioningMode&repeatXY)==0) return; // no positioning -> NOP
   // calculate content bounds where to keep views
   PixelRect r;
   getEnclosingContentRect(r);
-  if (mPositioningMode&wrapXmax) {
+  if (mPositioningMode&repeatXmax) {
     r.x = r.x+r.dx-aKeepDx;
     r.dx = aKeepDx;
   }
-  else if (mPositioningMode&wrapXmin) {
+  else if (mPositioningMode&repeatXmin) {
     r.dx = aKeepDx;
   }
-  if (mPositioningMode&wrapYmax) {
+  if (mPositioningMode&repeatYmax) {
     r.y = r.y+r.dy-aKeepDy;
     r.dy = aKeepDy;
   }
-  else if (mPositioningMode&wrapYmin) {
+  else if (mPositioningMode&repeatYmin) {
     r.dy = aKeepDy;
   }
   // now purge views
@@ -388,10 +388,10 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
     JsonObjectPtr o;
     if (aViewConfig->get("positioningmode", o)) {
       if (o->isType(json_type_string)) {
-        setPositioningMode(textToWrapMode(o->c_strValue()));
+        setPositioningMode(textToFramingMode(o->c_strValue()));
       }
       else {
-        setPositioningMode((WrapMode)o->int32Value());
+        setPositioningMode((FramingMode)o->int32Value());
       }
     }
     if (aViewConfig->get("layers", o)) {
@@ -406,7 +406,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
             int spacing = 0;
             if (l->get("positioning", o2)) {
               LOG(LOG_WARNING, "Warning: legacy 'positioning' in stack subview -> use stack-global 'positioningmode' instead");
-              setPositioningMode((WrapMode)o2->int32Value());
+              setPositioningMode((FramingMode)o2->int32Value());
             }
             if (l->get("spacing", o2)) {
               spacing = o2->int32Value();
@@ -456,7 +456,7 @@ JsonObjectPtr ViewStack::viewStatus()
     layers->arrayAppend(layer);
   }
   status->add("layers", layers);
-  status->add("positioningmode", JsonObject::newString(wrapModeToText(getPositioningMode(), true)));
+  status->add("positioningmode", JsonObject::newString(framingModeToText(getPositioningMode(), true)));
   return status;
 }
 

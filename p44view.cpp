@@ -52,8 +52,8 @@ P44View::P44View() :
   setFrame(zeroRect);
   // default to normal orientation
   mContentOrientation = right;
-  // default to clip, no content wrap
-  mContentWrapMode = clipXY;
+  // default to clip to frame, no content repeating
+  mFramingMode = clipXY;
   // default content size is same as view's
   setContent(zeroRect);
   mBackgroundColor = { .r=0, .g=0, .b=0, .a=0 }; // transparent background,
@@ -587,25 +587,25 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
   if (mAlpha==0) return transparent; // optimisation
   PixelColor pc = mBackgroundColor;
   // optionally clip content to frame
-  if (mContentWrapMode&clipXY && (
-    ((mContentWrapMode&clipXmin) && aPt.x<0) ||
-    ((mContentWrapMode&clipXmax) && aPt.x>=mFrame.dx) ||
-    ((mContentWrapMode&clipYmin) && aPt.y<0) ||
-    ((mContentWrapMode&clipYmax) && aPt.y>=mFrame.dy)
+  if (mFramingMode&clipXY && (
+    ((mFramingMode&clipXmin) && aPt.x<0) ||
+    ((mFramingMode&clipXmax) && aPt.x>=mFrame.dx) ||
+    ((mFramingMode&clipYmin) && aPt.y<0) ||
+    ((mFramingMode&clipYmax) && aPt.y>=mFrame.dy)
   )) {
     // clip
     pc.a = 0; // invisible
   }
   else {
     // not clipped
-    // optionally wrap content (repeat frame contents in selected directions)
+    // optionally repeat content (repeat frame contents in selected directions)
     if (mFrame.dx>0) {
-      while ((mContentWrapMode&wrapXmin) && aPt.x<0) aPt.x+=mFrame.dx;
-      while ((mContentWrapMode&wrapXmax) && aPt.x>=mFrame.dx) aPt.x-=mFrame.dx;
+      while ((mFramingMode&repeatXmin) && aPt.x<0) aPt.x+=mFrame.dx;
+      while ((mFramingMode&repeatXmax) && aPt.x>=mFrame.dx) aPt.x-=mFrame.dx;
     }
     if (mFrame.dy>0) {
-      while ((mContentWrapMode&wrapYmin) && aPt.y<0) aPt.y+=mFrame.dy;
-      while ((mContentWrapMode&wrapYmax) && aPt.y>=mFrame.dy) aPt.y-=mFrame.dy;
+      while ((mFramingMode&repeatYmin) && aPt.y<0) aPt.y+=mFrame.dy;
+      while ((mFramingMode&repeatYmax) && aPt.y>=mFrame.dy) aPt.y-=mFrame.dy;
     }
     // translate into content coordinates
     inFrameToContentCoord(aPt);
@@ -621,6 +621,9 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
       rpt.y = aPt.x*mRotSin+aPt.y*mRotCos;
       pc = contentColorAt(rpt);
     }
+
+
+    
     if (mInvertAlpha) {
       pc.a = 255-pc.a;
     }
@@ -690,10 +693,10 @@ typedef struct {
 } OrientationDesc;
 static const OrientationDesc orientationDescs[] = {
   { P44View::right, "right" }, //  untransformed X goes left to right, Y goes up
-  // Note: rest of table should be ordered such that multi-bit combinations come first (for wrapModeToText)
-  { P44View::down, "down" }, //  X goes down, Y goes right
+  // Note: rest of table should be ordered such that multi-bit combinations come first (for orientationToText)
+  { P44View::up, "up" }, //  X goes up, Y goes left
   { P44View::left, "left" }, //  X goes left, Y goes down
-  { P44View::up, "up" }, //  X goes down, Y goes right
+  { P44View::down, "down" }, //  X goes down, Y goes right
   { P44View::xy_swap, "xy_swap" }, //  swap x and y
   { P44View::x_flip, "x_flip" }, //  flip x
   { P44View::y_flip, "y_flip" }, //  flip y
@@ -702,7 +705,7 @@ static const OrientationDesc orientationDescs[] = {
 
 
 
-P44View::WrapMode P44View::textToOrientation(const char *aOrientationText)
+P44View::Orientation P44View::textToOrientation(const char *aOrientationText)
 {
   Orientation o = P44View::right;
   while (aOrientationText) {
@@ -723,27 +726,27 @@ P44View::WrapMode P44View::textToOrientation(const char *aOrientationText)
 
 
 typedef struct {
-  P44View::WrapMode mode;
+  P44View::FramingMode mode;
   const char *name;
   bool forPos;
-} WrapModeDesc;
-static const WrapModeDesc wrapModeDescs[] = {
-  { P44View::noWrap, "none", false }, // do not wrap or clip
-  // Note: rest of table should be ordered such that multi-bit combinations come first (for wrapModeToText)
-  { P44View::wrapXY, "wrapXY", false }, //  wrap in all directions
-  { P44View::wrapX, "wrapX", false }, //  wrap in both X directions
-  { P44View::wrapY, "wrapY", false }, //  wrap in both Y directions
-  { P44View::wrapXmin, "wrapXmin", false }, //  wrap in X direction for X<frame area
-  { P44View::wrapXmax, "wrapXmax", false }, //  wrap in X direction for X>=frame area
-  { P44View::wrapYmin, "wrapYmin", false }, //  wrap in Y direction for Y<frame area
-  { P44View::wrapYmax, "wrapYmax", false }, //  wrap in Y direction for Y>=frame area
-  { P44View::clipXY, "clipXY", false }, //  clip content
-  { P44View::clipY, "clipY", false }, //  clip content vertically
+} FramingModeDesc;
+static const FramingModeDesc framingModeDescs[] = {
+  { P44View::noFraming, "none", false }, // do not repeat or clip = content spills over frame
+  // Note: rest of table should be ordered such that multi-bit combinations come first (for framingModeToText)
+  { P44View::repeatXY, "repeatXY", false }, // repeat frame in all directions
+  { P44View::repeatX, "repeatX", false }, // repeat frame in both X directions
+  { P44View::repeatY, "repeatY", false }, // repeat frame in both Y directions
+  { P44View::repeatXmin, "repeatXmin", false }, // repeat frame in X direction for X<frame area
+  { P44View::repeatXmax, "repeatXmax", false }, // repeat frame in X direction for X>=frame area
+  { P44View::repeatYmin, "repeatYmin", false }, // repeat frame in Y direction for Y<frame area
+  { P44View::repeatYmax, "repeatYmax", false }, // repeat frame in Y direction for Y>=frame area
+  { P44View::clipXY, "clipXY", false }, // clip content to frame rectangle
+  { P44View::clipY, "clipY", false }, // clip content vertically
   { P44View::clipX, "clipX", false }, //  clip content horizontally
-  { P44View::clipXmin, "clipXmin", false }, //  clip content left of frame area
-  { P44View::clipXmax, "clipXmax", false }, //  clip content right of frame area
-  { P44View::clipYmin, "clipYmin", false }, //  clip content below frame area
-  { P44View::clipYmax, "clipYmax", false }, //  clip content above frame area
+  { P44View::clipXmin, "clipXmin", false }, // clip content left of frame area
+  { P44View::clipXmax, "clipXmax", false }, // clip content right of frame area
+  { P44View::clipYmin, "clipYmin", false }, // clip content below frame area
+  { P44View::clipYmax, "clipYmax", false }, // clip content above frame area
   { P44View::noAdjust, "noAdjust", true }, //  for positioning: do not adjust content rectangle
   { P44View::fillXY, "fillXY", true }, //  for positioning: set frame size fill parent frame
   { P44View::fillX, "fillX", true }, //  for positioning: set frame size fill parent in X direction
@@ -756,20 +759,20 @@ static const WrapModeDesc wrapModeDescs[] = {
 };
 
 
-P44View::WrapMode P44View::textToWrapMode(const char *aWrapModeText)
+P44View::FramingMode P44View::textToFramingMode(const char *aFramingModeText)
 {
-  WrapMode m = P44View::noWrap;
-  while (aWrapModeText) {
+  FramingMode m = P44View::noFraming;
+  while (aFramingModeText) {
     size_t n = 0;
-    while (aWrapModeText[n] && aWrapModeText[n]!='|') n++;
-    for (const WrapModeDesc *wd = wrapModeDescs; wd->name && n>0; wd++) {
-      if (strucmp(aWrapModeText, wd->name, n)==0) {
+    while (aFramingModeText[n] && aFramingModeText[n]!='|') n++;
+    for (const FramingModeDesc *wd = framingModeDescs; wd->name && n>0; wd++) {
+      if (strucmp(aFramingModeText, wd->name, n)==0) {
         m |= wd->mode;
       }
     }
-    aWrapModeText += n;
-    if (*aWrapModeText==0) break;
-    aWrapModeText++; // skip |
+    aFramingModeText += n;
+    if (*aFramingModeText==0) break;
+    aFramingModeText++; // skip |
   }
   return m;
 }
@@ -873,12 +876,12 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (aViewConfig->get("z_order", o)) {
     setZOrder(o->int32Value());
   }
-  if (aViewConfig->get("wrapmode", o)) {
+  if (aViewConfig->get("framing", o)) { // Formerly: "wrapmode"
     if (o->isType(json_type_string)) {
-      setWrapMode(textToWrapMode(o->c_strValue()));
+      setFramingMode(textToFramingMode(o->c_strValue()));
     }
     else {
-      setWrapMode(o->int32Value());
+      setFramingMode(o->int32Value());
     }
   }
   if (aViewConfig->get("mask", o)) {
@@ -980,17 +983,17 @@ ErrorPtr P44View::configureFromResourceOrObj(JsonObjectPtr aResourceOrObj, const
 #if ENABLE_VIEWSTATUS
 
 
-string P44View::wrapModeToText(P44View::WrapMode aWrapMode, bool aForPositioning)
+string P44View::framingModeToText(P44View::FramingMode aFramingMode, bool aForPositioning)
 {
-  const WrapModeDesc *wd = wrapModeDescs;
+  const FramingModeDesc *wd = framingModeDescs;
   string modes;
-  if (aWrapMode==P44View::noWrap) modes = wd->name;
-  else while ((++wd)->name && aWrapMode) {
+  if (aFramingMode==P44View::noFraming) modes = wd->name;
+  else while ((++wd)->name && aFramingMode) {
     if (aForPositioning!=wd->forPos) continue;
-    if ((aWrapMode & wd->mode) == wd->mode) {
+    if ((aFramingMode & wd->mode) == wd->mode) {
       if (!modes.empty()) modes += "|";
       modes += wd->name;
-      aWrapMode &= ~wd->mode;
+      aFramingMode &= ~wd->mode;
     }
   }
   return modes;
@@ -1072,7 +1075,7 @@ JsonObjectPtr P44View::viewStatus()
   status->add("visible", JsonObject::newBool(getVisible()));
   status->add("z_order", JsonObject::newInt32(getZOrder()));
   status->add("orientation", JsonObject::newString(orientationToText(mContentOrientation)));
-  status->add("wrapmode", JsonObject::newString(wrapModeToText(getWrapMode(), false)));
+  status->add("framing", JsonObject::newString(framingModeToText(getFramingMode(), false)));
   status->add("mask", JsonObject::newBool(getContentIsMask()));
   status->add("invertalpha", JsonObject::newBool(getInvertAlpha()));
   status->add("timingpriority", JsonObject::newBool(getLocalTimingPriority()));
@@ -1621,11 +1624,11 @@ ACC_IMPL_INT(ZOrder)
 ACC_IMPL_BOOL(SizeToContent)
 ACC_IMPL_BOOL(LocalTimingPriority)
 
-static ScriptObjPtr access_WrapMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
+static ScriptObjPtr access_FramingMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
-  if (!aToWrite) return new StringValue(P44View::wrapModeToText(aView.getWrapMode(), false));
-  if (aToWrite->hasType(numeric)) aView.setWrapMode(aToWrite->intValue());
-  else aView.setWrapMode(P44View::textToWrapMode(aToWrite->stringValue().c_str()));
+  if (!aToWrite) return new StringValue(P44View::framingModeToText(aView.getFramingMode(), false));
+  if (aToWrite->hasType(numeric)) aView.setFramingMode(aToWrite->intValue());
+  else aView.setFramingMode(P44View::textToFramingMode(aToWrite->stringValue().c_str()));
   return aToWrite; /* reflect back to indicate writable */
 }
 
@@ -1678,7 +1681,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("alpha", numeric|lvalue, Alpha),
   ACC_DECL("visible", numeric|lvalue, Visible),
   ACC_DECL("z_order", numeric|lvalue, ZOrder),
-  ACC_DECL("wrapmode", text|numeric|lvalue, WrapMode),
+  ACC_DECL("framing", text|numeric|lvalue, FramingMode),
   ACC_DECL("orientation", text|numeric|lvalue, Orientation),
   ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),

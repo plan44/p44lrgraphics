@@ -121,20 +121,20 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
         // limit coordinate increase in wraparound scroll view
         // Note: might need multiple rounds after scrolled view's content size has changed to get back in range
         if (mScrolledView) {
-          WrapMode wm = mScrolledView->getWrapMode();
+          FramingMode wm = mScrolledView->getFramingMode();
           PixelPoint svfsz = mScrolledView->getFrameSize();
-          if (wm&wrapX) {
+          if (wm&repeatX) {
             long fsx_milli = svfsz.x*1000;
-            while ((wm&wrapXmax) && mScrollOffsetX_milli>=fsx_milli && fsx_milli>0)
+            while ((wm&repeatXmax) && mScrollOffsetX_milli>=fsx_milli && fsx_milli>0)
               mScrollOffsetX_milli-=fsx_milli;
-            while ((wm&wrapXmin) && mScrollOffsetX_milli<0 && fsx_milli>0)
+            while ((wm&repeatXmin) && mScrollOffsetX_milli<0 && fsx_milli>0)
               mScrollOffsetX_milli+=fsx_milli;
           }
-          if (wm&wrapY) {
+          if (wm&repeatY) {
             long fsy_milli = svfsz.y*1000;
-            while ((wm&wrapYmax) && mScrollOffsetY_milli>=fsy_milli && fsy_milli>0)
+            while ((wm&repeatYmax) && mScrollOffsetY_milli>=fsy_milli && fsy_milli>0)
               mScrollOffsetY_milli-=fsy_milli;
-            while ((wm&wrapYmin) && mScrollOffsetY_milli<0 && fsy_milli>0)
+            while ((wm&repeatYmin) && mScrollOffsetY_milli<0 && fsy_milli>0)
               mScrollOffsetY_milli+=fsy_milli;
           }
         }
@@ -210,18 +210,18 @@ PixelPoint ViewScroller::remainingPixelsToScroll()
 {
   PixelPoint rem = { INT_MAX, INT_MAX }; // assume forever
   if (mScrolledView) {
-    WrapMode w = mScrolledView->getWrapMode();
+    FramingMode w = mScrolledView->getFramingMode();
     PixelRect sf = mScrolledView->getFrame();
-    if ((w&wrapXmax)==0 && mScrollStepX_milli>0) {
+    if ((w&repeatXmax)==0 && mScrollStepX_milli>0) {
       rem.x = (sf.x+sf.dx) - (int)(mScrollOffsetX_milli/1000+mFrame.dx);
     }
-    if ((w&wrapXmin)==0 && mScrollStepX_milli<0) {
+    if ((w&repeatXmin)==0 && mScrollStepX_milli<0) {
       rem.x = (int)(mScrollOffsetX_milli/1000) - sf.x;
     }
-    if ((w&wrapYmax)==0 && mScrollStepY_milli>0) {
+    if ((w&repeatYmax)==0 && mScrollStepY_milli>0) {
       rem.y = (sf.y+sf.dy) - (int)(mScrollOffsetY_milli/1000+mFrame.dy);
     }
-    if ((w&wrapYmin)==0 && mScrollStepY_milli<0) {
+    if ((w&repeatYmin)==0 && mScrollStepY_milli<0) {
       rem.y = (int)(mScrollOffsetY_milli/1000) - sf.y;
     }
   }

@@ -77,7 +77,7 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
     extentPixels = mExtent.x;
     progress = fabs(xf);
   }
-  if (progress<1 || (progress==1 && xf<0)  || (mContentWrapMode&clipXY)==0) {
+  if (progress<1 || (progress==1 && xf<0)  || (mFramingMode&clipXY)==0) {
     if (numGPixels>0) {
       int i = progress*extentPixels;
       pix = gradientPixel(i);
