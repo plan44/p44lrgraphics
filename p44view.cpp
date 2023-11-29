@@ -697,9 +697,9 @@ static const OrientationDesc orientationDescs[] = {
   { P44View::up, "up" }, //  X goes up, Y goes left
   { P44View::left, "left" }, //  X goes left, Y goes down
   { P44View::down, "down" }, //  X goes down, Y goes right
-  { P44View::xy_swap, "xy_swap" }, //  swap x and y
-  { P44View::x_flip, "x_flip" }, //  flip x
-  { P44View::y_flip, "y_flip" }, //  flip y
+  { P44View::xy_swap, "swapXY" }, //  swap x and y
+  { P44View::x_flip, "flipX" }, //  flip x
+  { P44View::y_flip, "flipY" }, //  flip y
   { 0, NULL }
 };
 

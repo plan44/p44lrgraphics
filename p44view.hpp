@@ -97,11 +97,11 @@ namespace p44 {
 
     // Orientation
     enum {
-      // basic transformation flags
+      // basic coordinate transformation flags
       xy_swap = 0x01,
       x_flip = 0x02,
       y_flip = 0x04,
-      // directions of X axis
+      // directions of the X axis
       right = 0, /// untransformed X goes left to right, Y goes up
       up = xy_swap+x_flip, /// X goes up, Y goes left
       left = x_flip+y_flip, /// X goes left, Y goes down
