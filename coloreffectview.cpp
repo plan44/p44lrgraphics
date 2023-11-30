@@ -268,7 +268,7 @@ GradientMode ColorEffectView::textToGradientMode(const char *aGradientText)
     size_t n = 0;
     while (aGradientText[n] && aGradientText[n]!='|') n++;
     for (const GradientModeDesc *gd = gradientModeDesc; gd->name; gd++) {
-      if (strucmp(aGradientText, gd->name, n)==0) {
+      if (uequals(aGradientText, gd->name, n)) {
         g = (GradientMode)(g | gd->mode);
         break;
       }
@@ -334,25 +334,25 @@ void ColorEffectView::coloringPropertySetter(double &aColoringParam, double aNew
 
 ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double& aCurrentValue)
 {
-  if (aProperty=="hue_gradient") {
+  if (uequals(aProperty, "hue_gradient")) {
     aCurrentValue = mHueGradient;
     return boost::bind(&ColorEffectView::coloringPropertySetter, this, mHueGradient, _1);
   }
-  else if (aProperty=="brightness_gradient") {
+  else if (uequals(aProperty, "brightness_gradient")) {
     aCurrentValue = mHueGradient;
     return boost::bind(&ColorEffectView::coloringPropertySetter, this, mBriGradient, _1);
   }
-  else if (aProperty=="saturation_gradient") {
+  else if (uequals(aProperty, "saturation_gradient")) {
     aCurrentValue = mSatGradient;
     return boost::bind(&ColorEffectView::coloringPropertySetter, this, mSatGradient, _1);
   }
-  else if (aProperty=="extent_x") {
+  else if (uequals(aProperty, "extent_x")) {
     return getCoordPropertySetter(mExtent.x, aCurrentValue);
   }
-  else if (aProperty=="extent_y") {
+  else if (uequals(aProperty, "extent_y")) {
     return getCoordPropertySetter(mExtent.y, aCurrentValue);
   }
-  if (aProperty=="rel_extent") {
+  if (uequals(aProperty, "rel_extent")) {
     aCurrentValue = 0; // dummy
     return boost::bind(&ColorEffectView::setRelativeExtent, this, _1);
   }

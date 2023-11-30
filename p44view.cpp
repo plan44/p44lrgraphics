@@ -712,7 +712,7 @@ P44View::Orientation P44View::textToOrientation(const char *aOrientationText)
     size_t n = 0;
     while (aOrientationText[n] && aOrientationText[n]!='|') n++;
     for (const OrientationDesc *od = orientationDescs; od->name; od++) {
-      if (strucmp(aOrientationText, od->name, n)==0) {
+      if (uequals(aOrientationText, od->name, n)) {
         o |= od->orientation;
       }
     }
@@ -766,7 +766,7 @@ P44View::FramingMode P44View::textToFramingMode(const char *aFramingModeText)
     size_t n = 0;
     while (aFramingModeText[n] && aFramingModeText[n]!='|') n++;
     for (const FramingModeDesc *wd = framingModeDescs; wd->name && n>0; wd++) {
-      if (strucmp(aFramingModeText, wd->name, n)==0) {
+      if (uequals(aFramingModeText, wd->name, n)) {
         m |= wd->mode;
       }
     }
@@ -1172,25 +1172,25 @@ ValueSetterCB P44View::getCoordPropertySetter(PixelCoord &aPixelCoord, double &a
 
 ValueSetterCB P44View::getColorComponentSetter(const string aComponent, PixelColor &aPixelColor, double &aCurrentValue)
 {
-  if (aComponent=="r") {
+  if (uequals(aComponent, "r")) {
     return getSingleColorComponentSetter(aPixelColor.r, aCurrentValue);
   }
-  else if (aComponent=="g") {
+  else if (uequals(aComponent, "g")) {
     return getSingleColorComponentSetter(aPixelColor.g, aCurrentValue);
   }
-  else if (aComponent=="b") {
+  else if (uequals(aComponent, "b")) {
     return getSingleColorComponentSetter(aPixelColor.b, aCurrentValue);
   }
-  else if (aComponent=="a") {
+  else if (uequals(aComponent, "a")) {
     return getSingleColorComponentSetter(aPixelColor.a, aCurrentValue);
   }
-  else if (aComponent=="hue") {
+  else if (uequals(aComponent, "hue")) {
     return getDerivedColorComponentSetter(0, aPixelColor, aCurrentValue);
   }
-  else if (aComponent=="saturation") {
+  else if (uequals(aComponent, "saturation")) {
     return getDerivedColorComponentSetter(1, aPixelColor, aCurrentValue);
   }
-  else if (aComponent=="brightness") {
+  else if (uequals(aComponent, "brightness")) {
     return getDerivedColorComponentSetter(2, aPixelColor, aCurrentValue);
   }
   return NoOP;
@@ -1241,7 +1241,7 @@ void P44View::derivedColorComponentSetter(int aHSBIndex, PixelColor *aPixelColor
 
 ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurrentValue)
 {
-  if (aProperty=="alpha") {
+  if (uequals(aProperty, "alpha")) {
     aCurrentValue = getAlpha();
     return boost::bind(&P44View::setAlpha, this, _1);
   }
@@ -1249,50 +1249,50 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     aCurrentValue = mContentRotation;
     return boost::bind(&P44View::setContentRotation, this, _1);
   }
-  else if (aProperty=="x") {
+  else if (uequals(aProperty, "x")) {
     return getGeometryPropertySetter(mFrame.x, aCurrentValue);
   }
-  else if (aProperty=="y") {
+  else if (uequals(aProperty, "y")) {
     return getGeometryPropertySetter(mFrame.y, aCurrentValue);
   }
-  else if (aProperty=="dx") {
+  else if (uequals(aProperty, "dx")) {
     return getGeometryPropertySetter(mFrame.dx, aCurrentValue);
   }
-  else if (aProperty=="dy") {
+  else if (uequals(aProperty, "dy")) {
     return getGeometryPropertySetter(mFrame.dy, aCurrentValue);
   }
-  else if (aProperty=="content_x") {
+  else if (uequals(aProperty, "content_x")) {
     return getGeometryPropertySetter(mContent.x, aCurrentValue);
   }
-  else if (aProperty=="content_y") {
+  else if (uequals(aProperty, "content_y")) {
     return getGeometryPropertySetter(mContent.y, aCurrentValue);
   }
-  else if (aProperty=="rel_content_x") {
+  else if (uequals(aProperty, "rel_content_x")) {
     aCurrentValue = 0; // dummy
     return boost::bind(&P44View::setRelativeContentOriginX, this, _1, false);
   }
-  else if (aProperty=="rel_content_y") {
+  else if (uequals(aProperty, "rel_content_y")) {
     aCurrentValue = 0; // dummy
     return boost::bind(&P44View::setRelativeContentOriginY, this, _1, false);
   }
-  else if (aProperty=="rel_center_x") {
+  else if (uequals(aProperty, "rel_center_x")) {
     aCurrentValue = 0; // dummy
     return boost::bind(&P44View::setRelativeContentOriginX, this, _1, true);
   }
-  else if (aProperty=="rel_center_y") {
+  else if (uequals(aProperty, "rel_center_y")) {
     aCurrentValue = 0; // dummy
     return boost::bind(&P44View::setRelativeContentOriginY, this, _1, true);
   }
-  else if (aProperty=="content_dx") {
+  else if (uequals(aProperty, "content_dx")) {
     return getGeometryPropertySetter(mContent.dx, aCurrentValue);
   }
-  else if (aProperty=="content_dy") {
+  else if (uequals(aProperty, "content_dy")) {
     return getGeometryPropertySetter(mContent.dy, aCurrentValue);
   }
-  else if (aProperty.substr(0,6)=="color.") {
+  else if (uequals(aProperty, "color.", 6)) {
     return getColorComponentSetter(aProperty.substr(6), mForegroundColor, aCurrentValue);
   }
-  else if (aProperty.substr(0,8)=="bgcolor.") {
+  else if (uequals(aProperty, "bgcolor.", 8)) {
     return getColorComponentSetter(aProperty.substr(8), mBackgroundColor, aCurrentValue);
   }
   // unknown

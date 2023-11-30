@@ -329,7 +329,7 @@ void TextView::setFont(const char* aFontName)
 {
   const font_t** fPP = fonts;
   while (*fPP && aFontName) {
-    if (strucmp(aFontName, (*fPP)->fontName)==0) {
+    if (uequals(aFontName, (*fPP)->fontName)) {
       // found, set it
       mFont = *fPP;
       // re-render text
