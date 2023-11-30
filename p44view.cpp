@@ -44,8 +44,13 @@ P44View::P44View() :
   mChangeTrackingLevel(0),
   mChangedGeometry(false),
   mChangedColoring(false),
+  mChangedTransform(false),
   mSizeToContent(false),
   mContentRotation(0),
+  mScrollX(0.0),
+  mScrollY(0.0),
+  mShrinkX(1.0),
+  mShrinkY(1.0),
   mRotCos(1.0),
   mRotSin(0.0)
 {
@@ -182,6 +187,23 @@ void P44View::finalizeChanges()
     makeColorDirty();
     mChangedColoring = false;
   }
+  if (mChangedTransform) {
+    FOCUSLOG("View '%s' changed transformation params", getLabel().c_str());
+    if (mContentRotation!=0) {
+      // Calculate rotation multipliers
+      double rotPi = mContentRotation*M_PI/180;
+      mRotSin = sin(rotPi);
+      mRotCos = cos(rotPi);
+      // when we rotate, we need fractional sampling anyway
+      mNeedsFractionalSampling = true;
+    }
+    else {
+      // no rotation, but non-integer scrolling or scaling might need fractional sampling
+      mNeedsFractionalSampling = trunc(mScrollX)!=mScrollX || trunc(mScrollY)!=mScrollY || mShrinkX!=1 || mShrinkY!=1;
+    }
+    mChangedTransform = false;
+    makeDirty();
+  }
 }
 
 
@@ -205,10 +227,16 @@ void P44View::flipCoordInFrame(PixelPoint &aCoord)
 }
 
 
-void P44View::inFrameToContentCoord(PixelPoint &aCoord)
+void P44View::inFrameToOrientedCoord(PixelPoint &aCoord)
 {
   flipCoordInFrame(aCoord);
   orientateCoord(aCoord);
+}
+
+
+void P44View::inFrameToContentCoord(PixelPoint &aCoord)
+{
+  inFrameToOrientedCoord(aCoord);
   aCoord.x -= mContent.x;
   aCoord.y -= mContent.y;
 }
@@ -218,9 +246,16 @@ void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 {
   aCoord.x += mContent.x;
   aCoord.y += mContent.y;
+  orientedToInFrameCoord(aCoord);
+}
+
+
+void P44View::orientedToInFrameCoord(PixelPoint &aCoord)
+{
   orientateCoord(aCoord);
   flipCoordInFrame(aCoord);
 }
+
 
 
 /// change rect and trigger geometry change when actually changed
@@ -318,18 +353,6 @@ void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
   announceChanges(true);
   changeGeometryRect(mContent, { mContent.x, (int)(aRelY*max(mContent.dy,mFrame.dy)+(aCentered ? mFrame.dy/2 : 0)), mContent.dx, mContent.dy });
   announceChanges(false);
-}
-
-
-void P44View::setContentRotation(double aRotation)
-{
-  if (aRotation!=mContentRotation) {
-    mContentRotation = aRotation;
-    double rotPi = mContentRotation*M_PI/180;
-    mRotSin = sin(rotPi);
-    mRotCos = cos(rotPi);
-    makeDirty();
-  }
 }
 
 
@@ -584,7 +607,7 @@ PixelColor P44View::colorAt(PixelPoint aPt)
 
 PixelColor P44View::colorInFrameAt(PixelPoint aPt)
 {
-  if (mAlpha==0) return transparent; // optimisation
+  if (mAlpha==0 || mShrinkX==0 || mShrinkY==0) return transparent; // optimisation
   PixelColor pc = mBackgroundColor;
   // optionally clip content to frame
   if (mFramingMode&clipXY && (
@@ -593,12 +616,13 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
     ((mFramingMode&clipYmin) && aPt.y<0) ||
     ((mFramingMode&clipYmax) && aPt.y>=mFrame.dy)
   )) {
-    // clip
+    // aPt is clipped out
     pc.a = 0; // invisible
   }
   else {
-    // not clipped
-    // optionally repeat content (repeat frame contents in selected directions)
+    // aPt is not clipped out, we need to consult content to get the color
+    // - optionally repeat frame's contents in selected directions outside the frame
+    //   (i.e. wrap outside input coordinates back into x..x+dx and y..y+dy)
     if (mFrame.dx>0) {
       while ((mFramingMode&repeatXmin) && aPt.x<0) aPt.x+=mFrame.dx;
       while ((mFramingMode&repeatXmax) && aPt.x>=mFrame.dx) aPt.x-=mFrame.dx;
@@ -607,23 +631,74 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
       while ((mFramingMode&repeatYmin) && aPt.y<0) aPt.y+=mFrame.dy;
       while ((mFramingMode&repeatYmax) && aPt.y>=mFrame.dy) aPt.y-=mFrame.dy;
     }
-    // translate into content coordinates
+    // re-orient in frame and make relative to content origin
     inFrameToContentCoord(aPt);
-    // now get content pixel in content coordinates
-    if (mContentRotation==0) {
-      // optimization: no rotation, get pixel
+    // Until here, we are still in the pixel grid of the frame
+    if (!mNeedsFractionalSampling) {
+      // just apply integer scroll
+      aPt.x += mScrollX;
+      aPt.y += mScrollY;
+      // get the pixel
       pc = contentColorAt(aPt);
     }
     else {
-      // - rotate first
-      PixelPoint rpt;
-      rpt.x = aPt.x*mRotCos-aPt.y*mRotSin;
-      rpt.y = aPt.x*mRotSin+aPt.y*mRotCos;
-      pc = contentColorAt(rpt);
+      #if SCROLLFIRST
+      // apply scroll: content origin relative coordinates but still in grid of frame
+      double samplingX = (double)aPt.x + mScrollX;
+      double samplingY = (double)aPt.y + mScrollY;
+      // apply shrink: expand pixel distance around origin
+      samplingX *= mShrinkX;
+      samplingY *= mShrinkY;
+      // apply rotation
+      samplingX = samplingX*mRotCos-samplingY*mRotSin;
+      samplingY = samplingX*mRotSin+samplingY*mRotCos;
+      #else
+      // apply rotation first, then scroll so we can scroll and shrink in any direction
+      double rX = (double)aPt.x;
+      double rY = (double)aPt.y;
+      double samplingX = rX*mRotCos-rY*mRotSin;
+      double samplingY = rX*mRotSin+rY*mRotCos;
+      // apply shrink and scroll
+      samplingX = samplingX*mShrinkX + mScrollX;
+      samplingY = samplingY*mShrinkY + mScrollY;
+      #endif
+      // Note: subsampling is not centered, but always right/up from the sample point
+      // samplingX/Y is now where we must sample from content
+      // mShrinkX/Y is the size of the area we need to sample from
+      // - the integer coordinates to start sampling
+      PixelPoint firstPt;
+      firstPt.x = floor(samplingX);
+      firstPt.y = floor(samplingY);
+      // - the integer coordinates to end sampling
+      PixelPoint lastPt;
+      lastPt.x = ceil(samplingX+mShrinkX)-1;
+      lastPt.y = ceil(samplingY+mShrinkY)-1;
+      // - the possibly fractional weight at the start
+      double firstPixelWeightX = (double)firstPt.x+1-samplingX;
+      double firstPixelWeightY = (double)firstPt.y+1-samplingY;
+      // - the possibly fractional weight at the end
+      double lastPixelWeightX = samplingX+mShrinkX - lastPt.x;
+      double lastPixelWeightY = samplingY+mShrinkY - lastPt.y;
+      // averaging loop
+      // - accumulators
+      double r, g, b, a, tw;
+      prepareAverage(r, g, b, a, tw);
+      double weightY = firstPixelWeightY;
+      PixelPoint samplingPt; // sampling point coordinate in content
+      for (samplingPt.y = firstPt.y; samplingPt.y<=lastPt.y; samplingPt.y++) {
+        double weightX = firstPixelWeightX;
+        for (samplingPt.x = firstPt.x; samplingPt.x<=lastPt.x; samplingPt.x++) {
+          // the color to sample
+          pc = contentColorAt(samplingPt);
+          averagePixelPower(r, g, b, a, tw, pc, weightY*weightX);
+          // adjust the weight
+          weightX = samplingPt.x+1==lastPt.x ? lastPixelWeightX : 1; // possibly fractional weight on last pixel
+        }
+        weightY = samplingPt.y+1==lastPt.y ? lastPixelWeightY : 1; // possibly fractional weight on last pixel
+      }
+      pc = averagedPixelResult(r, g, b, a, tw);
     }
-
-
-    
+    // now aPt is the content relative coordinate for which we would like to have the color
     if (mInvertAlpha) {
       pc.a = 255-pc.a;
     }
@@ -1025,7 +1100,6 @@ string P44View::getLabel() const
 
 string P44View::getId() const
 {
-  if (!mLabel.empty()) return mLabel;
   return string_format("V_%08X", (uint32_t)(intptr_t)this);
 }
 
@@ -1092,6 +1166,8 @@ JsonObjectPtr P44View::viewStatus()
 
 #if ENABLE_ANIMATION
 
+// MARK: ===== Animation
+
 void P44View::configureAnimation(JsonObjectPtr aAnimationCfg)
 {
   JsonObjectPtr o;
@@ -1151,6 +1227,24 @@ ValueSetterCB P44View::getGeometryPropertySetter(PixelCoord &aPixelCoord, double
 {
   aCurrentValue = aPixelCoord;
   return boost::bind(&P44View::geometryPropertySetter, this, &aPixelCoord, _1);
+}
+
+
+void P44View::transformPropertySetter(double* aTransformValueP, double aNewValue)
+{
+  double newValue = aNewValue;
+  if (newValue!=*aTransformValueP) {
+    announceChanges(true);
+    *aTransformValueP = newValue;
+    flagTransformChange();
+    announceChanges(false);
+  }
+}
+
+ValueSetterCB P44View::getTransformPropertySetter(double& aTransformValue, double &aCurrentValue)
+{
+  aCurrentValue = aTransformValue;
+  return boost::bind(&P44View::transformPropertySetter, this, &aTransformValue, _1);
 }
 
 
@@ -1245,10 +1339,6 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     aCurrentValue = getAlpha();
     return boost::bind(&P44View::setAlpha, this, _1);
   }
-  else if (aProperty=="rotation") {
-    aCurrentValue = mContentRotation;
-    return boost::bind(&P44View::setContentRotation, this, _1);
-  }
   else if (uequals(aProperty, "x")) {
     return getGeometryPropertySetter(mFrame.x, aCurrentValue);
   }
@@ -1282,6 +1372,21 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
   else if (uequals(aProperty, "rel_center_y")) {
     aCurrentValue = 0; // dummy
     return boost::bind(&P44View::setRelativeContentOriginY, this, _1, true);
+  }
+  else if (uequals(aProperty, "scroll_x")) {
+    return getTransformPropertySetter(mScrollX, aCurrentValue);
+  }
+  else if (uequals(aProperty, "scroll_y")) {
+    return getTransformPropertySetter(mScrollY, aCurrentValue);
+  }
+  else if (uequals(aProperty, "zoom_x")) {
+    return getTransformPropertySetter(mShrinkX, aCurrentValue);
+  }
+  else if (uequals(aProperty, "zoom_y")) {
+    return getTransformPropertySetter(mShrinkY, aCurrentValue);
+  }
+  else if (uequals(aProperty, "rotation")) {
+    return getTransformPropertySetter(mContentRotation, aCurrentValue);
   }
   else if (uequals(aProperty, "content_dx")) {
     return getGeometryPropertySetter(mContent.dx, aCurrentValue);
@@ -1615,7 +1720,6 @@ ACC_IMPL_INT(ContentX)
 ACC_IMPL_INT(ContentY)
 ACC_IMPL_INT(ContentDx)
 ACC_IMPL_INT(ContentDy)
-ACC_IMPL_DBL(ContentRotation)
 ACC_IMPL_STR(Color)
 ACC_IMPL_STR(Bgcolor)
 ACC_IMPL_INT(Alpha)
@@ -1623,6 +1727,11 @@ ACC_IMPL_BOOL(Visible)
 ACC_IMPL_INT(ZOrder)
 ACC_IMPL_BOOL(SizeToContent)
 ACC_IMPL_BOOL(LocalTimingPriority)
+ACC_IMPL_DBL(ContentRotation)
+ACC_IMPL_DBL(ScrollX)
+ACC_IMPL_DBL(ScrollY)
+ACC_IMPL_DBL(ZoomX)
+ACC_IMPL_DBL(ZoomY)
 
 static ScriptObjPtr access_FramingMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
@@ -1685,6 +1794,10 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("orientation", text|numeric|lvalue, Orientation),
   ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
+  ACC_DECL("scroll_x", numeric|lvalue, ScrollX),
+  ACC_DECL("scroll_y", numeric|lvalue, ScrollY),
+  ACC_DECL("zoom_x", numeric|lvalue, ZoomX),
+  ACC_DECL("zoom_y", numeric|lvalue, ZoomY),
   { NULL } // terminator
 };
 

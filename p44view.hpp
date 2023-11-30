@@ -83,6 +83,7 @@ namespace p44 {
     int mChangeTrackingLevel;
     bool mChangedGeometry;
     bool mChangedColoring;
+    bool mChangedTransform;
 
     PixelRect mPreviousFrame;
     PixelRect mPreviousContent;
@@ -150,8 +151,11 @@ namespace p44 {
     /// flag a coloring change
     void flagColorChange() { flagChange(mChangedColoring); }
 
-    /// flag a coloring change
+    /// flag a geometry change
     void flagGeometryChange() { flagChange(mChangedGeometry); }
+
+    /// flag a transform change
+    void flagTransformChange() { flagChange(mChangedTransform); }
 
 
   protected:
@@ -187,8 +191,16 @@ namespace p44 {
     bool mInvertAlpha; ///< invert alpha provided by content
     bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
     MLMicroSeconds mMaskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
+
+    // content transformation (fractional results)
     double mContentRotation; ///< rotation of content pixels in degree CCW
+    double mScrollX; ///< offset/scroll in X direction in frame scale. Positive means we want to move content with higher X into our frame (content moves left)
+    double mScrollY; ///< offset/scroll in Y direction in frame scale. Positive means we want to move content with higher Y into our frame (content moves down)
+    double mShrinkX; ///< shrinking (1/zoom) in X direction - larger number means content appears smaller (sampling points further apart)
+    double mShrinkY; ///< shrinking (1/zoom) in Y direction - larger number means content appears smaller (sampling points further apart)
+
     // - derived values
+    bool mNeedsFractionalSampling;
     double mRotSin;
     double mRotCos;
 
@@ -206,12 +218,21 @@ namespace p44 {
     /// content rectangle in frame coordinates
     void contentRectAsViewCoord(PixelRect &aRect);
 
+    /// transform from frame coordinates to re-oriented coordinates
+    /// @note origin can change the corner of the frame, and X/Y axis might swap, but area is still the same
+    void inFrameToOrientedCoord(PixelPoint &aCoord);
+
+    /// transform from re-oriented coordinates back to original frame coordinates
+    /// @note origin can change the corner of the frame, and X/Y axis might swap, but area is still the same
+    void orientedToInFrameCoord(PixelPoint &aCoord);
+
+
     /// transform frame to content coordinates
-    /// @note transforming from frame to content coords is: flipCoordInFrame() -> rotateCoord() -> subtract content.x/y
+    /// @note transforming from frame to content coords is: flipCoordInFrame() -> orientateCoord() -> subtract content.x/y
     void inFrameToContentCoord(PixelPoint &aCoord);
 
     /// transform content to frame coordinates
-    /// @note transforming from content to frame coords is: add content.x/y -> rotateCoord() -> flipCoordInFrame()
+    /// @note transforming from content to frame coords is: add content.x/y -> orientateCoord() -> flipCoordInFrame()
     void contentToInFrameCoord(PixelPoint &aCoord);
 
 
@@ -287,6 +308,17 @@ namespace p44 {
     void setContentDx(PixelCoord aVal) { mContent.dx = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getContentDy() { return mContent.dy; };
     void setContentDy(PixelCoord aVal) { mContent.dy = aVal; makeDirty(); flagGeometryChange(); };
+    // transformation
+    double getScrollX() { return mScrollX; };
+    void setScrollX(double aVal) { mScrollX = aVal; makeDirty(); flagTransformChange(); };
+    double getScrollY() { return mScrollY; };
+    void setScrollY(double aVal) { mScrollY = aVal; makeDirty(); flagTransformChange(); };
+    double getZoomX() { return mShrinkX<=0 ? 0 : 1/mShrinkX; };
+    void setZoomX(double aVal) { mShrinkX = aVal<=0 ? 0 : 1.0/aVal; makeDirty(); flagTransformChange(); };
+    double getZoomY() { return mShrinkY<=0 ? 0 : 1/mShrinkX; };
+    void setZoomY(double aVal) { mShrinkY = aVal<=0 ? 0 : 1.0/aVal; makeDirty(); flagTransformChange(); };
+    double getContentRotation() { return mContentRotation; }
+    void setContentRotation(double aVal) { mContentRotation = aVal; makeDirty(); flagTransformChange(); };
     // colors as text
     string getBgcolor() { return pixelToWebColor(getBackgroundColor(), true); };
     void setBgcolor(string aVal) { setBackgroundColor(webColorToPixel(aVal)); };
@@ -397,13 +429,6 @@ namespace p44 {
 
     /// @return the orientation of the content in the frame
     Orientation getOrientation() { return mContentOrientation; }
-
-    /// set content rotation around content origin
-    /// @param aRotation content rotation in degrees CCW
-    void setContentRotation(double aRotation);
-
-    /// @return content rotation around content origin
-    double getContentRotation() { return mContentRotation; }
 
     /// set content size and offset (relative to frame origin, but in content coordinates, i.e. possibly orientation translated!)
     void setContent(PixelRect aContent);
@@ -598,22 +623,25 @@ namespace p44 {
 
   protected:
 
-    ValueSetterCB getGeometryPropertySetter(PixelCoord &aPixelCoord, double &aCurrentValue);
-    ValueSetterCB getCoordPropertySetter(PixelCoord &aPixelCoord, double &aCurrentValue);
-    ValueSetterCB getColorComponentSetter(const string aComponent, PixelColor &aPixelColor, double &aCurrentValue);
+    ValueSetterCB getGeometryPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
+    ValueSetterCB getTransformPropertySetter(double& aTransformValue, double& aCurrentValue);
+    ValueSetterCB getCoordPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
+    ValueSetterCB getColorComponentSetter(const string aComponent, PixelColor& aPixelColor, double& aCurrentValue);
 
   private:
 
     /// generic setter for geometry related values (handles automatic frame resizing etc.)
-    void geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue);
+    void geometryPropertySetter(PixelCoord* aPixelCoordP, double aNewValue);
     /// generic setter for other coordinates that just flag the view dirty
-    void coordPropertySetter(PixelCoord *aPixelCoordP, double aNewValue);
+    void coordPropertySetter(PixelCoord* aPixelCoordP, double aNewValue);
     /// generic setter for single R,G,B or A component that just flag the view dirty
-    ValueSetterCB getSingleColorComponentSetter(PixelColorComponent &aColorComponent, double &aCurrentValue);
-    void singleColorComponentSetter(PixelColorComponent *aColorComponentP, double aNewValue);
+    ValueSetterCB getSingleColorComponentSetter(PixelColorComponent& aColorComponent, double& aCurrentValue);
+    void singleColorComponentSetter(PixelColorComponent* aColorComponentP, double aNewValue);
     /// setter for hue, saturation, brightness that affect all 3 R,G,B channels at once
-    ValueSetterCB getDerivedColorComponentSetter(int aHSBIndex, PixelColor &aPixelColor, double &aCurrentValue);
-    void derivedColorComponentSetter(int aHSBIndex, PixelColor *aPixelColorP, double aNewValue);
+    ValueSetterCB getDerivedColorComponentSetter(int aHSBIndex, PixelColor& aPixelColor, double& aCurrentValue);
+    void derivedColorComponentSetter(int aHSBIndex, PixelColor* aPixelColorP, double aNewValue);
+    /// setter for transform properties
+    void transformPropertySetter(double* aTransformValueP, double aNewValue);
 
     void configureAnimation(JsonObjectPtr aAnimationCfg);
 

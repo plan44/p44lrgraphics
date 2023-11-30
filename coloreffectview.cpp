@@ -308,7 +308,7 @@ JsonObjectPtr ColorEffectView::viewStatus()
   status->add("hue_gradient", JsonObject::newDouble(getHueGradient()));
   status->add("saturation_gradient", JsonObject::newDouble(getSatGradient()));
   status->add("brightness_mode", JsonObject::newString(gradientModeToText(mBriMode)));
-  status->add("hu_mode", JsonObject::newString(gradientModeToText(mHueMode)));
+  status->add("hue_mode", JsonObject::newString(gradientModeToText(mHueMode)));
   status->add("saturation_mode", JsonObject::newString(gradientModeToText(mSatMode)));
   status->add("radial", JsonObject::newBool(getRadial()));
   status->add("extent_x", JsonObject::newDouble(getExtentX()));

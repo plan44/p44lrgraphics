@@ -352,11 +352,6 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
     #if !ENABLE_P44SCRIPT
     // Legacy implementation when we have no properties
     // view
-    if (aViewConfig->get("scrolledview", o)) {
-      err = p44::createViewFromConfig(o, mScrolledView, this);
-      makeDirty();
-    }
-    // offsets
     if (aViewConfig->get("offsetx", o)) {
       setOffsetX(o->doubleValue());
     }
@@ -370,6 +365,11 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       mAutoPurge = o->boolValue();
     }
     #endif // !ENABLE_P44SCRIPT
+    // directly factory-configuring a scrolledview
+    if (aViewConfig->get("scrolledview", o)) {
+      err = p44::createViewFromConfig(o, mScrolledView, this);
+      makeDirty();
+    }
     // pseudo "properties" for starting scroll
     double stepX = 0;
     double stepY = 0;
