@@ -265,11 +265,10 @@ P44ViewPtr ViewSequencer::findView(const string aLabel)
   return inherited::findView(aLabel);
 }
 
-
 #endif // ENABLE_VIEWCONFIG
 
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 JsonObjectPtr ViewSequencer::viewStatus()
 {
@@ -288,3 +287,116 @@ JsonObjectPtr ViewSequencer::viewStatus()
 }
 
 #endif // ENABLE_VIEWSTATUS
+
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr ViewSequencer::newViewObj()
+{
+  // base class with standard functionality
+  return new ViewSequencerObj(this);
+}
+
+
+ScriptObjPtr ViewSequencer::stepsList()
+{
+  ArrayValuePtr steps = new ArrayValue();
+  for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
+    ObjectValuePtr step = new ObjectValue();
+    step->setMemberByName("view", pos->mView->newViewObj());
+    step->setMemberByName("showtime", new NumericValue(pos->mShowTime/Second));
+    step->setMemberByName("fadeintime", new NumericValue(pos->mFadeInTime/Second));
+    step->setMemberByName("fadeouttime", new NumericValue(pos->mFadeOutTime/Second));
+    steps->appendMember(step);
+  }
+  return steps;
+}
+
+
+#if P44SCRIPT_FULL_SUPPORT
+
+// pushstep(view, showtime [, fadeintime [, fadeouttime]])
+static const BuiltInArgDesc pushstep_args[] = { { structured }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg } };
+static const size_t pushstep_numargs = sizeof(pushstep_args)/sizeof(BuiltInArgDesc);
+static void pushstep_func(BuiltinFunctionContextPtr f)
+{
+  ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
+  assert(v);
+  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(f->arg(0).get());
+  if (!subview) {
+    f->finish(new ErrorValue(ScriptError::Invalid, "first argument must be a view"));
+    return;
+  }
+  MLMicroSeconds showtime = f->arg(1)->doubleValue()*Second;
+  MLMicroSeconds fadein = f->arg(2)->doubleValue()*Second;
+  MLMicroSeconds fadeout = f->arg(3)->doubleValue()*Second;
+  v->sequencer()->pushStep(subview->view(), showtime, fadein, fadeout);
+  f->finish();
+}
+
+
+// start(repeat)
+static const BuiltInArgDesc start_args[] = { { numeric|optionalarg } };
+static const size_t start_numargs = sizeof(start_args)/sizeof(BuiltInArgDesc);
+static void start_func(BuiltinFunctionContextPtr f)
+{
+  ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
+  assert(v);
+  bool repeat = f->arg(0)->boolValue();
+  v->sequencer()->startAnimation(repeat);
+  // TODO: maybe make awaitable
+  f->finish();
+}
+
+
+#endif // P44SCRIPT_FULL_SUPPORT
+
+#define ACCESSOR_CLASS ViewSequencer
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  ViewSequencerPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ViewSequencerObj*>(aParentObj.get())->sequencer().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+
+static ScriptObjPtr access_Steps(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
+{
+  ScriptObjPtr ret;
+  if (!aToWrite) { // not writable
+    ret = aView.stepsList();
+  }
+  return ret;
+}
+
+
+static const BuiltinMemberDescriptor viewSequencerMembers[] = {
+  #if P44SCRIPT_FULL_SUPPORT
+  { "pushstep", executable|null|error, pushstep_numargs, pushstep_args, &pushstep_func },
+  { "start", executable|null|error, start_numargs, start_args, &start_func },
+  #endif
+  // property accessors
+  ACC_DECL("steps", objectvalue, Steps),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedViewSequencerMemberLookupP = NULL;
+
+ViewSequencerObj::ViewSequencerObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedViewSequencerMemberLookupP==NULL) {
+    sharedViewSequencerMemberLookupP = new BuiltInMemberLookup(viewSequencerMembers);
+    sharedViewSequencerMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedViewSequencerMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT

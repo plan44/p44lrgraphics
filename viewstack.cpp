@@ -596,7 +596,7 @@ static const BuiltinMemberDescriptor viewStackMembers[] = {
   #endif
   // property accessors
   ACC_DECL("positioningmode", numeric|lvalue, PositioningMode),
-  ACC_DECL("layers", objectvalue|lvalue, Layers),
+  ACC_DECL("layers", objectvalue, Layers),
   { NULL } // terminator
 };
 

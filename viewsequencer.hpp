@@ -111,10 +111,21 @@ namespace p44 {
 
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
+
+    #if ENABLE_P44SCRIPT
+
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+
+    /// @return ScriptObj representing all sequence steps
+    P44Script::ScriptObjPtr stepsList();
+
+    #endif
+
 
   protected:
 
@@ -130,6 +141,23 @@ namespace p44 {
 
   };
   typedef boost::intrusive_ptr<ViewSequencer> ViewSequencerPtr;
+
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a ColorEffectView
+    class ViewSequencerObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      ViewSequencerObj(P44ViewPtr aView);
+      ViewSequencerPtr sequencer() { return boost::static_pointer_cast<ViewSequencer>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 
