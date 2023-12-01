@@ -45,15 +45,10 @@ P44View::P44View() :
   mChangedGeometry(false),
   mChangedColoring(false),
   mChangedTransform(false),
-  mSizeToContent(false),
-  mContentRotation(0),
-  mScrollX(0.0),
-  mScrollY(0.0),
-  mShrinkX(1.0),
-  mShrinkY(1.0),
-  mRotCos(1.0),
-  mRotSin(0.0)
+  mSizeToContent(false)
 {
+  resetTransforms();
+  mDirty = false; // reset again, because resetTransforms() sets it
   setFrame(zeroRect);
   // default to normal orientation
   mContentOrientation = right;
@@ -81,6 +76,7 @@ P44View::~P44View()
 
 
 // MARK: ===== frame and content
+
 
 bool P44View::isInContentSize(PixelPoint aPt)
 {
@@ -117,7 +113,7 @@ void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 
 void P44View::announceChanges(bool aStart)
 {
-  if (aStart){
+  if (aStart) {
     if (mChangeTrackingLevel<=0) {
       beginChanges();
     }
@@ -158,6 +154,7 @@ void P44View::beginChanges()
   // start tracking changes
   mChangedGeometry = false;
   mChangedColoring = false;
+  mChangedTransform = false;
   mPreviousFrame = mFrame;
   mPreviousContent = mContent;
 }
@@ -176,7 +173,7 @@ void P44View::finalizeChanges()
     makeDirty();
     geometryChanged(mPreviousFrame, mPreviousContent); // let subclasses know
     if (mParentView) {
-      // Note: as we are passing in the frames, it is safe when the following calls recursively calls geometryChange again
+      // Note: as we are passing in the frames, it is safe when the following calls recursively calls geometryChanged again
       //   except that it must not do so unconditionally to prevent endless recursion
       mParentView->childGeometryChanged(this, mPreviousFrame, mPreviousContent);
     }
@@ -188,22 +185,28 @@ void P44View::finalizeChanges()
     mChangedColoring = false;
   }
   if (mChangedTransform) {
-    FOCUSLOG("View '%s' changed transformation params", getLabel().c_str());
     if (mContentRotation!=0) {
       // Calculate rotation multipliers
       double rotPi = mContentRotation*M_PI/180;
       mRotSin = sin(rotPi);
       mRotCos = cos(rotPi);
-      // when we rotate, we need fractional sampling anyway
-      mNeedsFractionalSampling = true;
     }
     else {
-      // no rotation, but non-integer scrolling or scaling might need fractional sampling
-      mNeedsFractionalSampling = trunc(mScrollX)!=mScrollX || trunc(mScrollY)!=mScrollY || mShrinkX!=1 || mShrinkY!=1;
+      // no rotation
+      mRotCos = 1.0;
+      mRotSin = 0.0;
     }
+    recalculateScrollDependencies();
     mChangedTransform = false;
     makeDirty();
   }
+}
+
+
+void P44View::recalculateScrollDependencies()
+{
+  // but non-integer scrolling or scaling might need fractional sampling
+  mNeedsFractionalSampling = mContentRotation!=0 || trunc(mScrollX)!=mScrollX || trunc(mScrollY)!=mScrollY || mShrinkX!=1 || mShrinkY!=1;
 }
 
 
@@ -227,16 +230,10 @@ void P44View::flipCoordInFrame(PixelPoint &aCoord)
 }
 
 
-void P44View::inFrameToOrientedCoord(PixelPoint &aCoord)
+void P44View::inFrameToContentCoord(PixelPoint &aCoord)
 {
   flipCoordInFrame(aCoord);
   orientateCoord(aCoord);
-}
-
-
-void P44View::inFrameToContentCoord(PixelPoint &aCoord)
-{
-  inFrameToOrientedCoord(aCoord);
   aCoord.x -= mContent.x;
   aCoord.y -= mContent.y;
 }
@@ -246,16 +243,9 @@ void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 {
   aCoord.x += mContent.x;
   aCoord.y += mContent.y;
-  orientedToInFrameCoord(aCoord);
-}
-
-
-void P44View::orientedToInFrameCoord(PixelPoint &aCoord)
-{
   orientateCoord(aCoord);
   flipCoordInFrame(aCoord);
 }
-
 
 
 /// change rect and trigger geometry change when actually changed
@@ -425,6 +415,19 @@ void P44View::clear()
   // Note: subclasses will not always call inherited::clear() as they might want to retain the content rectangle,
   //       and just remove the actual content data
   setContentSize({0, 0});
+}
+
+
+void P44View::resetTransforms()
+{
+  announceChanges(true);
+  mContentRotation = 0;
+  mScrollX = 0;
+  mScrollY = 0;
+  mShrinkX = 1;
+  mShrinkY = 1;
+  mChangedTransform = true;
+  announceChanges(false);
 }
 
 
@@ -658,7 +661,7 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
       double rY = (double)aPt.y;
       double samplingX = rX*mRotCos-rY*mRotSin;
       double samplingY = rX*mRotSin+rY*mRotCos;
-      // apply shrink and scroll
+      // apply shrink and scroll (Important: scroll is in content coordinates, after 
       samplingX = samplingX*mShrinkX + mScrollX;
       samplingY = samplingY*mShrinkY + mScrollY;
       #endif
@@ -920,7 +923,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 {
   JsonObjectPtr o;
-  geometryChange(true);
+  announceChanges(true);
   if (aViewConfig->get("label", o)) {
     setLabel(o->stringValue());
   }
@@ -1005,6 +1008,18 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (aViewConfig->get("rotation", o)) {
     setContentRotation(o->doubleValue());
   }
+  if (aViewConfig->get("scroll_x", o)) {
+    setScrollX(o->doubleValue());
+  }
+  if (aViewConfig->get("scroll_y", o)) {
+    setScrollY(o->doubleValue());
+  }
+  if (aViewConfig->get("zoom_x", o)) {
+    setZoomX(o->doubleValue());
+  }
+  if (aViewConfig->get("zoom_y", o)) {
+    setZoomY(o->doubleValue());
+  }
   if (aViewConfig->get("timingpriority", o)) {
     setLocalTimingPriority(o->boolValue());
   }
@@ -1022,7 +1037,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     configureAnimation(o);
   }
   #endif
-  geometryChange(false);
+  announceChanges(false);
   return ErrorPtr();
 }
 
@@ -1143,6 +1158,10 @@ JsonObjectPtr P44View::viewStatus()
   status->add("content_dx", JsonObject::newInt32(getContentDx()));
   status->add("content_dy", JsonObject::newInt32(getContentDy()));
   status->add("rotation", JsonObject::newDouble(getContentRotation()));
+  status->add("scroll_x", JsonObject::newDouble(getScrollX()));
+  status->add("scroll_y", JsonObject::newDouble(getScrollY()));
+  status->add("zoom_x", JsonObject::newDouble(getZoomX()));
+  status->add("zoom_y", JsonObject::newDouble(getZoomY()));
   status->add("color", JsonObject::newString(getColor()));
   status->add("bgcolor", JsonObject::newString(getBgcolor()));
   status->add("alpha", JsonObject::newInt32(getAlpha()));
@@ -1649,9 +1668,20 @@ static void clear_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->clear(); // to make sure changes are applied
+  v->view()->clear();
   f->finish(v); // return view itself to allow chaining
 }
+
+
+// rest()     reset view transformations
+static void reset_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  v->view()->resetTransforms();
+  f->finish(v); // return view itself to allow chaining
+}
+
 
 
 // fullframe()     make content fill frame
@@ -1760,6 +1790,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   { "remove", executable|numeric, 0, NULL, &remove_func },
   { "parent", executable|objectvalue, 0, NULL, &parent_func },
   { "clear", executable|objectvalue, 0, NULL, &clear_func },
+  { "reset", executable|objectvalue, 0, NULL, &reset_func },
   { "fullframe", executable|objectvalue, 0, NULL, &fullframe_func },
   { "content_position", executable|objectvalue, content_position_numargs, content_position_args, &content_position_func },
   { "get", executable|text, get_numargs, get_args, &get_func },
@@ -1785,6 +1816,10 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("content_dx", numeric|lvalue, ContentDx),
   ACC_DECL("content_dy", numeric|lvalue, ContentDy),
   ACC_DECL("rotation", numeric|lvalue, ContentRotation),
+  ACC_DECL("scroll_x", numeric|lvalue, ScrollX),
+  ACC_DECL("scroll_y", numeric|lvalue, ScrollY),
+  ACC_DECL("zoom_x", numeric|lvalue, ZoomX),
+  ACC_DECL("zoom_y", numeric|lvalue, ZoomY),
   ACC_DECL("color", text|lvalue, Color),
   ACC_DECL("bgcolor", text|lvalue, Bgcolor),
   ACC_DECL("alpha", numeric|lvalue, Alpha),
@@ -1794,10 +1829,6 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("orientation", text|numeric|lvalue, Orientation),
   ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
-  ACC_DECL("scroll_x", numeric|lvalue, ScrollX),
-  ACC_DECL("scroll_y", numeric|lvalue, ScrollY),
-  ACC_DECL("zoom_x", numeric|lvalue, ZoomX),
-  ACC_DECL("zoom_y", numeric|lvalue, ZoomY),
   { NULL } // terminator
 };
 

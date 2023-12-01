@@ -48,13 +48,8 @@ namespace p44 {
 
     P44ViewPtr mScrolledView;
 
-    // current scroll offsets
-    long mScrollOffsetX_milli; ///< in millipixel, X distance from this view's content origin to the scrolled view's origin
-    long mScrollOffsetY_milli; ///< in millipixel, Y distance from this view's content origin to the scrolled view's origin
-
-    // scroll animation
-    long mScrollStepX_milli; ///< in millipixel, X distance to scroll per scrollStepInterval
-    long mScrollStepY_milli; ///< in millipixel, Y distance to scroll per scrollStepInterval
+    double mScrollStepX; ///< X distance to scroll per scrollStepInterval
+    double mScrollStepY; ///< Y distance to scroll per scrollStepInterval
     long mScrollSteps; ///< >0: number of remaining scroll steps, <0 = scroll forever, 0=scroll stopped
     bool mSyncScroll; ///< if set, scroll timing has absolute priority (and multi-step jumps can occur to catch up delays)
     MLMicroSeconds mScrollStepInterval; ///< interval between scroll steps
@@ -90,28 +85,20 @@ namespace p44 {
     /// @return the view being scrolled
     P44ViewPtr getScrolledView() { return mScrolledView; }
 
-    /// set scroll offsets
-    /// @param aOffsetX X direction scroll offset, subpixel distances allowed
-    /// @note the scroll offset describes the distance from this view's content origin (not its frame origin on the parent view!)
-    ///   to the scrolled view's frame origin (not its content origin)
-    void setOffsetX(double aOffsetX);
-
-    /// set scroll offsets
-    /// @param aOffsetY Y direction scroll offset, subpixel distances allowed
-    /// @note the scroll offset describes the distance from this view's content origin (not its origin on the parent view!)
-    ///   to the scrolled view's origin (not its content origin)
-    void setOffsetY(double aOffsetY);
-
-    /// @return the current X scroll offset
-    double getOffsetX() const { return (double)mScrollOffsetX_milli/1000; };
-
-    /// @return the current Y scroll offset
-    double getOffsetY() const { return (double)mScrollOffsetY_milli/1000; };
-
+    /// @name trivial property getters/setters
+    /// @{
     bool getSyncScroll() { return mSyncScroll; };
     void setSyncScroll(bool aVal) { mSyncScroll = aVal; };
     bool getAutoPurge() { return mAutoPurge; };
     void setAutoPurge(bool aVal) { mAutoPurge = aVal; };
+    double getStepX() const { return mScrollStepX; }
+    void setStepX(double aVal) { mScrollStepX = aVal; }
+    double getStepY() const { return mScrollStepY; }
+    void setStepY(double aVal) { mScrollStepY = aVal; }
+    double getScrollStepIntervalS() const { return (double)mScrollStepInterval/Second; }
+    void setScrollStepIntervalS(double aVal) { mScrollStepInterval = aVal*Second; }
+
+    /// @}
 
     /// start scrolling
     /// @param aStepX scroll step in X direction
@@ -130,15 +117,6 @@ namespace p44 {
     /// stop scrolling
     /// @note completed callback will not be called
     void stopScroll();
-
-    /// @return the current X scroll step
-    double getStepX() const { return (double)mScrollStepX_milli/1000; }
-
-    /// @return the current Y scroll step
-    double getStepY() const { return (double)mScrollStepY_milli/1000; }
-
-    /// @return the time interval between two scroll steps [in Seconds]
-    double getScrollStepIntervalS() const { return (double)mScrollStepInterval/Second; }
 
     /// @return the remaining scroll steps
     long getRemainingSteps() const { return mScrollSteps; }

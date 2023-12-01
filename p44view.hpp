@@ -165,6 +165,9 @@ namespace p44 {
     /// called from announceChanges() when all changes are done
     virtual void finalizeChanges();
 
+    /// efficient shortcut for ViewScroller
+    void recalculateScrollDependencies();
+
     // parent view (pointer only, to avoid retain cycles)
     // Containers must make sure their children's parent pointer gets reset before parent goes away
     P44View* mParentView;
@@ -194,8 +197,8 @@ namespace p44 {
 
     // content transformation (fractional results)
     double mContentRotation; ///< rotation of content pixels in degree CCW
-    double mScrollX; ///< offset/scroll in X direction in frame scale. Positive means we want to move content with higher X into our frame (content moves left)
-    double mScrollY; ///< offset/scroll in Y direction in frame scale. Positive means we want to move content with higher Y into our frame (content moves down)
+    double mScrollX; ///< offset/scroll in X direction in content coordinate units/scale (applied after all other transforms). Positive means we want to move content with higher X into our frame (content moves left)
+    double mScrollY; ///< offset/scroll in Y direction in content coordinate units/scale (applied after all other transforms). Positive means we want to move content with higher Y into our frame (content moves down)
     double mShrinkX; ///< shrinking (1/zoom) in X direction - larger number means content appears smaller (sampling points further apart)
     double mShrinkY; ///< shrinking (1/zoom) in Y direction - larger number means content appears smaller (sampling points further apart)
 
@@ -217,15 +220,6 @@ namespace p44 {
 
     /// content rectangle in frame coordinates
     void contentRectAsViewCoord(PixelRect &aRect);
-
-    /// transform from frame coordinates to re-oriented coordinates
-    /// @note origin can change the corner of the frame, and X/Y axis might swap, but area is still the same
-    void inFrameToOrientedCoord(PixelPoint &aCoord);
-
-    /// transform from re-oriented coordinates back to original frame coordinates
-    /// @note origin can change the corner of the frame, and X/Y axis might swap, but area is still the same
-    void orientedToInFrameCoord(PixelPoint &aCoord);
-
 
     /// transform frame to content coordinates
     /// @note transforming from frame to content coords is: flipCoordInFrame() -> orientateCoord() -> subtract content.x/y
@@ -288,6 +282,9 @@ namespace p44 {
     /// @return current frame rect
     PixelRect getFrame() { return mFrame; };
 
+    /// reset all transformations (rotate, zoom, scroll)
+    void resetTransforms();
+
     /// @name trivial property getters/setters
     /// @{
     // frame coords
@@ -308,17 +305,17 @@ namespace p44 {
     void setContentDx(PixelCoord aVal) { mContent.dx = aVal; makeDirty(); flagGeometryChange(); };
     PixelCoord getContentDy() { return mContent.dy; };
     void setContentDy(PixelCoord aVal) { mContent.dy = aVal; makeDirty(); flagGeometryChange(); };
-    // transformation
-    double getScrollX() { return mScrollX; };
-    void setScrollX(double aVal) { mScrollX = aVal; makeDirty(); flagTransformChange(); };
-    double getScrollY() { return mScrollY; };
-    void setScrollY(double aVal) { mScrollY = aVal; makeDirty(); flagTransformChange(); };
+    // transformation (in order as applied: rotation around content origin, zoom, THEN scroll)
+    double getContentRotation() { return mContentRotation; }
+    void setContentRotation(double aVal) { mContentRotation = aVal; makeDirty(); flagTransformChange(); };
     double getZoomX() { return mShrinkX<=0 ? 0 : 1/mShrinkX; };
     void setZoomX(double aVal) { mShrinkX = aVal<=0 ? 0 : 1.0/aVal; makeDirty(); flagTransformChange(); };
     double getZoomY() { return mShrinkY<=0 ? 0 : 1/mShrinkX; };
     void setZoomY(double aVal) { mShrinkY = aVal<=0 ? 0 : 1.0/aVal; makeDirty(); flagTransformChange(); };
-    double getContentRotation() { return mContentRotation; }
-    void setContentRotation(double aVal) { mContentRotation = aVal; makeDirty(); flagTransformChange(); };
+    double getScrollX() { return mScrollX; };
+    void setScrollX(double aVal) { mScrollX = aVal; makeDirty(); flagTransformChange(); };
+    double getScrollY() { return mScrollY; };
+    void setScrollY(double aVal) { mScrollY = aVal; makeDirty(); flagTransformChange(); };
     // colors as text
     string getBgcolor() { return pixelToWebColor(getBackgroundColor(), true); };
     void setBgcolor(string aVal) { setBackgroundColor(webColorToPixel(aVal)); };
