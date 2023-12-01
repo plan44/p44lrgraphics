@@ -1874,13 +1874,13 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
 }
 
 
-// hsv(hue, sat, bri) // convert to webcolor string
+// hsv(hue, sat, bri, alpha) // convert to webcolor string
 // hsv(obj)
 // rgb(red, green, blue, alpha) // convert to webcolor string
 // rgb(obj) // convert to webcolor string
 // hsv(webcolor) // convert webcolor to hsv obj
 // rgb(webcolor) // convert webcolor to rgb obj
-static const BuiltInArgDesc col_args[] = { { numeric|text }, { numeric+optionalarg }, { numeric+optionalarg } };
+static const BuiltInArgDesc col_args[] = { { numeric|text|objectvalue }, { numeric+optionalarg }, { numeric+optionalarg }, { numeric+optionalarg } };
 static const size_t col_numargs = sizeof(col_args)/sizeof(BuiltInArgDesc);
 static const char* colnames[2][4] = {
   { "r", "g", "b", "a" },
@@ -1914,7 +1914,7 @@ static void color_conversion(BuiltinFunctionContextPtr f, bool aHSV)
     c[0] = aHSV ? 0 : 1.0;
     c[1] = 1.0;
     c[2] = 1.0;
-    c[3] = 1.0;
+    c[3] = 1.0; // fully opaque
     // - params
     if (f->arg(0)->hasType(objectvalue)) {
       // components from object fields
