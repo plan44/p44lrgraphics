@@ -75,15 +75,26 @@ namespace p44 {
     void start();
     void stop();
 
+    /// @name trivial property getters/setters
+    /// @{
+    bool getRun() { return mNextRender>0; }
+    void setRun(bool aVal) { if (aVal!=getRun()) { if (aVal) start(); else stop(); } }
+    /// @}
+
     #if ENABLE_VIEWCONFIG
     /// configure view from JSON
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
+
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
 
   private:
 
@@ -95,6 +106,22 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<EpxView> EpxViewPtr;
 
+  #if ENABLE_P44SCRIPT
+
+  namespace P44Script {
+
+    /// represents a ColorEffectView
+    class EpxViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      EpxViewObj(P44ViewPtr aView);
+      EpxViewPtr epx() { return boost::static_pointer_cast<EpxView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 

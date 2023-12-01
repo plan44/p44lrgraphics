@@ -302,31 +302,107 @@ ErrorPtr EpxView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("epx", o)) {
       err = loadEpxAnimationJSON(o);
     }
+    #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("run", o)) {
-      bool r = o->boolValue();
-      if (r!=(mNextRender>0)) {
-        if (r) start();
-        else stop();
-      }
+      setRun(o->boolValue());
     }
+    #endif
   }
   return err;
 }
 
-#endif // ENABLE_EPX_SUPPORT
+#endif // ENABLE_VIEWCONFIG
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 JsonObjectPtr EpxView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("run", JsonObject::newBool(mNextRender>0));
+  status->add("run", JsonObject::newBool(getRun()));
   return status;
 }
 
 #endif // ENABLE_VIEWSTATUS
 
 
-#endif // ENABLE_IMAGE_SUPPORT
+#if ENABLE_P44SCRIPT
 
+using namespace P44Script;
+
+ScriptObjPtr EpxView::newViewObj()
+{
+  // base class with standard functionality
+  return new EpxViewObj(this);
+}
+
+#if P44SCRIPT_FULL_SUPPORT
+
+// loadepx(object|filepath)
+static const BuiltInArgDesc loadepx_args[] = { { text|objectvalue|undefres } };
+static const size_t loadepx_numargs = sizeof(loadepx_args)/sizeof(BuiltInArgDesc);
+static void loadepx_func(BuiltinFunctionContextPtr f)
+{
+  EpxViewObj* v = dynamic_cast<EpxViewObj*>(f->thisObj().get());
+  assert(v);
+  JsonObjectPtr json;
+  ErrorPtr err;
+  if (f->arg(0)->hasType(objectvalue)) {
+    // use object as JSON directly
+    json = f->arg(0)->jsonValue();
+  }
+  else {
+    // assum filepath
+    json = Application::jsonResource(f->arg(0)->stringValue(), &err);
+  }
+  if (Error::isOK(err)) {
+    err = v->epx()->loadEpxAnimationJSON(json);
+  }
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
+    return;
+  }
+  f->finish();
+}
+
+#endif // P44SCRIPT_FULL_SUPPORT
+
+#define ACCESSOR_CLASS EpxView
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  EpxViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<EpxViewObj*>(aParentObj.get())->epx().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_BOOL(Run);
+
+static const BuiltinMemberDescriptor epxMembers[] = {
+  #if P44SCRIPT_FULL_SUPPORT
+  { "loadepx", executable|null|error, loadepx_numargs, loadepx_args, &loadepx_func },
+  #endif
+  // property accessors
+  ACC_DECL("run", numeric|lvalue, Run),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedEpxMemberLookupP = NULL;
+
+EpxViewObj::EpxViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedEpxMemberLookupP==NULL) {
+    sharedEpxMemberLookupP = new BuiltInMemberLookup(epxMembers);
+    sharedEpxMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedEpxMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT
+
+#endif // ENABLE_EPX_SUPPORT
 

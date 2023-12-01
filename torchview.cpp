@@ -227,7 +227,7 @@ PixelColor TorchView::contentColorAt(PixelPoint aPt)
 }
 
 
-#if ENABLE_VIEWCONFIG
+#if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
 // MARK: ===== view configuration
 
@@ -237,84 +237,127 @@ ErrorPtr TorchView::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     // flame parameters
-    if (aViewConfig->get("flame_min", o)) {
-      mFlameMin  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("flame_max", o)) {
-      mFlameMax  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("flame_height", o)) {
-      mFlameHeight  = o->int32Value(); makeDirty();
-    }
+    if (aViewConfig->get("flame_min", o)) setFlameMin(o->int32Value());
+    if (aViewConfig->get("flame_max", o)) setFlameMax(o->int32Value());
+    if (aViewConfig->get("flame_height", o)) setFlameHeight(o->int32Value());
     // spark generation parameters
-    if (aViewConfig->get("spark_probability", o)) {
-      mSparkProbability  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("spark_min", o)) {
-      mSparkMin  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("spark_max", o)) {
-      mSparkMax  = o->int32Value(); makeDirty();
-    }
+    if (aViewConfig->get("spark_probability", o)) setSparkProbability(o->int32Value());
+    if (aViewConfig->get("spark_min", o)) setSparkMin(o->int32Value());
+    if (aViewConfig->get("spark_max", o)) setSparkMax(o->int32Value());
     // spark development parameters
-    if (aViewConfig->get("spark_tfr", o)) {
-      mSparkTfr  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("spark_cap", o)) {
-      mSparkCap  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("up_rad", o)) {
-      mUpRad  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("side_rad", o)) {
-      mSideRad  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("heat_cap", o)) {
-      mHeatCap  = o->int32Value(); makeDirty();
-    }
+    if (aViewConfig->get("spark_tfr", o)) setSparkTfr(o->int32Value());
+    if (aViewConfig->get("spark_cap", o)) setSparkCap(o->int32Value());
+    if (aViewConfig->get("up_rad", o)) setUpRad(o->int32Value());
+    if (aViewConfig->get("side_rad", o)) setSideRad(o->int32Value());
+    if (aViewConfig->get("heat_cap", o)) setHeatCap(o->int32Value());
     // hot spark coloring parameters
-    if (aViewConfig->get("hotspark_min", o)) {
-      mHotsparkMin  = o->int32Value(); makeDirty();
-    }
-    if (aViewConfig->get("hotsparkcolor", o)) {
-      mHotsparkColor = webColorToPixel(o->stringValue()); makeDirty();
-    }
-    if (aViewConfig->get("hotsparkinc", o)) {
-      mHotsparkColorInc = webColorToPixel(o->stringValue()); makeDirty();
-    }
+    if (aViewConfig->get("hotspark_min", o)) setHotsparkMin(o->int32Value());
+    if (aViewConfig->get("hotsparkcolor", o)) setHotsparkColor(o->stringValue());
+    if (aViewConfig->get("hotsparkinc", o)) setHotsparkColorInc(o->stringValue());
     // timing parameter
-    if (aViewConfig->get("cycletime", o)) {
-      mCycleTime  = o->doubleValue()*Second;
-    }
+    if (aViewConfig->get("cycletime", o)) setCycleTimeS(o->doubleValue());
   }
   return err;
 }
 
-#endif // ENABLE_VIEWCONFIG
+#endif // ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 JsonObjectPtr TorchView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("flame_min", JsonObject::newInt32(mFlameMin));
-  status->add("flame_max", JsonObject::newInt32(mFlameMax));
-  status->add("flame_height", JsonObject::newInt32(mFlameHeight));
-  status->add("spark_probability", JsonObject::newInt32(mSparkProbability));
-  status->add("spark_min", JsonObject::newInt32(mSparkMin));
-  status->add("spark_max", JsonObject::newInt32(mSparkMax));
-  status->add("spark_tfr", JsonObject::newInt32(mSparkTfr));
-  status->add("spark_cap", JsonObject::newInt32(mSparkCap));
-  status->add("up_rad", JsonObject::newInt32(mUpRad));
-  status->add("side_rad", JsonObject::newInt32(mSideRad));
-  status->add("heat_cap", JsonObject::newInt32(mHeatCap));
-  status->add("hotspark_min", JsonObject::newInt32(mHotsparkMin));
-  status->add("hotsparkinc", JsonObject::newString(pixelToWebColor(mHotsparkColorInc, true)));
-  status->add("hotsparkcolor", JsonObject::newString(pixelToWebColor(mHotsparkColor, true)));
-  status->add("cycletime", JsonObject::newDouble((double)mCycleTime/Second));
-
+  status->add("flame_min", JsonObject::newInt32(getFlameMin()));
+  status->add("flame_max", JsonObject::newInt32(getFlameMax()));
+  status->add("flame_height", JsonObject::newInt32(getFlameHeight()));
+  status->add("spark_probability", JsonObject::newInt32(getSparkProbability()));
+  status->add("spark_min", JsonObject::newInt32(getSparkMin()));
+  status->add("spark_max", JsonObject::newInt32(getSparkMax()));
+  status->add("spark_tfr", JsonObject::newInt32(getSparkTfr()));
+  status->add("spark_cap", JsonObject::newInt32(getSparkCap()));
+  status->add("up_rad", JsonObject::newInt32(getUpRad()));
+  status->add("side_rad", JsonObject::newInt32(getSideRad()));
+  status->add("heat_cap", JsonObject::newInt32(getHeatCap()));
+  status->add("hotspark_min", JsonObject::newInt32(getHotsparkMin()));
+  status->add("hotsparkcolor", JsonObject::newString(getHotsparkColor()));
+  status->add("hotsparkinc", JsonObject::newString(getHotsparkColorInc()));
+  status->add("cycletime", JsonObject::newDouble(getCycleTimeS()));
   return status;
 }
 
-#endif // ENABLE_VIEWSTATUS
+#endif // ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr TorchView::newViewObj()
+{
+  // base class with standard functionality
+  return new TorchViewObj(this);
+}
+
+
+#define ACCESSOR_CLASS TorchView
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  TorchViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<TorchViewObj*>(aParentObj.get())->torch().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_INT(FlameMin)
+ACC_IMPL_INT(FlameMax)
+ACC_IMPL_INT(FlameHeight)
+ACC_IMPL_INT(SparkProbability)
+ACC_IMPL_INT(SparkMin)
+ACC_IMPL_INT(SparkMax)
+ACC_IMPL_INT(SparkTfr)
+ACC_IMPL_INT(SparkCap)
+ACC_IMPL_INT(UpRad)
+ACC_IMPL_INT(SideRad)
+ACC_IMPL_INT(HeatCap)
+ACC_IMPL_INT(HotsparkMin)
+ACC_IMPL_STR(HotsparkColor)
+ACC_IMPL_STR(HotsparkColorInc)
+ACC_IMPL_INT(CycleTimeS)
+
+static const BuiltinMemberDescriptor torchMembers[] = {
+  // property accessors
+  ACC_DECL("flame_min", numeric|lvalue, FlameMin),
+  ACC_DECL("flame_max", numeric|lvalue, FlameMax),
+  ACC_DECL("flame_height", numeric|lvalue, FlameHeight),
+  ACC_DECL("spark_probability", numeric|lvalue, SparkProbability),
+  ACC_DECL("spark_min", numeric|lvalue, SparkMin),
+  ACC_DECL("spark_max", numeric|lvalue, SparkMax),
+  ACC_DECL("spark_tfr", numeric|lvalue, SparkTfr),
+  ACC_DECL("spark_cap", numeric|lvalue, SparkCap),
+  ACC_DECL("up_rad", numeric|lvalue, UpRad),
+  ACC_DECL("side_rad", numeric|lvalue, SideRad),
+  ACC_DECL("heat_cap", numeric|lvalue, HeatCap),
+  ACC_DECL("hotspark_min", numeric|lvalue, HotsparkMin),
+  ACC_DECL("hotsparkcolor", numeric|lvalue, HotsparkColor),
+  ACC_DECL("hotsparkinc", numeric|lvalue, HotsparkColorInc),
+  ACC_DECL("cycletime", numeric|lvalue, CycleTimeS),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedTorchMemberLookupP = NULL;
+
+TorchViewObj::TorchViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedTorchMemberLookupP==NULL) {
+    sharedTorchMemberLookupP = new BuiltInMemberLookup(torchMembers);
+    sharedTorchMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedTorchMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT

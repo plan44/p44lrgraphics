@@ -357,6 +357,7 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
   JsonObjectPtr o;
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
+    #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("generationinterval", o)) {
       mGenerationInterval  = o->doubleValue()*Second;
     }
@@ -369,6 +370,7 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("minpopulation", o)) {
       mMinPopulation  = o->int32Value();
     }
+    #endif // !ENABLE_P44SCRIPT
     if (aViewConfig->get("addrandom", o)) {
       int c = o->int32Value();
       createRandomCells(c/3, c);
@@ -383,17 +385,69 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
 
 #endif // ENABLE_VIEWCONFIG
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 /// @return the current status of the view, in the same format as accepted by configure()
 JsonObjectPtr LifeView::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
-  status->add("generationinterval", JsonObject::newDouble((double)mGenerationInterval/Second));
-  status->add("maxstatic", JsonObject::newInt32(mMaxStatic));
-  status->add("minstatic", JsonObject::newInt32(mMinStatic));
-  status->add("minpopulation", JsonObject::newInt32(mMinPopulation));
+  status->add("generationinterval", JsonObject::newDouble(getGenerationIntervalS());
+  status->add("maxstatic", JsonObject::newInt32(getMaxStatic()));
+  status->add("minstatic", JsonObject::newInt32(getMinStatic()));
+  status->add("minpopulation", JsonObject::newInt32(getMinPopulation()));
   return status;
 }
 
 #endif // ENABLE_VIEWSTATUS
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr LifeView::newViewObj()
+{
+  // base class with standard functionality
+  return new LifeViewObj(this);
+}
+
+
+#define ACCESSOR_CLASS LifeView
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  LifeViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<LifeViewObj*>(aParentObj.get())->life().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+ACC_IMPL_DBL(GenerationIntervalS);
+ACC_IMPL_INT(MaxStatic);
+ACC_IMPL_INT(MinStatic);
+ACC_IMPL_INT(MinPopulation);
+
+static const BuiltinMemberDescriptor lifeMembers[] = {
+  // property accessors
+  ACC_DECL("generationinterval", numeric|lvalue, GenerationIntervalS),
+  ACC_DECL("maxstatic", numeric|lvalue, MaxStatic),
+  ACC_DECL("minstatic", numeric|lvalue, MinStatic),
+  ACC_DECL("minpopulation", numeric|lvalue, MinPopulation),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedLifeMemberLookupP = NULL;
+
+LifeViewObj::LifeViewObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedLifeMemberLookupP==NULL) {
+    sharedLifeMemberLookupP = new BuiltInMemberLookup(lifeMembers);
+    sharedLifeMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedLifeMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT

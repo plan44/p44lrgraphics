@@ -64,6 +64,19 @@ namespace p44 {
     /// clear and resize to new
     virtual void clear() P44_OVERRIDE;
 
+    /// @name trivial property getters/setters
+    /// @{
+    double getGenerationIntervalS() { return (double)mGenerationInterval/Second; }
+    void setGenerationIntervalS(double aVal) { mGenerationInterval = aVal*Second; }
+    int getMaxStatic() { return mMaxStatic; }
+    void setMaxStatic(int aVal) { mMaxStatic = aVal; }
+    int getMinStatic() { return mMinStatic; }
+    void setMinStatic(int aVal) { mMinStatic = aVal; }
+    int getMinPopulation() { return mMinPopulation; }
+    void setMinPopulation(int aVal) { mMinPopulation = aVal; }
+    /// @}
+
+
     /// calculate changes on the display, return time of next change
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
     /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
@@ -72,19 +85,22 @@ namespace p44 {
     virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow) P44_OVERRIDE;
 
     #if ENABLE_VIEWCONFIG
-
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
     /// @return ok or error in case of real errors (image not found etc., but minor
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
-
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
+
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
 
   protected:
 
@@ -106,7 +122,22 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<LifeView> LifeViewPtr;
 
+  #if ENABLE_P44SCRIPT
 
+  namespace P44Script {
+
+    /// represents a LifeView
+    class LifeViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      LifeViewObj(P44ViewPtr aView);
+      LifeViewPtr life() { return boost::static_pointer_cast<LifeView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 

@@ -84,6 +84,43 @@ namespace p44 {
     /// clear
     virtual void clear() P44_OVERRIDE;
 
+    /// @name trivial property getters/setters
+    /// @{
+    // params
+    int getFlameMin() { return mFlameMin; }
+    void setFlameMin(int aVal) { mFlameMin = aVal; makeDirty(); }
+    int getFlameMax() { return mFlameMax; }
+    void setFlameMax(int aVal) { mFlameMax = aVal; makeDirty(); }
+    int getFlameHeight() { return mFlameHeight; }
+    void setFlameHeight(int aVal) { mFlameHeight = aVal; makeDirty(); }
+    int getSparkProbability() { return mSparkProbability; }
+    void setSparkProbability(int aVal) { mSparkProbability = aVal; makeDirty(); }
+    int getSparkMin() { return mSparkMin; }
+    void setSparkMin(int aVal) { mSparkMin = aVal; makeDirty(); }
+    int getSparkMax() { return mSparkMax; }
+    void setSparkMax(int aVal) { mSparkMax = aVal; makeDirty(); }
+    int getSparkTfr() { return mSparkTfr; }
+    void setSparkTfr(int aVal) { mSparkTfr = aVal; makeDirty(); }
+    int getSparkCap() { return mSparkCap; }
+    void setSparkCap(int aVal) { mSparkCap = aVal; makeDirty(); }
+    int getUpRad() { return mUpRad; }
+    void setUpRad(int aVal) { mUpRad = aVal; makeDirty(); }
+    int getSideRad() { return mSideRad; }
+    void setSideRad(int aVal) { mSideRad = aVal; makeDirty(); }
+    int getHeatCap() { return mHeatCap; }
+    void setHeatCap(int aVal) { mHeatCap = aVal; makeDirty(); }
+    int getHotsparkMin() { return mHotsparkMin; }
+    void setHotsparkMin(int aVal) { mHotsparkMin = aVal; makeDirty(); }
+    // colors as text
+    string getHotsparkColor() { return pixelToWebColor(mHotsparkColor, true); };
+    void setHotsparkColor(string aVal) { mHotsparkColor = webColorToPixel(aVal); makeDirty(); };
+    string getHotsparkColorInc() { return pixelToWebColor(mHotsparkColorInc, true); };
+    void setHotsparkColorInc(string aVal) { mHotsparkColorInc = webColorToPixel(aVal); makeDirty(); };
+    // timing
+    double getCycleTimeS() const { return (double)mCycleTime/Second; }
+    void setCycleTimeS(double aVal) { mCycleTime = aVal*Second; }
+    /// @}
+
     /// calculate changes on the display, return time of next change
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
     /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
@@ -91,20 +128,23 @@ namespace p44 {
     /// @note this must be called as demanded by return value, and after making changes to the view
     virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow) P44_OVERRIDE;
 
-    #if ENABLE_VIEWCONFIG
-
+    #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews
     /// @return ok or error in case of real errors (image not found etc., but minor
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
-
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
+
+    #if ENABLE_P44SCRIPT
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+    #endif
 
   protected:
 
@@ -129,7 +169,22 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<TorchView> TorchViewPtr;
 
+  #if ENABLE_P44SCRIPT
 
+  namespace P44Script {
+
+    /// represents a TorchView
+    class TorchViewObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      TorchViewObj(P44ViewPtr aView);
+      TorchViewPtr torch() { return boost::static_pointer_cast<TorchView>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
 
