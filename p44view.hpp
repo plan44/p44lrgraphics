@@ -553,7 +553,7 @@ namespace p44 {
     /// get view by label
     /// @param aLabelOrId label or Id of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual P44ViewPtr getView(const string aLabelOrId);
+    virtual P44ViewPtr findView(const string aLabelOrId);
 
     /// configure view from JSON
     /// @param aViewConfig JSON for configuring view and subviews

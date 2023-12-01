@@ -253,16 +253,16 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-P44ViewPtr ViewSequencer::getView(const string aLabel)
+P44ViewPtr ViewSequencer::findView(const string aLabel)
 {
   for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
     P44ViewPtr v = pos->mView;
     if (v) {
-      P44ViewPtr view = v->getView(aLabel);
+      P44ViewPtr view = v->findView(aLabel);
       if (view) return view;
     }
   }
-  return inherited::getView(aLabel);
+  return inherited::findView(aLabel);
 }
 
 

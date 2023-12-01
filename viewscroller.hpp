@@ -170,7 +170,7 @@ namespace p44 {
     /// get view by label
     /// @param aLabel label of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
+    virtual P44ViewPtr findView(const string aLabel) P44_OVERRIDE;
 
     #endif
 

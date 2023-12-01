@@ -1044,7 +1044,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 #endif // legacy configure w/o ENABLE_P44SCRIPT
 
 
-P44ViewPtr P44View::getView(const string aLabelOrId)
+P44ViewPtr P44View::findView(const string aLabelOrId)
 {
   if (aLabelOrId==mLabel || aLabelOrId==getId()) {
     return P44ViewPtr(this); // that's me
@@ -1488,7 +1488,7 @@ static void findview_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  P44ViewPtr foundView = v->view()->getView(f->arg(0)->stringValue());
+  P44ViewPtr foundView = v->view()->findView(f->arg(0)->stringValue());
   if (foundView) {
     f->finish(foundView->newViewObj());
     return;
