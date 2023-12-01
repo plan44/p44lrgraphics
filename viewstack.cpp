@@ -55,7 +55,7 @@ ViewStack::~ViewStack()
 }
 
 
-void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
+void ViewStack::pushView(P44ViewPtr aView, int aSpacing, bool aFullFrame)
 {
   announceChanges(true);
   // clip/noAdjust bits set means we don't want the content rect to get recalculated
@@ -109,6 +109,10 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing)
   aView->setParent(this);
   makeDirty();
   announceChanges(false);
+  // re-apply fullframe ON the pushed view (in case frame was adjusted during push)
+  if (aFullFrame && ((mPositioningMode&fillX)==fillX || (mPositioningMode&fillY)==fillY)) {
+    aView->setFullFrameContent();
+  }
 }
 
 
@@ -232,8 +236,8 @@ void ViewStack::getEnclosingContentRect(PixelRect &aBounds)
 
 bool ViewStack::addSubView(P44ViewPtr aSubView)
 {
-  // just push w/o spacing
-  pushView(aSubView);
+  // just push w/o spacing or fullframe
+  pushView(aSubView, 0, false);
   return true;
 }
 
@@ -386,6 +390,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     JsonObjectPtr o;
+    #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("positioningmode", o)) {
       if (o->isType(json_type_string)) {
         setPositioningMode(textToFramingMode(o->c_strValue()));
@@ -394,31 +399,40 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
         setPositioningMode((FramingMode)o->int32Value());
       }
     }
+    #endif
     if (aViewConfig->get("layers", o)) {
       for (int i=0; i<o->arrayLength(); ++i) {
         JsonObjectPtr l = o->arrayGet(i);
         JsonObjectPtr o2;
+        JsonObjectPtr lv;
         P44ViewPtr layerView;
-        if (l->get("view", o2)) {
-          err = p44::createViewFromConfig(o2, layerView, this);
+        int spacing = 0;
+        bool fullframe = false;
+        // Note extra object level containing single "view" is legacy, supported only for backwards compatibility
+        if (l->get("view", lv)) {
+          // legacy view config nested in a special layer object, only for setting positioning options
+          if (l->get("spacing", o2)) spacing = o2->int32Value();
+          if (l->get("fullframe", o2)) fullframe = o2->boolValue();
+          if (l->get("positioning", o2)) {
+            LOG(LOG_WARNING, "Warning: legacy 'positioning' in stack subview -> use stack-global 'positioningmode' instead");
+            setPositioningMode((FramingMode)o2->int32Value());
+          }
+        }
+        else {
+          // new style: no in-between object
+          lv = l; // the layer is the view config
+        }
+        if (!lv) {
+          err = TextError::err("missing view in layers");
+        }
+        else {
+          err = p44::createViewFromConfig(lv, layerView, this);
           if (Error::isOK(err)) {
-            bool fullframe = o2->get("fullframe", o2) && o2->boolValue();
-            int spacing = 0;
-            if (l->get("positioning", o2)) {
-              LOG(LOG_WARNING, "Warning: legacy 'positioning' in stack subview -> use stack-global 'positioningmode' instead");
-              setPositioningMode((FramingMode)o2->int32Value());
-            }
-            if (l->get("spacing", o2)) {
-              spacing = o2->int32Value();
-            }
-            pushView(layerView, spacing);
-            // re-apply fullframe in case frame was adjusted during push
-            if (
-              fullframe &&
-              ((mPositioningMode&fillX)==fillX || (mPositioningMode&fillY)==fillY)
-            ) {
-              layerView->setFullFrameContent();
-            }
+            // the options that were formerly in the in-between object can be specified as layer_xxx here
+            if (lv->get("layer_spacing", o2)) spacing = o2->int32Value();
+            if (lv->get("layer_fullframe", o2)) spacing = o2->int32Value();
+            // push the layer
+            pushView(layerView, spacing, fullframe);
           }
         }
       }
@@ -431,29 +445,37 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
 }
 
 
-P44ViewPtr ViewStack::getView(const string aLabel)
+P44ViewPtr ViewStack::findLayer(const string aLabel, bool aRecursive)
 {
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if (*pos) {
-      P44ViewPtr view = (*pos)->getView(aLabel);
+      P44ViewPtr view;
+      if (aRecursive) view = (*pos)->findView(aLabel); // derived class
+      else view = (*pos)->P44View::findView(aLabel); // base class only checks label/id
       if (view) return view;
     }
   }
-  return inherited::getView(aLabel);
+  return P44ViewPtr();
+}
+
+
+P44ViewPtr ViewStack::findView(const string aLabel)
+{
+  P44ViewPtr view = findLayer(aLabel, true);
+  if (view) return view;
+  return inherited::findView(aLabel);
 }
 
 #endif // ENABLE_VIEWCONFIG
 
-#if ENABLE_VIEWSTATUS
+#if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 JsonObjectPtr ViewStack::viewStatus()
 {
   JsonObjectPtr status = inherited::viewStatus();
   JsonObjectPtr layers = JsonObject::newArray();
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
-    JsonObjectPtr layer = JsonObject::newObj();
-    layer->add("view", (*pos)->viewStatus());
-    layers->arrayAppend(layer);
+    layers->arrayAppend((*pos)->viewStatus());
   }
   status->add("layers", layers);
   status->add("positioningmode", JsonObject::newString(framingModeToText(getPositioningMode(), true)));
@@ -461,3 +483,133 @@ JsonObjectPtr ViewStack::viewStatus()
 }
 
 #endif // ENABLE_VIEWSTATUS
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+ScriptObjPtr ViewStack::newViewObj()
+{
+  // base class with standard functionality
+  return new ViewStackObj(this);
+}
+
+
+ScriptObjPtr ViewStack::layersList()
+{
+  ArrayValuePtr layers = new ArrayValue();
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
+    layers->appendMember((*pos)->newViewObj());
+  }
+  return layers;
+}
+
+
+#if P44SCRIPT_FULL_SUPPORT
+
+
+// pushview(view [,spacing [, fullframe]])
+static const BuiltInArgDesc pushview_args[] = { { structured }, { numeric|optionalarg }, { numeric|optionalarg } };
+static const size_t pushview_numargs = sizeof(pushview_args)/sizeof(BuiltInArgDesc);
+static void pushview_func(BuiltinFunctionContextPtr f)
+{
+  ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
+  assert(v);
+  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(f->arg(0).get());
+  if (!subview) {
+    f->finish(new ErrorValue(ScriptError::Invalid, "first argument must be a view"));
+    return;
+  }
+  int spacing = f->arg(1)->intValue();
+  bool fullframe = f->arg(2)->boolValue();
+  v->stack()->pushView(subview->view(), spacing, fullframe);
+  // return the pushed view for chaining
+  f->finish(subview);
+}
+
+
+// purge(dx, dy, completely)
+static const BuiltInArgDesc purge_args[] = { { numeric }, { numeric }, { numeric|optionalarg } };
+static const size_t purge_numargs = sizeof(purge_args)/sizeof(BuiltInArgDesc);
+static void purge_func(BuiltinFunctionContextPtr f)
+{
+  ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
+  assert(v);
+  PixelCoord dx = f->arg(0)->intValue();
+  PixelCoord dy = f->arg(1)->intValue();
+  bool completely = f->arg(2)->boolValue();
+  v->stack()->purgeViews(dx, dy, completely);
+}
+
+
+// popview()
+static void popview_func(BuiltinFunctionContextPtr f)
+{
+  ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
+  assert(v);
+  v->stack()->popView();
+  f->finish();
+}
+
+
+#endif // P44SCRIPT_FULL_SUPPORT
+
+#define ACCESSOR_CLASS ViewStack
+
+static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
+{
+  ACCFN_DEF
+  ViewStackPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ViewStackObj*>(aParentObj.get())->stack().get());
+  ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
+  view->announceChanges(true);
+  ScriptObjPtr res = acc(*view, aObjToWrite);
+  view->announceChanges(false);
+  return res;
+}
+
+//ACC_IMPL_BOOL(Run);
+
+static ScriptObjPtr access_PositioningMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
+{
+  if (!aToWrite) return new StringValue(P44View::framingModeToText(aView.getPositioningMode(), true));
+  if (aToWrite->hasType(numeric)) aView.setPositioningMode(aToWrite->intValue());
+  else aView.setPositioningMode(P44View::textToFramingMode(aToWrite->stringValue().c_str()));
+  return aToWrite; /* reflect back to indicate writable */
+}
+
+static ScriptObjPtr access_Layers(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
+{
+  ScriptObjPtr ret;
+  if (!aToWrite) { // not writable
+    ret = aView.layersList();
+  }
+  return ret;
+}
+
+
+
+static const BuiltinMemberDescriptor viewStackMembers[] = {
+  #if P44SCRIPT_FULL_SUPPORT
+  { "pushview", executable|null|error, pushview_numargs, pushview_args, &pushview_func },
+  { "popview", executable|null|error, 0, NULL, &popview_func },
+  { "purge", executable|null|error, purge_numargs, purge_args, &purge_func },
+  #endif
+  // property accessors
+  ACC_DECL("positioningmode", numeric|lvalue, PositioningMode),
+  ACC_DECL("layers", objectvalue|lvalue, Layers),
+  { NULL } // terminator
+};
+
+static BuiltInMemberLookup* sharedViewStackMemberLookupP = NULL;
+
+ViewStackObj::ViewStackObj(P44ViewPtr aView) :
+  inherited(aView)
+{
+  if (sharedViewStackMemberLookupP==NULL) {
+    sharedViewStackMemberLookupP = new BuiltInMemberLookup(viewStackMembers);
+    sharedViewStackMemberLookupP->isMemberVariable(); // disable refcounting
+  }
+  registerMemberLookup(sharedViewStackMemberLookupP);
+}
+
+#endif // ENABLE_P44SCRIPT

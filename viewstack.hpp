@@ -59,7 +59,9 @@ namespace p44 {
     /// push view onto top of stack
     /// @param aView the view to push in front of all other views
     /// @param aSpacing extra pixels between appended views
-    void pushView(P44ViewPtr aView, int aSpacing = 0);
+    /// @param aFullFrame if set, content area is auto-adjusted after pushing (because depending on positioning mode,
+    ///   the frame might have changed)
+    void pushView(P44ViewPtr aView, int aSpacing = 0, bool aFullFrame = false);
 
     /// purge views that are outside the specified content size in the specified direction
     /// @param aKeepDx keep views with frame completely or partially within this new size (measured according to positioning mode)
@@ -110,7 +112,6 @@ namespace p44 {
     /// child view has changed geometry (frame, content rect)
     virtual void childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
-
     #if ENABLE_VIEWCONFIG
 
     /// configure view from JSON
@@ -119,17 +120,33 @@ namespace p44 {
     ///   issues like unknown properties usually don't cause error)
     virtual ErrorPtr configureView(JsonObjectPtr aViewConfig) P44_OVERRIDE;
 
-    /// get view by label
+    /// find view by label or id
     /// @param aLabel label of view to find
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
-    virtual P44ViewPtr getView(const string aLabel) P44_OVERRIDE;
+    virtual P44ViewPtr findView(const string aLabel) P44_OVERRIDE;
+
+    /// find layer
+    /// @param aLabel label of layer to find
+    /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
+    P44ViewPtr findLayer(const string aLabel, bool aRecursive);
+
 
     #endif
 
-    #if ENABLE_VIEWSTATUS
+    #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
     virtual JsonObjectPtr viewStatus() P44_OVERRIDE;
     #endif // ENABLE_VIEWSTATUS
+
+    #if ENABLE_P44SCRIPT
+
+    /// @return ScriptObj representing this view
+    virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+
+    /// @return ScriptObj representing all stack layers
+    P44Script::ScriptObjPtr layersList();
+
+    #endif
 
   protected:
 
@@ -147,8 +164,24 @@ namespace p44 {
   };
   typedef boost::intrusive_ptr<ViewStack> ViewStackPtr;
 
-} // namespace p44
+  #if ENABLE_P44SCRIPT
 
+  namespace P44Script {
+
+    /// represents a ColorEffectView
+    class ViewStackObj : public P44lrgViewObj
+    {
+      typedef P44lrgViewObj inherited;
+    public:
+      ViewStackObj(P44ViewPtr aView);
+      ViewStackPtr stack() { return boost::static_pointer_cast<ViewStack>(inherited::view()); };
+    };
+
+  } // namespace P44Script
+
+  #endif // ENABLE_P44SCRIPT
+
+} // namespace p44
 
 
 #endif /* _p44lrgraphics_viewstack_hpp__ */
