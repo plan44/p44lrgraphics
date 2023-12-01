@@ -515,16 +515,17 @@ static void pushview_func(BuiltinFunctionContextPtr f)
 {
   ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
   assert(v);
-  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(f->arg(0).get());
-  if (!subview) {
-    f->finish(new ErrorValue(ScriptError::Invalid, "first argument must be a view"));
+  ErrorPtr err;
+  P44ViewPtr pushedview = P44View::viewFromScriptObj(f->arg(0), err);
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
     return;
   }
   int spacing = f->arg(1)->intValue();
   bool fullframe = f->arg(2)->boolValue();
-  v->stack()->pushView(subview->view(), spacing, fullframe);
+  v->stack()->pushView(pushedview, spacing, fullframe);
   // return the pushed view for chaining
-  f->finish(subview);
+  f->finish(pushedview->newViewObj());
 }
 
 

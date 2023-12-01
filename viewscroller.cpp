@@ -555,12 +555,16 @@ ACC_IMPL_RO_INT(RemainingSteps)
 static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
   if (!aToWrite) return aView.getScrolledView() ? aView.getScrolledView()->newViewObj() : new AnnotatedNullValue("no scrolled view set");
-  P44lrgViewObj* vo = dynamic_cast<P44lrgViewObj*>(aToWrite.get());
-  if (vo) {
-    aView.setScrolledView(vo->view());
+  ErrorPtr err;
+  P44ViewPtr scrolledview = P44View::viewFromScriptObj(aToWrite, err);
+  if (Error::isOK(err) && aView.isParentOrThis(scrolledview)) {
+    err = ScriptError::err(ScriptError::Invalid, "Scrolled view must not be a parent of the scroller");
+  }
+  if (Error::ok(err)) {
+    aView.setScrolledView(scrolledview);
   }
   else {
-    aToWrite = new ErrorValue(ScriptError::Invalid, "Can only assign a View object");
+    aToWrite = new ErrorValue(err);
   }
   return aToWrite; /* reflect back to indicate writable or error */ \
 }

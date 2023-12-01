@@ -291,6 +291,13 @@ P44ViewPtr P44View::getParent()
 }
 
 
+bool P44View::isParentOrThis(P44ViewPtr aRefView)
+{
+  if (aRefView==this) return true;
+  if (mParentView) return mParentView->isParentOrThis(aRefView);
+  return false;
+}
+
 
 void P44View::setContent(PixelRect aContent)
 {
@@ -1481,6 +1488,46 @@ ScriptObjPtr P44View::installedAnimators()
 
 #if P44SCRIPT_FULL_SUPPORT
 
+
+P44ViewPtr P44View::viewFromScriptObj(ScriptObjPtr aArg, ErrorPtr &aErr)
+{
+  P44ViewPtr view;
+  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(aArg.get());
+  if (subview) {
+    view = subview->view();
+  }
+  else {
+    // try to create from config
+    JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(aArg, aErr);
+    if (Error::isOK(aErr)) {
+      aErr = createViewFromConfig(viewCfgJSON, view, P44ViewPtr());
+    }
+  }
+  return view;
+}
+
+
+JsonObjectPtr P44View::viewConfigFromScriptObj(ScriptObjPtr aArg, ErrorPtr &aErr)
+{
+  #if SCRIPTING_JSON_SUPPORT
+  if (aArg->hasType(structured)) {
+    // is already a object value, use its JSON as-is
+    return aArg->jsonValue();
+  }
+  else
+  #endif
+  {
+    // JSON from string (or file if we have a JSON app)
+    string viewConfig = aArg->stringValue();
+    #if ENABLE_JSON_APPLICATION
+    return Application::jsonObjOrResource(viewConfig, &aErr);
+    #else
+    return JsonObject::objFromText(viewConfig.c_str(), -1, &aErr);
+    #endif
+  }
+}
+
+
 // findview(viewlabel)
 static const BuiltInArgDesc findview_args[] = { { text } };
 static const size_t findview_numargs = sizeof(findview_args)/sizeof(BuiltInArgDesc);
@@ -1504,37 +1551,21 @@ static void addview_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(f->arg(0).get());
-  if (!subview) {
-    f->finish(new ErrorValue(ScriptError::Invalid, "argument must be a view"));
+  ErrorPtr err;
+  P44ViewPtr subview = P44View::viewFromScriptObj(f->arg(0), err);
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
     return;
   }
-  if (!v->view()->addSubView(subview->view())) {
+  if (v->view()->isParentOrThis(subview)) {
+    f->finish(new ErrorValue(ScriptError::Invalid, "View cannot be added to itself or to its own children"));
+    return;
+  }
+  if (!v->view()->addSubView(subview)) {
     f->finish(new ErrorValue(ScriptError::Invalid, "cannot add subview here"));
     return;
   }
-  f->finish(subview);
-}
-
-
-static JsonObjectPtr viewConfigFromArg(ScriptObjPtr aArg, ErrorPtr &aErr)
-{
-  #if SCRIPTING_JSON_SUPPORT
-  if (aArg->hasType(structured)) {
-    // is already a JSON value, use it as-is
-    return aArg->jsonValue();
-  }
-  else
-  #endif
-  {
-    // JSON from string (or file if we have a JSON app)
-    string viewConfig = aArg->stringValue();
-    #if ENABLE_JSON_APPLICATION
-    return Application::jsonObjOrResource(viewConfig, &aErr);
-    #else
-    return JsonObject::objFromText(viewConfig.c_str(), -1, &aErr);
-    #endif
-  }
+  f->finish(subview->newViewObj());
 }
 
 
@@ -1546,7 +1577,7 @@ static void configure_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   ErrorPtr err;
-  JsonObjectPtr viewCfgJSON = viewConfigFromArg(f->arg(0), err);
+  JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(f->arg(0), err);
   if (Error::isOK(err)) {
     err = v->view()->configureView(viewCfgJSON);
     if (Error::isOK(err)) {
@@ -1577,8 +1608,6 @@ static void content_position_func(BuiltinFunctionContextPtr f)
   }
   f->finish(v); // return view itself to allow chaining
 }
-
-
 
 
 #if ENABLE_VIEWSTATUS
@@ -1923,7 +1952,7 @@ static void makeview_func(BuiltinFunctionContextPtr f)
 {
   P44ViewPtr newView;
   ErrorPtr err;
-  JsonObjectPtr viewCfgJSON = viewConfigFromArg(f->arg(0), err);
+  JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(f->arg(0), err);
   if (Error::isOK(err)) {
     err = createViewFromConfig(viewCfgJSON, newView, P44ViewPtr());
   }

@@ -342,6 +342,9 @@ namespace p44 {
     /// @note parent views should NOT store this, because it creates a retain cycle
     P44ViewPtr getParent();
 
+    /// check if a view is in this view's ancestors (including itself)
+    bool isParentOrThis(P44ViewPtr aRefView);
+
     /// @param aSubView parent view or NULL if none
     /// @return true if subview could be added
     /// @note this is a NOP in this baseclass
@@ -602,7 +605,13 @@ namespace p44 {
     /// @return ArrayValue containing all animators installed on this view
     P44Script::ScriptObjPtr installedAnimators();
 
-    #endif
+    #if P44SCRIPT_FULL_SUPPORT
+    /// function implementation helpers
+    static P44ViewPtr viewFromScriptObj(P44Script::ScriptObjPtr aArg, ErrorPtr &aErr);
+    static JsonObjectPtr viewConfigFromScriptObj(P44Script::ScriptObjPtr aArg, ErrorPtr &aErr);
+
+    #endif // P44SCRIPT_FULL_SUPPORT
+    #endif // ENABLE_P44SCRIPT
 
     #if ENABLE_ANIMATION
 

@@ -324,15 +324,16 @@ static void pushstep_func(BuiltinFunctionContextPtr f)
 {
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
   assert(v);
-  P44lrgViewObj* subview = dynamic_cast<P44lrgViewObj*>(f->arg(0).get());
-  if (!subview) {
-    f->finish(new ErrorValue(ScriptError::Invalid, "first argument must be a view"));
+  ErrorPtr err;
+  P44ViewPtr stepview = P44View::viewFromScriptObj(f->arg(0), err);
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
     return;
   }
   MLMicroSeconds showtime = f->arg(1)->doubleValue()*Second;
   MLMicroSeconds fadein = f->arg(2)->doubleValue()*Second;
   MLMicroSeconds fadeout = f->arg(3)->doubleValue()*Second;
-  v->sequencer()->pushStep(subview->view(), showtime, fadein, fadeout);
+  v->sequencer()->pushStep(stepview, showtime, fadein, fadeout);
   f->finish();
 }
 
