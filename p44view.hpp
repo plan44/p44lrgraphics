@@ -25,6 +25,7 @@
 
 #include "p44lrg_common.hpp"
 #include "colorutils.hpp"
+#include "fixpoint_macros.h"
 
 #if ENABLE_VIEWCONFIG
   #include "jsonobject.hpp"
@@ -196,16 +197,16 @@ namespace p44 {
     MLMicroSeconds mMaskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
 
     // content transformation (fractional results)
-    double mContentRotation; ///< rotation of content pixels in degree CCW
-    double mScrollX; ///< offset/scroll in X direction in content coordinate units/scale (applied after all other transforms). Positive means we want to move content with higher X into our frame (content moves left)
-    double mScrollY; ///< offset/scroll in Y direction in content coordinate units/scale (applied after all other transforms). Positive means we want to move content with higher Y into our frame (content moves down)
-    double mShrinkX; ///< shrinking (1/zoom) in X direction - larger number means content appears smaller (sampling points further apart)
-    double mShrinkY; ///< shrinking (1/zoom) in Y direction - larger number means content appears smaller (sampling points further apart)
+    FracValue mContentRotation; ///< rotation of content pixels in degree CCW
+    FracValue mScrollX; ///< offset/scroll in X direction in content coordinate units/scale (applied after all other transforms). Positive means we want to move content with higher X into our frame (content moves left)
+    FracValue mScrollY; ///< offset/scroll in Y direction in content coordinate units/scale (applied after all other transforms). Positive means we want to move content with higher Y into our frame (content moves down)
+    FracValue mShrinkX; ///< shrinking (1/zoom) in X direction - larger number means content appears smaller (sampling points further apart)
+    FracValue mShrinkY; ///< shrinking (1/zoom) in Y direction - larger number means content appears smaller (sampling points further apart)
 
     // - derived values
     bool mNeedsFractionalSampling;
-    double mRotSin;
-    double mRotCos;
+    FracValue mRotSin;
+    FracValue mRotCos;
 
     string mLabel; ///< label of the view for addressing it
 
@@ -306,16 +307,16 @@ namespace p44 {
     PixelCoord getContentDy() { return mContent.dy; };
     void setContentDy(PixelCoord aVal) { mContent.dy = aVal; makeDirty(); flagGeometryChange(); };
     // transformation (in order as applied: rotation around content origin, zoom, THEN scroll)
-    double getContentRotation() { return mContentRotation; }
-    void setContentRotation(double aVal) { mContentRotation = aVal; makeDirty(); flagTransformChange(); };
-    double getZoomX() { return mShrinkX<=0 ? 0 : 1/mShrinkX; };
-    void setZoomX(double aVal) { mShrinkX = aVal<=0 ? 0 : 1.0/aVal; makeDirty(); flagTransformChange(); };
-    double getZoomY() { return mShrinkY<=0 ? 0 : 1/mShrinkX; };
-    void setZoomY(double aVal) { mShrinkY = aVal<=0 ? 0 : 1.0/aVal; makeDirty(); flagTransformChange(); };
-    double getScrollX() { return mScrollX; };
-    void setScrollX(double aVal) { mScrollX = aVal; makeDirty(); flagTransformChange(); };
-    double getScrollY() { return mScrollY; };
-    void setScrollY(double aVal) { mScrollY = aVal; makeDirty(); flagTransformChange(); };
+    double getContentRotation() { return FP_DBL_VAL(mContentRotation); }
+    void setContentRotation(double aVal) { mContentRotation = FP_FROM_DBL(aVal); makeDirty(); flagTransformChange(); };
+    double getZoomX() { return mShrinkX<=0 ? 0 : 1/FP_DBL_VAL(mShrinkX); };
+    void setZoomX(double aVal) { mShrinkX = FP_FROM_DBL(aVal<=0 ? 0 : 1.0/aVal); makeDirty(); flagTransformChange(); };
+    double getZoomY() { return mShrinkY<=0 ? 0 : 1/FP_DBL_VAL(mShrinkY); };
+    void setZoomY(double aVal) { mShrinkY = FP_FROM_DBL(aVal<=0 ? 0 : 1.0/aVal); makeDirty(); flagTransformChange(); };
+    double getScrollX() { return FP_DBL_VAL(mScrollX); };
+    void setScrollX(double aVal) { mScrollX = FP_FROM_DBL(aVal); makeDirty(); flagTransformChange(); };
+    double getScrollY() { return FP_DBL_VAL(mScrollY); };
+    void setScrollY(double aVal) { mScrollY = FP_FROM_DBL(aVal); makeDirty(); flagTransformChange(); };
     // colors as text
     string getBgcolor() { return pixelToWebColor(getBackgroundColor(), true); };
     void setBgcolor(string aVal) { setBackgroundColor(webColorToPixel(aVal)); };
@@ -630,7 +631,7 @@ namespace p44 {
   protected:
 
     ValueSetterCB getGeometryPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
-    ValueSetterCB getTransformPropertySetter(double& aTransformValue, double& aCurrentValue);
+    ValueSetterCB getTransformPropertySetter(FracValue& aTransformValue, double& aCurrentValue);
     ValueSetterCB getCoordPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
     ValueSetterCB getColorComponentSetter(const string aComponent, PixelColor& aPixelColor, double& aCurrentValue);
 
@@ -647,7 +648,7 @@ namespace p44 {
     ValueSetterCB getDerivedColorComponentSetter(int aHSBIndex, PixelColor& aPixelColor, double& aCurrentValue);
     void derivedColorComponentSetter(int aHSBIndex, PixelColor* aPixelColorP, double aNewValue);
     /// setter for transform properties
-    void transformPropertySetter(double* aTransformValueP, double aNewValue);
+    void transformPropertySetter(FracValue* aTransformValueP, double aNewValue);
 
     void configureAnimation(JsonObjectPtr aAnimationCfg);
 

@@ -187,14 +187,14 @@ void P44View::finalizeChanges()
   if (mChangedTransform) {
     if (mContentRotation!=0) {
       // Calculate rotation multipliers
-      double rotPi = mContentRotation*M_PI/180;
-      mRotSin = sin(rotPi);
-      mRotCos = cos(rotPi);
+      double rotPi = FP_DBL_VAL(mContentRotation)*M_PI/180;
+      mRotSin = FP_FROM_DBL(sin(rotPi));
+      mRotCos = FP_FROM_DBL(cos(rotPi));
     }
     else {
       // no rotation
-      mRotCos = 1.0;
-      mRotSin = 0.0;
+      mRotCos = FP_FROM_INT(1);
+      mRotSin = FP_FROM_INT(0);
     }
     recalculateScrollDependencies();
     mChangedTransform = false;
@@ -206,7 +206,7 @@ void P44View::finalizeChanges()
 void P44View::recalculateScrollDependencies()
 {
   // but non-integer scrolling or scaling might need fractional sampling
-  mNeedsFractionalSampling = mContentRotation!=0 || trunc(mScrollX)!=mScrollX || trunc(mScrollY)!=mScrollY || mShrinkX!=1 || mShrinkY!=1;
+  mNeedsFractionalSampling = mContentRotation!=0 || FP_HASFRAC(mScrollX) || FP_HASFRAC(mScrollY) || mShrinkX!=FP_FROM_INT(1) || mShrinkY!=FP_FROM_INT(1);
 }
 
 
@@ -428,11 +428,11 @@ void P44View::clear()
 void P44View::resetTransforms()
 {
   announceChanges(true);
-  mContentRotation = 0;
-  mScrollX = 0;
-  mScrollY = 0;
-  mShrinkX = 1;
-  mShrinkY = 1;
+  mContentRotation = FP_FROM_INT(0);
+  mScrollX = FP_FROM_INT(0);
+  mScrollY = FP_FROM_INT(0);
+  mShrinkX = FP_FROM_INT(1);
+  mShrinkY = FP_FROM_INT(1);
   mChangedTransform = true;
   announceChanges(false);
 }
@@ -646,65 +646,53 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
     // Until here, we are still in the pixel grid of the frame
     if (!mNeedsFractionalSampling) {
       // just apply integer scroll
-      aPt.x += mScrollX;
-      aPt.y += mScrollY;
+      aPt.x += FP_INT_VAL(mScrollX);
+      aPt.y += FP_INT_VAL(mScrollY);
       // get the pixel
       pc = contentColorAt(aPt);
     }
     else {
-      #if SCROLLFIRST
-      // apply scroll: content origin relative coordinates but still in grid of frame
-      double samplingX = (double)aPt.x + mScrollX;
-      double samplingY = (double)aPt.y + mScrollY;
-      // apply shrink: expand pixel distance around origin
-      samplingX *= mShrinkX;
-      samplingY *= mShrinkY;
-      // apply rotation
-      samplingX = samplingX*mRotCos-samplingY*mRotSin;
-      samplingY = samplingX*mRotSin+samplingY*mRotCos;
-      #else
       // apply rotation first, then scroll so we can scroll and shrink in any direction
-      double rX = (double)aPt.x;
-      double rY = (double)aPt.y;
-      double samplingX = rX*mRotCos-rY*mRotSin;
-      double samplingY = rX*mRotSin+rY*mRotCos;
-      // apply shrink and scroll (Important: scroll is in content coordinates, after 
-      samplingX = samplingX*mShrinkX + mScrollX;
-      samplingY = samplingY*mShrinkY + mScrollY;
-      #endif
+      FracValue rX = FP_FACTOR_FROM_INT(aPt.x);
+      FracValue rY = FP_FACTOR_FROM_INT(aPt.y);
+      FracValue samplingX = rX*mRotCos-rY*mRotSin;
+      FracValue samplingY = rX*mRotSin+rY*mRotCos;
+      // apply shrink and scroll (Important: scroll is in content coordinates, after rotation
+      samplingX = FP_MUL_CORR(samplingX*mShrinkX) + mScrollX;
+      samplingY = FP_MUL_CORR(samplingY*mShrinkY) + mScrollY;
       // Note: subsampling is not centered, but always right/up from the sample point
       // samplingX/Y is now where we must sample from content
       // mShrinkX/Y is the size of the area we need to sample from
       // - the integer coordinates to start sampling
       PixelPoint firstPt;
-      firstPt.x = floor(samplingX);
-      firstPt.y = floor(samplingY);
+      firstPt.x = FP_INT_FLOOR(samplingX);
+      firstPt.y = FP_INT_FLOOR(samplingY);
       // - the integer coordinates to end sampling
       PixelPoint lastPt;
-      lastPt.x = ceil(samplingX+mShrinkX)-1;
-      lastPt.y = ceil(samplingY+mShrinkY)-1;
+      lastPt.x = FP_INT_CEIL(samplingX+mShrinkX)-1;
+      lastPt.y = FP_INT_CEIL(samplingY+mShrinkY)-1;
       // - the possibly fractional weight at the start
-      double firstPixelWeightX = (double)firstPt.x+1-samplingX;
-      double firstPixelWeightY = (double)firstPt.y+1-samplingY;
+      FracValue firstPixelWeightX = FP_FROM_INT(firstPt.x+1)-samplingX;
+      FracValue firstPixelWeightY = FP_FROM_INT(firstPt.y+1)-samplingY;
       // - the possibly fractional weight at the end
-      double lastPixelWeightX = samplingX+mShrinkX - lastPt.x;
-      double lastPixelWeightY = samplingY+mShrinkY - lastPt.y;
+      FracValue lastPixelWeightX = samplingX+mShrinkX - FP_FROM_INT(lastPt.x);
+      FracValue lastPixelWeightY = samplingY+mShrinkY - FP_FROM_INT(lastPt.y);
       // averaging loop
       // - accumulators
-      double r, g, b, a, tw;
+      FracValue r, g, b, a, tw;
       prepareAverage(r, g, b, a, tw);
-      double weightY = firstPixelWeightY;
+      FracValue weightY = firstPixelWeightY;
       PixelPoint samplingPt; // sampling point coordinate in content
       for (samplingPt.y = firstPt.y; samplingPt.y<=lastPt.y; samplingPt.y++) {
-        double weightX = firstPixelWeightX;
+        FracValue weightX = firstPixelWeightX;
         for (samplingPt.x = firstPt.x; samplingPt.x<=lastPt.x; samplingPt.x++) {
           // the color to sample
           pc = contentColorAt(samplingPt);
-          averagePixelPower(r, g, b, a, tw, pc, weightY*weightX);
+          averagePixelPower(r, g, b, a, tw, pc, FP_MUL_CORR(weightY*weightX));
           // adjust the weight
-          weightX = samplingPt.x+1==lastPt.x ? lastPixelWeightX : 1; // possibly fractional weight on last pixel
+          weightX = samplingPt.x+1==lastPt.x ? lastPixelWeightX : FP_FROM_INT(1); // possibly fractional weight on last pixel
         }
-        weightY = samplingPt.y+1==lastPt.y ? lastPixelWeightY : 1; // possibly fractional weight on last pixel
+        weightY = samplingPt.y+1==lastPt.y ? lastPixelWeightY : FP_FROM_INT(1); // possibly fractional weight on last pixel
       }
       pc = averagedPixelResult(r, g, b, a, tw);
     }
@@ -1256,20 +1244,20 @@ ValueSetterCB P44View::getGeometryPropertySetter(PixelCoord &aPixelCoord, double
 }
 
 
-void P44View::transformPropertySetter(double* aTransformValueP, double aNewValue)
+void P44View::transformPropertySetter(FracValue* aTransformValueP, double aNewValue)
 {
   double newValue = aNewValue;
-  if (newValue!=*aTransformValueP) {
+  if (FP_FROM_DBL(newValue)!=*aTransformValueP) {
     announceChanges(true);
-    *aTransformValueP = newValue;
+    *aTransformValueP = FP_FROM_DBL(newValue);
     flagTransformChange();
     announceChanges(false);
   }
 }
 
-ValueSetterCB P44View::getTransformPropertySetter(double& aTransformValue, double &aCurrentValue)
+ValueSetterCB P44View::getTransformPropertySetter(FracValue& aTransformValue, double &aCurrentValue)
 {
-  aCurrentValue = aTransformValue;
+  aCurrentValue = FP_DBL_VAL(aTransformValue);
   return boost::bind(&P44View::transformPropertySetter, this, &aTransformValue, _1);
 }
 
