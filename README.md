@@ -21,6 +21,7 @@ Instead, *p44lrgraphics* mostly does exactly the opposite: each of the (relative
 Projects using p44lrgraphics (or cointaining roots that led to it) include 
 the [pixelboard](https://github.com/plan44/pixelboard-hardware), the [ETH digital platform](https://plan44.ch/custom/custom.php#leth), and the "chatty wifi" installation I brought to the 35c3 (which is in the [*hermel* branch of *lethd*](https://github.com/plan44/lethd/tree/hermeld))
 
+To create pixel fonts for p44lrgraphics, the Q&D macOS app [FontHexer2](https://github.com/plan44/fonthexer2) can be used to sample existing pixel-ready fonts. A few of these are included in the `font/` subfolder of this repo already.
 
 Usage
 -----
