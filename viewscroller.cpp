@@ -499,7 +499,7 @@ static void alertempty_func(BuiltinFunctionContextPtr f)
 
 
 // startscroll(stepX, stepY, interval, roundoffsets, numsteps=null, syncstart=0)
-static const BuiltInArgDesc startscroll_args[] = { { numeric }, { numeric }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg }  };
+static const BuiltInArgDesc startscroll_args[] = { { numeric }, { numeric }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg }, { numeric|optionalarg } };
 static const size_t startscroll_numargs = sizeof(startscroll_args)/sizeof(BuiltInArgDesc);
 static void startscroll_func(BuiltinFunctionContextPtr f)
 {
@@ -511,7 +511,7 @@ static void startscroll_func(BuiltinFunctionContextPtr f)
   bool roundoffsets = f->arg(3)->undefined() || f->arg(3)->boolValue();
   long numsteps = f->arg(4)->defined() ? f->arg(4)->intValue() : -1; // default to -1 = forever
   MLMicroSeconds starttime = f->arg(5)->doubleValue()*Second; // optional synchronized start time, default to right now==0
-  if (starttime<Day) {
+  if (starttime>0 && starttime<Day) {
     // roundup interval for synchronized start
     starttime = ((MainLoop::now()+starttime-1)/starttime) * starttime;
   }
