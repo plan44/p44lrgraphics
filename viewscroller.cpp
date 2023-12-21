@@ -99,8 +99,8 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
           LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld µS after precise time", -next);
         }
         // perform step (using underlying p44view's scroll)
-        mScrollX += mScrollStepX;
-        mScrollY += mScrollStepY;
+        mScrollX += FP_FROM_DBL(mScrollStepX);
+        mScrollY += FP_FROM_DBL(mScrollStepY);
         recalculateScrollDependencies();
         makeDirty();
         // limit coordinate increase in wraparound scroll view
@@ -111,12 +111,12 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
           FramingMode fm = mScrolledView->getFramingMode();
           PixelPoint svfsz = mScrolledView->getFrameSize();
           if (fm&repeatX) {
-            if ((fm & repeatXmax) && svfsz.x>0) while (mScrollX>=svfsz.x) mScrollX -= svfsz.x;
-            if ((fm & repeatXmin) && svfsz.x>0) while (mScrollX<0) mScrollX += svfsz.x;
+            if ((fm & repeatXmax) && svfsz.x>0) while (mScrollX>=FP_FROM_INT(svfsz.x)) mScrollX -= FP_FROM_INT(svfsz.x);
+            if ((fm & repeatXmin) && svfsz.x>0) while (mScrollX<0) mScrollX += FP_FROM_INT(svfsz.x);
           }
           if (fm&repeatY) {
-            if ((fm & repeatYmax) && svfsz.y>0) while (mScrollY>=svfsz.y) mScrollY -= svfsz.y;
-            if ((fm & repeatYmin) && svfsz.y>0) while (mScrollY<0) mScrollY += svfsz.y;
+            if ((fm & repeatYmax) && svfsz.y>0) while (mScrollY>=FP_FROM_INT(svfsz.y)) mScrollY -= FP_FROM_INT(svfsz.y);
+            if ((fm & repeatYmin) && svfsz.y>0) while (mScrollY<0) mScrollY += FP_FROM_INT(svfsz.y);
           }
         }
         // check scroll end
@@ -161,7 +161,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
             PixelRect sf = mScrolledView->getFrame();
             FOCUSLOG("*** Scroller '%s' needs new content: scrollX = %.2f, scrollY=%.2f, frame=(%d,%d,%d,%d) scrolledframe=(%d,%d,%d,%d)",
               getLabel().c_str(),
-              mScrollX, mScrollY,
+              FP_DBL_VAL(mScrollX), FP_DBL_VAL(mScrollY),
               mFrame.x, mFrame.y, mFrame.dx, mFrame.dy,
               sf.x, sf.y, sf.dx, sf.dy
             );
@@ -194,16 +194,16 @@ PixelPoint ViewScroller::remainingPixelsToScroll()
     FramingMode fm = mScrolledView->getFramingMode();
     PixelRect sf = mScrolledView->getFrame();
     if ((fm & repeatXmax)==0 && mScrollStepX>0) {
-      rem.x = (sf.x+sf.dx) - (int)(mScrollX+mFrame.dx);
+      rem.x = (sf.x+sf.dx) - (int)(FP_INT_VAL(mScrollX)+mFrame.dx);
     }
     if ((fm & repeatXmin)==0 && mScrollStepX<0) {
-      rem.x = (int)mScrollX - sf.x;
+      rem.x = FP_INT_VAL(mScrollX) - sf.x;
     }
     if ((fm & repeatYmax)==0 && mScrollStepY>0) {
-      rem.y = (sf.y+sf.dy) - (int)(mScrollY+mFrame.dy);
+      rem.y = (sf.y+sf.dy) - (int)(FP_INT_VAL(mScrollY)+mFrame.dy);
     }
     if ((fm & repeatYmin)==0 && mScrollStepY<0) {
-      rem.y = (int)mScrollY - sf.y;
+      rem.y = FP_INT_VAL(mScrollY) - sf.y;
     }
   }
   return rem;
@@ -264,8 +264,8 @@ void ViewScroller::startScroll(double aStepX, double aStepY, MLMicroSeconds aInt
   mScrollStepX = aStepX;
   mScrollStepY = aStepY;
   if (aRoundOffsets) {
-    if (mScrollStepX) mScrollX = round(mScrollX);
-    if (mScrollStepY) mScrollY = round(mScrollY);
+    if (mScrollStepX) mScrollX = FP_FROM_INT(FP_INT_FLOOR(mScrollX));
+    if (mScrollStepY) mScrollY = FP_FROM_INT(FP_INT_FLOOR(mScrollY));
   }
   mScrollStepInterval = aInterval;
   mScrollSteps = aNumSteps;
