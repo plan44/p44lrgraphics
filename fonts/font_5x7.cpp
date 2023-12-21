@@ -1110,7 +1110,7 @@ static const GlyphRange font_5x7_ranges[] = {
 };
 
 static const font_t font_5x7 = {
-  .fontName = "font_5x7",
+  .fontName = "5x7",
   .glyphHeight = 7,
   .numGlyphs = 124,
   .glyphRanges = font_5x7_ranges,
