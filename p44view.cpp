@@ -1862,77 +1862,6 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
 }
 
 
-// hsv(hue, sat, bri, alpha) // convert to webcolor string
-// hsv(obj)
-// rgb(red, green, blue, alpha) // convert to webcolor string
-// rgb(obj) // convert to webcolor string
-// hsv(webcolor) // convert webcolor to hsv obj
-// rgb(webcolor) // convert webcolor to rgb obj
-static const BuiltInArgDesc col_args[] = { { numeric|text|objectvalue }, { numeric+optionalarg }, { numeric+optionalarg }, { numeric+optionalarg } };
-static const size_t col_numargs = sizeof(col_args)/sizeof(BuiltInArgDesc);
-static const char* colnames[2][4] = {
-  { "r", "g", "b", "a" },
-  { "hue", "saturation", "brightness", "a" }
-};
-static void color_conversion(BuiltinFunctionContextPtr f, bool aHSV)
-{
-  double c[4];
-  PixelColor pix;
-  if (f->arg(0)->hasType(text)) {
-    // conversion FROM textcolor
-    pix = webColorToPixel(f->arg(0)->stringValue());
-    ObjectValuePtr r = new ObjectValue();
-    c[3] = (double)pix.a/255;
-    if (aHSV) {
-      pixelToHsb(pix, c[0], c[1], c[2]);
-    }
-    else {
-      c[0] = (double)pix.r/255;
-      c[1] = (double)pix.g/255;
-      c[2] = (double)pix.b/255;
-    }
-    for (int i=0; i<4; i++) {
-      r->setMemberByName(colnames[aHSV][i], new NumericValue(c[i]));
-    }
-    f->finish(r);
-  }
-  else {
-    // conversion TO textcolor
-    // - defaults
-    c[0] = aHSV ? 0 : 1.0;
-    c[1] = 1.0;
-    c[2] = 1.0;
-    c[3] = 1.0; // fully opaque
-    // - params
-    if (f->arg(0)->hasType(objectvalue)) {
-      // components from object fields
-      for (int i=0; i<4; i++) {
-        ScriptObjPtr co = f->arg(0)->memberByName(colnames[aHSV][i], none);
-        if (co) c[i] = co->doubleValue();
-      }
-    }
-    else {
-      // components from function params
-      for (int i=0; i<4; i++) {
-        if (f->arg(i)->defined()) c[i] = f->arg(i)->doubleValue();
-      }
-    }
-    if (aHSV) {
-      pix = hsbToPixel(c[0], c[1], c[2]);
-    }
-    else {
-      pix.r = c[0]*255;
-      pix.g = c[1]*255;
-      pix.b = c[2]*255;
-    }
-    pix.a = c[3]*255;
-  }
-  f->finish(new StringValue(pixelToWebColor(pix, true)));
-}
-static void hsv_func(BuiltinFunctionContextPtr f) { return color_conversion(f, true); }
-static void rgb_func(BuiltinFunctionContextPtr f) { return color_conversion(f, false); }
-
-
 // makeview(jsonconfig|filename)
 static const BuiltInArgDesc makeview_args[] = { { text|objectvalue } };
 static const size_t makeview_numargs = sizeof(makeview_args)/sizeof(BuiltInArgDesc);
@@ -1952,7 +1881,6 @@ static void makeview_func(BuiltinFunctionContextPtr f)
 }
 
 
-
 static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, BuiltinMemberDescriptor*)
 {
   P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
@@ -1965,8 +1893,6 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 static const BuiltinMemberDescriptor lrgGlobals[] = {
   { "makeview", executable|objectvalue, makeview_numargs, makeview_args, &makeview_func },
   { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
-  { "hsv", executable|text|objectvalue, col_numargs, col_args, &hsv_func },
-  { "rgb", executable|text|objectvalue, col_numargs, col_args, &rgb_func },
   { NULL } // terminator
 };
 
