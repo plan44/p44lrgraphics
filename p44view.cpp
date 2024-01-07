@@ -1690,7 +1690,7 @@ static void clear_func(BuiltinFunctionContextPtr f)
 }
 
 
-// rest()     reset view transformations
+// reset()     reset view transformations
 static void reset_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1774,6 +1774,8 @@ ACC_IMPL_BOOL(Visible)
 ACC_IMPL_INT(ZOrder)
 ACC_IMPL_BOOL(SizeToContent)
 ACC_IMPL_BOOL(LocalTimingPriority)
+ACC_IMPL_BOOL(ContentIsMask)
+ACC_IMPL_BOOL(InvertAlpha)
 ACC_IMPL_DBL(ContentRotation)
 ACC_IMPL_DBL(ScrollX)
 ACC_IMPL_DBL(ScrollY)
@@ -1846,6 +1848,8 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("orientation", text|numeric|lvalue, Orientation),
   ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
+  ACC_DECL("contentismask", numeric|lvalue, ContentIsMask),
+  ACC_DECL("invertalpha", numeric|lvalue, InvertAlpha),
   { NULL } // terminator
 };
 
