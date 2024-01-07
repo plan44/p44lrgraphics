@@ -51,6 +51,7 @@ using namespace p44;
 #include "fonts/font_m6x11.cpp"
 #include "fonts/font_bios.cpp"
 #include "fonts/font_sixtyfour.cpp"
+#include "fonts/font_vcr_osd_mono.cpp"
 
 // Font table
 const font_t* fonts[] {
@@ -62,6 +63,7 @@ const font_t* fonts[] {
   &font_m6x11,
   &font_bios,
   &font_sixtyfour,
+  &font_vcr_osd_mono,
   nullptr
 };
 

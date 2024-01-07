@@ -56,7 +56,7 @@ namespace p44 {
     string mText; ///< internal representation of text
     bool mCollapsed; ///< if not set, text view is reduced to zero width
     int mTextSpacing; ///< pixels between characters
-    int mStretch; ///< pixels between characters
+    int mStretch; ///< pixel row repetitions
     int mBolden; ///< how many shifted overlays
     string mTextPixelData; ///< string of text column data (might be multiple bytes per columnt for fonts with dy>8)
     const font_t* mFont; ///< the font to use
