@@ -256,7 +256,7 @@ static const GradientModeDesc gradientModeDesc[] = {
   { gradient_repeat_none, gradient_repeat_mask, "norepeat" },
   { gradient_repeat_cyclic, gradient_repeat_mask, "cyclic" },
   { gradient_repeat_oscillating, gradient_repeat_mask, "oscillating" },
-  { gradient_repeat_oscillating, gradient_repeat_mask, "unlimited" },
+  { gradient_unlimited, gradient_repeat_mask, "unlimited" },
   { (GradientMode)0, (GradientMode)0, nullptr }
 };
 
