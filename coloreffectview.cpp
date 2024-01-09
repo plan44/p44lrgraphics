@@ -41,6 +41,10 @@ ColorEffectView::ColorEffectView() :
   // make sure we start dark!
   setForegroundColor(black);
   setBackgroundColor(transparent);
+  #if NEW_COLORING
+  mGradientPeriods = 1; // single period (gradient = 1 -> covers full gradient)
+  mTransparentFade = true;
+  #endif
   mExtent.x = 10;
   mExtent.y = 10;
 }
@@ -114,37 +118,55 @@ double ColorEffectView::gradientCycles(double aValue, GradientMode aMode)
 
 double ColorEffectView::gradientCurveLevel(double aProgress, GradientMode aMode)
 {
-  if ((aMode&gradient_curve_mask)==gradient_none) return 0; // no gradient at all
-  bool minus = aProgress<0;
-  double samp = gradientCycles(fabs(aProgress), aMode);
+  double samp = gradientCycles(aProgress, aMode);
   switch (aMode&gradient_curve_mask) {
-    case gradient_curve_square: samp = samp>0.5 ? 1 : 0; break; // square
-    case gradient_curve_sin: samp = sin(samp*M_PI/2); break; // sine
-    case gradient_curve_cos: samp = 1-cos(samp*M_PI/2); break; // cosine
-    case gradient_curve_log: samp = 1.0/CURVE_EXP*log(samp*(exp(CURVE_EXP)-1)+1); break; // logarithmic
-    case gradient_curve_exp: samp = (exp(samp*CURVE_EXP)-1)/(exp(CURVE_EXP)-1); break; // exponential
+    case gradient_curve_square: return samp>0.5 ? 1 : 0; // square
+    case gradient_curve_sin: return sin(samp*M_PI/2); // sine
+    case gradient_curve_cos: return cos(samp*M_PI/2); // cosine
+    case gradient_curve_log: return 1.0/CURVE_EXP*log(samp*(exp(CURVE_EXP)-1)+1); // logarithmic
+    case gradient_curve_exp: return (exp(samp*CURVE_EXP)-1)/(exp(CURVE_EXP)-1); // exponential
     default:
     case gradient_curve_lin: break; // linear/triangle
   }
-  return minus ? -samp : samp;
+  return samp;
 }
 
 
 double ColorEffectView::gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap)
 {
-  if (aGradient==0 || aMode==gradient_none) return aValue; // no gradient
-  aValue = aValue+gradientCurveLevel(aProgress*aGradient, aMode)*aMax;
-  if (aValue>aMax) return aWrap ? aValue-aMax : aMax;
-  if (aValue<0) return aWrap ? aValue+aMax : 0;
+  if (aGradient==0 || (aMode&gradient_curve_mask)==gradient_none) return aValue; // no gradient
+  // add gradient for the value
+  double componentprogress = aProgress*aGradient;
+  bool minus = componentprogress<0;
+  double change = gradientCurveLevel(fabs(componentprogress), aMode)*aMax;
+  if (minus) aValue -= change;
+  else aValue += change;
+  // bring back into range
+  if (aWrap) {
+    while (aValue>aMax) aValue-=aMax;
+    while (aValue<0) aValue+=aMax;
+  }
+  else {
+    if (aValue>aMax) aValue = aMax;
+    else if (aValue<0) aValue = 0;
+  }
+  // possibly invert the value: start at maximum instead of minimum
+  if (aMode & gradient_curve_inverted) aValue = aMax - aValue;
   return aValue;
 }
 
 
 
+/// @param aNumGradientPixels the number of gradient pixels we need (at most, should be enough to span
+///   the entire view)
+/// @param aPeriods how many progress periods to generate, i.e. in what range the progress parameter
+///   should sweep over the entire gradient.
+///   Note that "periods" are NOT necessarily the periods of the H,S,V curves, only if the gradient parameter is==1
+///   Usually gradients are less than 1, meaning the respective H,S,V curve spans more than 1 period
 #if NEW_COLORING
 void ColorEffectView::calculateGradient(int aNumGradientPixels)
 #else
-void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels);
+void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels)
 #endif
 {
   mGradientPixels.clear();
@@ -157,7 +179,7 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
     #if NEW_COLORING
-    double pr = (double)i/aNumGradientPixels;
+    double pr = (double)i*mGradientPeriods/aNumGradientPixels;
     #else
     double pr = aExtentPixels>0 ? (double)i/aExtentPixels : 0;
     #endif
@@ -168,7 +190,11 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
     // - brightness
     b = gradiated(base_b, pr, mBriGradient, mBriMode, 1, false);
     // store the pixel
+    #if NEW_COLORING
+    PixelColor gpix = hsbToPixel(h,s,b, mTransparentFade);
+    #else
     PixelColor gpix = hsbToPixel(h,s,b, true);
+    #endif
     mGradientPixels.push_back(gpix);
   }
 }
@@ -262,6 +288,7 @@ static const GradientModeDesc gradientModeDesc[] = {
   { gradient_curve_cos, gradient_curve_mask, "cos" },
   { gradient_curve_log, gradient_curve_mask, "log" },
   { gradient_curve_exp, gradient_curve_mask, "exp" },
+  { gradient_curve_inverted, gradient_curve_inverted, "inverted" },
   { gradient_repeat_none, gradient_repeat_mask, "norepeat" },
   { gradient_repeat_cyclic, gradient_repeat_mask, "cyclic" },
   { gradient_repeat_oscillating, gradient_repeat_mask, "oscillating" },
@@ -412,6 +439,10 @@ ACC_IMPL_DBL(SatGradient);
 ACC_IMPL_GMODE(BriMode);
 ACC_IMPL_GMODE(HueMode);
 ACC_IMPL_GMODE(SatMode);
+#if NEW_COLORING
+ACC_IMPL_DBL(GradientPeriods);
+ACC_IMPL_BOOL(TransparentFade);
+#endif
 ACC_IMPL_DBL(ExtentX);
 ACC_IMPL_DBL(ExtentY);
 ACC_IMPL_BOOL(Radial);
@@ -427,6 +458,10 @@ static const BuiltinMemberDescriptor colorEffectMembers[] = {
   ACC_DECL("brightness_mode", numeric|lvalue, BriMode),
   ACC_DECL("hue_mode", numeric|lvalue, HueMode),
   ACC_DECL("saturation_mode", numeric|lvalue, SatMode),
+  #if NEW_COLORING
+  ACC_DECL("gradient_periods", numeric|lvalue, GradientPeriods),
+  ACC_DECL("transparent_fade", numeric|lvalue, TransparentFade),
+  #endif
   ACC_DECL("extent_x", numeric|lvalue, ExtentX),
   ACC_DECL("extent_y", numeric|lvalue, ExtentY),
   ACC_DECL("radial", numeric|lvalue, Radial),

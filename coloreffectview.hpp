@@ -37,13 +37,15 @@ namespace p44 {
   typedef enum : uint8_t {
     gradient_none = 0,
     // curves
-    gradient_curve_mask = 0x0F,
+    gradient_curve_mask = 0x07,
     gradient_curve_square = 0x01,
     gradient_curve_lin = 0x02,
     gradient_curve_sin = 0x03,
     gradient_curve_cos = 0x04,
     gradient_curve_log = 0x05,
     gradient_curve_exp = 0x06,
+    // invert
+    gradient_curve_inverted = 0x08,
     // modes
     gradient_repeat_mask = 0xF0,
     gradient_repeat_none = 0x00,
@@ -70,6 +72,12 @@ namespace p44 {
     GradientMode mBriMode;
     GradientMode mHueMode;
     GradientMode mSatMode;
+
+    #if NEW_COLORING
+    double mGradientPeriods; ///< how many overall gradient cycles (meaning full value cycles of gradients==1)
+    bool mTransparentFade; ///< if set, gradient brightness controls alpha, otherwise color itself
+    #endif
+
     PixelPoint mExtent; ///< extent of effect in pixels (depends on effect itself what this actually means)
 
   public :
@@ -105,6 +113,13 @@ namespace p44 {
     void setHueMode(GradientMode aVal) { mHueMode = aVal; flagColorChange(); };
     GradientMode getSatMode() { return mSatMode; };
     void setSatMode(GradientMode aVal) { mSatMode = aVal; flagColorChange(); };
+    #if NEW_COLORING
+    // - gradient periods
+    double getGradientPeriods() { return mGradientPeriods; };
+    void setGradientPeriods(double aVal) { mGradientPeriods = aVal; flagColorChange(); };
+    bool getTransparentFade() { return mTransparentFade; };
+    void setTransparentFade(bool aVal) { mTransparentFade = aVal; makeColorDirty(); };
+    #endif
     // - extent
     double getExtentX() { return mExtent.x; };
     void setExtentX(double aVal) { mExtent.x = aVal;  makeDirty(); };
