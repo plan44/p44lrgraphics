@@ -72,10 +72,10 @@ namespace p44 {
     GradientMode mBriMode;
     GradientMode mHueMode;
     GradientMode mSatMode;
+    bool mTransparentFade; ///< if set, gradient brightness controls alpha, otherwise color itself
 
     #if NEW_COLORING
     double mGradientPeriods; ///< how many overall gradient cycles (meaning full value cycles of gradients==1)
-    bool mTransparentFade; ///< if set, gradient brightness controls alpha, otherwise color itself
     #endif
 
     PixelPoint mExtent; ///< extent of effect in pixels (depends on effect itself what this actually means)
@@ -117,8 +117,6 @@ namespace p44 {
     // - gradient periods
     double getGradientPeriods() { return mGradientPeriods; };
     void setGradientPeriods(double aVal) { mGradientPeriods = aVal; flagColorChange(); };
-    bool getTransparentFade() { return mTransparentFade; };
-    void setTransparentFade(bool aVal) { mTransparentFade = aVal; makeColorDirty(); };
     #endif
     // - extent
     double getExtentX() { return mExtent.x; };
@@ -128,6 +126,8 @@ namespace p44 {
     // - flags
     bool getRadial() { return mRadial; };
     void setRadial(bool aVal) { mRadial = aVal; makeColorDirty(); };
+    bool getTransparentFade() { return mTransparentFade; };
+    void setTransparentFade(bool aVal) { mTransparentFade = aVal; makeColorDirty(); };
     /// @}
 
     /// set extent (how many pixels the light field reaches out around the center)

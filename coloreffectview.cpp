@@ -31,6 +31,7 @@ using namespace p44;
 
 ColorEffectView::ColorEffectView() :
   mRadial(true),
+  mTransparentFade(true),
   mBriGradient(0),
   mHueGradient(0),
   mSatGradient(0),
@@ -43,7 +44,6 @@ ColorEffectView::ColorEffectView() :
   setBackgroundColor(transparent);
   #if NEW_COLORING
   mGradientPeriods = 1; // single period (gradient = 1 -> covers full gradient)
-  mTransparentFade = true;
   #endif
   mExtent.x = 10;
   mExtent.y = 10;
@@ -190,11 +190,7 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
     // - brightness
     b = gradiated(base_b, pr, mBriGradient, mBriMode, 1, false);
     // store the pixel
-    #if NEW_COLORING
     PixelColor gpix = hsbToPixel(h,s,b, mTransparentFade);
-    #else
-    PixelColor gpix = hsbToPixel(h,s,b, true);
-    #endif
     mGradientPixels.push_back(gpix);
   }
 }
@@ -441,13 +437,11 @@ ACC_IMPL_GMODE(HueMode);
 ACC_IMPL_GMODE(SatMode);
 #if NEW_COLORING
 ACC_IMPL_DBL(GradientPeriods);
-ACC_IMPL_BOOL(TransparentFade);
 #endif
 ACC_IMPL_DBL(ExtentX);
 ACC_IMPL_DBL(ExtentY);
 ACC_IMPL_BOOL(Radial);
-
-
+ACC_IMPL_BOOL(TransparentFade);
 
 
 static const BuiltinMemberDescriptor colorEffectMembers[] = {
@@ -460,11 +454,11 @@ static const BuiltinMemberDescriptor colorEffectMembers[] = {
   ACC_DECL("saturation_mode", numeric|lvalue, SatMode),
   #if NEW_COLORING
   ACC_DECL("gradient_periods", numeric|lvalue, GradientPeriods),
-  ACC_DECL("transparent_fade", numeric|lvalue, TransparentFade),
   #endif
   ACC_DECL("extent_x", numeric|lvalue, ExtentX),
   ACC_DECL("extent_y", numeric|lvalue, ExtentY),
   ACC_DECL("radial", numeric|lvalue, Radial),
+  ACC_DECL("transparent_fade", numeric|lvalue, TransparentFade),
   { NULL } // terminator
 };
 
