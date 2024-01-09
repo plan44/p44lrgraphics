@@ -410,7 +410,11 @@ void TextView::renderText()
 
 void TextView::recalculateColoring()
 {
+  #if NEW_COLORING
+  calculateGradient(mContent.dx);
+  #else
   calculateGradient(mContent.dx, mExtent.x);
+  #endif
   inherited::recalculateColoring();
 }
 

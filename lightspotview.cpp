@@ -43,7 +43,12 @@ LightSpotView::~LightSpotView()
 
 void LightSpotView::recalculateColoring()
 {
+  // enough pixels so the gradient's resolution is enough to cover the maximum frame dimension
+  #if NEW_COLORING
+  calculateGradient(mRadial ? max(mFrame.dx, mFrame.dy) : mFrame.dx);
+  #else
   calculateGradient(mRadial ? max(mFrame.dx, mFrame.dy) : mFrame.dx,  mRadial ? max(mExtent.x, mExtent.y) : mExtent.x);
+  #endif
   inherited::recalculateColoring();
 }
 
@@ -62,7 +67,16 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
 
   // aPt are coordinates from center (already offset by content frame origin)
   int numGPixels = (int)mGradientPixels.size();
-  // - factor relative to the size (0..1)
+
+  #if DEBUG
+  #warning // %% remove this
+  if (mContent.y+aPt.y==0) {
+    // render the gradient at the bottom
+    return gradientPixel(mContent.x+aPt.x);
+  }
+  #endif
+
+  // - factor relative to the size (0..1) = where within the extent
   double xf = (double)aPt.x/mExtent.x;
   int extentPixels;
   double progress;
@@ -77,6 +91,8 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
     extentPixels = mExtent.x;
     progress = fabs(xf);
   }
+  // extent pixels = size of
+  // FIXME: special clipping test here, completely irregular, to allow lightspot extend beyond EXTENT?!?
   if (progress<1 || (progress==1 && xf<0)  || (mFramingMode&clipXY)==0) {
     if (numGPixels>0) {
       int i = progress*extentPixels;

@@ -25,6 +25,12 @@
 
 #include "p44lrg_common.hpp"
 
+#if DEBUG
+  #warning "new coloring"
+  // FIXME: remove ifdefs once new coloring is ok, or make NEW_COLORING the default at least
+  #define NEW_COLORING 1
+#endif
+
 
 namespace p44 {
 
@@ -123,7 +129,11 @@ namespace p44 {
     static double gradientCurveLevel(double aProgress, GradientMode aMode);
     static double gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap);
 
+    #if NEW_COLORING
+    void calculateGradient(int aNumGradientPixels);
+    #else
     void calculateGradient(int aNumGradientPixels, int aExtentPixels);
+    #endif
 
     #if ENABLE_VIEWCONFIG
 

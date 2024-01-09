@@ -141,7 +141,11 @@ double ColorEffectView::gradiated(double aValue, double aProgress, double aGradi
 
 
 
-void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels)
+#if NEW_COLORING
+void ColorEffectView::calculateGradient(int aNumGradientPixels)
+#else
+void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels);
+#endif
 {
   mGradientPixels.clear();
   if (mBriGradient==0 && mHueGradient==0 && mSatGradient==0) return; // optimized
@@ -152,7 +156,11 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   // now create gradient pixels covering extent dimension
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
+    #if NEW_COLORING
+    double pr = (double)i/aNumGradientPixels;
+    #else
     double pr = aExtentPixels>0 ? (double)i/aExtentPixels : 0;
+    #endif
     // - hue
     h = gradiated(base_h, pr, mHueGradient, mHueMode, 360, true);
     // - saturation
@@ -170,7 +178,8 @@ PixelColor ColorEffectView::gradientPixel(int aPixelIndex)
 {
   int numGPixels = (int)mGradientPixels.size();
   if (numGPixels==0) return mForegroundColor;
-  if (aPixelIndex<0) aPixelIndex = 0; else if (aPixelIndex>=numGPixels) aPixelIndex = numGPixels-1;
+  if (aPixelIndex<0) aPixelIndex = 0; // for negative indices: value of first pixel
+  else if (aPixelIndex>=numGPixels) aPixelIndex = numGPixels-1; // for indices larger than gradient we have: value of the last pixel
   return mGradientPixels[aPixelIndex];
 }
 

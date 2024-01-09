@@ -85,7 +85,11 @@ void TorchView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 
 void TorchView::recalculateColoring()
 {
+  #if NEW_COLORING
+  calculateGradient(256);
+  #else
   calculateGradient(256, mExtent.y*256*2/mContent.dy);
+  #endif
   inherited::recalculateColoring();
 }
 
