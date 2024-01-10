@@ -188,7 +188,7 @@ namespace p44 {
     int mZOrder;
 
     // content
-    PixelRect mContent; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation translated!)
+    PixelRect mContent; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation, scroll and zoom translated!). Size might not be the actual size, but just a sizing parameter (e.g. lightspot: 1st quadrant)
     Orientation mContentOrientation; ///< orientation of content in frame
     FramingMode mFramingMode; ///< content wrap mode in frame area
     bool mContentIsMask; ///< if set, only alpha of content is used on foreground color
@@ -240,6 +240,7 @@ namespace p44 {
     virtual PixelColor contentColorAt(PixelPoint aPt);
 
     /// helper for implementations: check if aPt within set content size
+    /// @note not all content is actually in the mContent rect, mContent might be just a meaningful dimension for the content geometry (such as center + radii in lightspot)
     bool isInContentSize(PixelPoint aPt);
 
     /// color effect params have changed
@@ -434,9 +435,6 @@ namespace p44 {
     /// set content size and offset (relative to frame origin, but in content coordinates, i.e. possibly orientation translated!)
     void setContent(PixelRect aContent);
 
-    /// set content size (without changing offset)
-    void setContentSize(PixelPoint aSize);
-
     /// set content origin/center (without changing size)
     void setContentOrigin(PixelPoint aOrigin);
 
@@ -465,8 +463,30 @@ namespace p44 {
     /// @note for clipped content, -1 or 1 means at least "out of the frame"
     void setRelativeContentOriginY(double aRelY, bool aCentered = true);
 
+    /// set content size (without changing offset)
+    void setContentSize(PixelPoint aSize);
+
     /// @return content size
     PixelPoint getContentSize() const { return { mContent.dx, mContent.dy }; }
+
+    /// set content size X relative to the frame size
+    /// @param aRelDx relative dX size
+    /// @note 1 means size equal to the respective frame size (taking orientation and zoom into account)
+    /// @note content size might not actually be the size of the content, for example for lightspot it denotes center and radii
+    void setRelativeContentSizeX(double aRelDx);
+
+    /// set content size Y relative to the frame size
+    /// @param aRelDy relative dY size
+    /// @note 1 means size equal to the respective frame size (taking orientation and zoom into account)
+    /// @note content size might not actually be the size of the content, for example for lightspot it denotes center and radii
+    void setRelativeContentSizeY(double aRelDy);
+
+    /// set content size relative to the frame size
+    /// @param aRelDx relative dX size
+    /// @param aRelDy relative dY size
+    /// @note 1 means size equal to the respective frame size (taking orientation and zoom into account)
+    /// @note content size might not actually be the size of the content, for example for lightspot it denotes center and radii
+    void setRelativeContentSize(double aRelDx, double aRelDy);
 
     /// @return frame size
     PixelPoint getFrameSize() const { return { mFrame.dx, mFrame.dy }; }

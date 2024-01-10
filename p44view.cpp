@@ -353,13 +353,46 @@ void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 }
 
 
+void P44View::setRelativeContentSize(double aRelDx, double aRelDy)
+{
+  PixelPoint sz = getFrameSize();
+  orientateCoord(sz); // maybe flipped
+  sz.x *= aRelDx*FP_DBL_VAL(mShrinkX); // if content is shrunken, size must be boosted to appear same size again
+  sz.y *= aRelDy*FP_DBL_VAL(mShrinkY); // if content is shrunken, size must be boosted to appear same size again
+  announceChanges(true);
+  // Note: not using setContentSize() because we do not want auto-reframing when we adjust relative to frame
+  setContentDx(sz.x);
+  setContentDy(sz.y);
+  announceChanges(false);
+}
+
+
+void P44View::setRelativeContentSizeX(double aRelDx)
+{
+  PixelPoint sz = getFrameSize();
+  orientateCoord(sz); // maybe flipped
+  sz.x *= aRelDx*FP_DBL_VAL(mShrinkX); // if content is shrunken, size must be boosted to appear same size again
+  // Note: not using setContentSize() because we do not want auto-reframing when we adjust relative to frame
+  setContentDx(sz.x);
+}
+
+
+void P44View::setRelativeContentSizeY(double aRelDy)
+{
+  PixelPoint sz = getFrameSize();
+  orientateCoord(sz); // maybe flipped
+  sz.y *= aRelDy*FP_DBL_VAL(mShrinkY); // if content is shrunken, size must be boosted to appear same size again
+  // Note: not using setContentSize() because we do not want auto-reframing when we adjust relative to frame
+  setContentDy(sz.y);
+}
+
+
 void P44View::setFullFrameContent()
 {
   PixelPoint sz = getFrameSize();
   orientateCoord(sz);
   setContent({ 0, 0, sz.x, sz.y });
 }
-
 
 
 void P44View::contentRectAsViewCoord(PixelRect &aRect)
@@ -1387,6 +1420,14 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     aCurrentValue = 0; // dummy
     return boost::bind(&P44View::setRelativeContentOriginY, this, _1, true);
   }
+  else if (uequals(aProperty, "rel_content_size_x")) {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&P44View::setRelativeContentSizeX, this, _1);
+  }
+  else if (uequals(aProperty, "rel_content_size_y")) {
+    aCurrentValue = 0; // dummy
+    return boost::bind(&P44View::setRelativeContentSizeY, this, _1);
+  }
   else if (uequals(aProperty, "scroll_x")) {
     return getTransformPropertySetter(mScrollX, aCurrentValue);
   }
@@ -1588,12 +1629,33 @@ static void content_position_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   bool centered = f->arg(2)->boolValue();
+  v->view()->announceChanges(true);
   if (f->arg(0)->defined()) {
     v->view()->setRelativeContentOriginX(f->arg(0)->doubleValue(), centered);
   }
   if (f->arg(1)->defined()) {
     v->view()->setRelativeContentOriginY(f->arg(1)->doubleValue(), centered);
   }
+  v->view()->announceChanges(false);
+  f->finish(v); // return view itself to allow chaining
+}
+
+
+// content_size(dx,dy)
+static const BuiltInArgDesc content_size_args[] = { { numeric|null }, { numeric|null } };
+static const size_t content_size_numargs = sizeof(content_size_args)/sizeof(BuiltInArgDesc);
+static void content_size_func(BuiltinFunctionContextPtr f)
+{
+  P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
+  assert(v);
+  v->view()->announceChanges(true);
+  if (f->arg(0)->defined()) {
+    v->view()->setRelativeContentSizeX(f->arg(0)->doubleValue());
+  }
+  if (f->arg(1)->defined()) {
+    v->view()->setRelativeContentSizeY(f->arg(1)->doubleValue());
+  }
+  v->view()->announceChanges(false);
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1812,6 +1874,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   { "reset", executable|objectvalue, 0, NULL, &reset_func },
   { "fullframe", executable|objectvalue, 0, NULL, &fullframe_func },
   { "content_position", executable|objectvalue, content_position_numargs, content_position_args, &content_position_func },
+  { "content_size", executable|objectvalue, content_size_numargs, content_size_args, &content_size_func },
   { "get", executable|text, get_numargs, get_args, &get_func },
   #if ENABLE_ANIMATION
   { "animator", executable|objectvalue, animator_numargs, animator_args, &animator_func },

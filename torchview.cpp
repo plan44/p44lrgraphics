@@ -216,7 +216,7 @@ PixelColor TorchView::contentColorAt(PixelPoint aPt)
     else {
       if (d.current>0) {
         #if NEWCOLORING
-        pix = gradientPixel(255-d.current);
+        pix = gradientPixel(255-d.current, false);
         #else
         // energy to brightness is non-linear
         pix.a = 255; // opaque

@@ -68,14 +68,37 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
   // aPt are coordinates from center (already offset by content frame origin)
   int numGPixels = (int)mGradientPixels.size();
 
-  #if DEBUG
+  #if DEBUG_GRADIENT
   #warning // %% remove this
   if (mContent.y+aPt.y==0) {
     // render the gradient at the bottom
-    return gradientPixel(mContent.x+aPt.x);
+    return gradientPixel(mContent.x+aPt.x, false);
   }
   #endif
 
+  #if NEW_COLORING
+  // - factor relative to the size (0..1) = where within the content size
+  if (mContent.dx>0) {
+    double xf = mContent.dx ? (double)aPt.x/mContent.dx : 0;
+    double yf = mContent.dy ? (double)aPt.y/mContent.dy : 0;
+    double progress;
+    if (mRadial) {
+      // radial
+      progress = sqrt(xf*xf+yf*yf);
+    }
+    else if (mEffectZoom<0 || fabs(yf)<mEffectZoom) {
+      // y is in range, we can use x
+      progress = fabs(xf);
+    }
+    else {
+      // y not in range, prevent rendering
+      progress = mEffectZoom;
+    }
+    if (mEffectZoom<0 || progress<mEffectZoom ) {
+      pix = gradientPixel(progress*numGPixels, mEffectWrap);
+    }
+  }
+  #else
   // - factor relative to the size (0..1) = where within the extent
   double xf = (double)aPt.x/mExtent.x;
   int extentPixels;
@@ -102,6 +125,7 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
       pix = mForegroundColor;
     }
   }
+  #endif
   return pix;
 }
 

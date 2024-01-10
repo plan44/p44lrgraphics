@@ -72,13 +72,15 @@ namespace p44 {
     GradientMode mBriMode;
     GradientMode mHueMode;
     GradientMode mSatMode;
-    bool mTransparentFade; ///< if set, gradient brightness controls alpha, otherwise color itself
+    bool mTransparentFade; ///< if set, brightness gradient controls alpha, otherwise color itself
 
     #if NEW_COLORING
-    double mGradientPeriods; ///< how many overall gradient cycles (meaning full value cycles of gradients==1)
+    double mEffectCycles; ///< how many overall effect cycles to run within the effect - depends on effect itself what it actually means
+    double mEffectZoom; ///< zoom for effect (relative to content size), 1=standard - depends on effect itself what it actually means, negative/Infinite -> unlimited
+    bool mEffectWrap; ///< repeat/wrap effect - depends on effect itself what it actually means
+    #else
+    PixelCoord mExtent; ///< extent of effect in pixels (depends on effect itself what this actually means)
     #endif
-
-    PixelPoint mExtent; ///< extent of effect in pixels (depends on effect itself what this actually means)
 
   public :
 
@@ -114,22 +116,29 @@ namespace p44 {
     GradientMode getSatMode() { return mSatMode; };
     void setSatMode(GradientMode aVal) { mSatMode = aVal; flagColorChange(); };
     #if NEW_COLORING
-    // - gradient periods
-    double getGradientPeriods() { return mGradientPeriods; };
-    void setGradientPeriods(double aVal) { mGradientPeriods = aVal; flagColorChange(); };
-    #endif
+    // - effect cycles
+    double getEffectCycles() { return mEffectCycles; };
+    void setEffectCycles(double aVal) { mEffectCycles = aVal; flagColorChange(); };
+    // - effect scaling
+    double getEffectZoom() { return mEffectZoom; };
+    void setEffectZoom(double aVal) { mEffectZoom = aVal; makeDirty(); };
+    #else
     // - extent
     double getExtentX() { return mExtent.x; };
     void setExtentX(double aVal) { mExtent.x = aVal;  makeDirty(); };
     double getExtentY() { return mExtent.y; };
     void setExtentY(double aVal) { mExtent.y = aVal;  makeDirty(); };
+    #endif
     // - flags
     bool getRadial() { return mRadial; };
     void setRadial(bool aVal) { mRadial = aVal; makeColorDirty(); };
     bool getTransparentFade() { return mTransparentFade; };
     void setTransparentFade(bool aVal) { mTransparentFade = aVal; makeColorDirty(); };
+    bool getEffectWrap() { return mEffectWrap; };
+    void setEffectWrap(bool aVal) { mEffectWrap = aVal; makeDirty(); };
     /// @}
 
+    #if !NEW_COLORING
     /// set extent (how many pixels the light field reaches out around the center)
     /// @param aExtent the extent radii of the light in x and y direction
     /// @note extent(0,0) means single pixel at the center
@@ -138,6 +147,7 @@ namespace p44 {
     /// set extent relative to the content size
     /// @param aRelativeExtent 0 = single pixel, 1 = half the content size in both x/y direction
     void setRelativeExtent(double aRelativeExtent);
+    #endif
 
     /// gradient utilities
     static double gradientCycles(double aValue, GradientMode aMode);
@@ -199,9 +209,12 @@ namespace p44 {
 
   protected:
 
-    /// @param aPixelIndex the index into the gradient. Any index can be passed, range is clipped to 0..gradientSize-1
+    /// @param aPixelIndex the index into the gradient. Any index can be passed, indices>numGradientPixels
+    ///   are wrapped or last pixel repeated
+    /// @param aWrap if set, indices outside the available number of gradient pixels will wrap around
+    ///   if not set, all indices outside the available number of gradient pixels return the last pixel
     /// @return the pixel as specified by aPixelIndex if in range, otherwise first or last gradient pixel, resp
-    PixelColor gradientPixel(int aPixelIndex);
+    PixelColor gradientPixel(int aPixelIndex, bool aWrap);
 
   };
   typedef boost::intrusive_ptr<ColorEffectView> ColorEffectViewPtr;

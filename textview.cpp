@@ -439,7 +439,7 @@ PixelColor TextView::contentColorAt(PixelPoint aPt)
           // text pixel is set
           if (!mGradientPixels.empty()) {
             // horizontally gradiated text
-            return gradientPixel(aPt.x);
+            return gradientPixel(aPt.x, mEffectWrap);
           }
           return mForegroundColor;
         }
