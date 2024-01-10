@@ -25,12 +25,10 @@
 
 #include "p44lrg_common.hpp"
 
-#if DEBUG
-  #warning "new coloring"
+#ifndef NEW_COLORING
   // FIXME: remove ifdefs once new coloring is ok, or make NEW_COLORING the default at least
   #define NEW_COLORING 1
 #endif
-
 
 namespace p44 {
 
@@ -122,6 +120,8 @@ namespace p44 {
     // - effect scaling
     double getEffectZoom() { return mEffectZoom; };
     void setEffectZoom(double aVal) { mEffectZoom = aVal; makeDirty(); };
+    bool getEffectWrap() { return mEffectWrap; };
+    void setEffectWrap(bool aVal) { mEffectWrap = aVal; makeDirty(); };
     #else
     // - extent
     double getExtentX() { return mExtent.x; };
@@ -134,8 +134,6 @@ namespace p44 {
     void setRadial(bool aVal) { mRadial = aVal; makeColorDirty(); };
     bool getTransparentFade() { return mTransparentFade; };
     void setTransparentFade(bool aVal) { mTransparentFade = aVal; makeColorDirty(); };
-    bool getEffectWrap() { return mEffectWrap; };
-    void setEffectWrap(bool aVal) { mEffectWrap = aVal; makeDirty(); };
     /// @}
 
     #if !NEW_COLORING
