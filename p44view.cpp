@@ -353,10 +353,14 @@ void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 }
 
 
-void P44View::setRelativeContentSize(double aRelDx, double aRelDy)
+void P44View::setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativeToLargerFrameDimension)
 {
   PixelPoint sz = getFrameSize();
   orientateCoord(sz); // maybe flipped
+  if (aRelativeToLargerFrameDimension) {
+    sz.x = max(sz.x, sz.y);
+    sz.y = sz.x;
+  }
   sz.x *= aRelDx*FP_DBL_VAL(mShrinkX); // if content is shrunken, size must be boosted to appear same size again
   sz.y *= aRelDy*FP_DBL_VAL(mShrinkY); // if content is shrunken, size must be boosted to appear same size again
   announceChanges(true);

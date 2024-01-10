@@ -484,9 +484,11 @@ namespace p44 {
     /// set content size relative to the frame size
     /// @param aRelDx relative dX size
     /// @param aRelDy relative dY size
+    /// @param aRelativeToLargerFrameDimension if set, size is set relative to the larger of both frame dimensions
+    ///   (which means aspect ration of aRelDx and aRelDy is retained, so relDx==relDy will result in a square)
     /// @note 1 means size equal to the respective frame size (taking orientation and zoom into account)
     /// @note content size might not actually be the size of the content, for example for lightspot it denotes center and radii
-    void setRelativeContentSize(double aRelDx, double aRelDy);
+    void setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativeToLargerFrameDimension);
 
     /// @return frame size
     PixelPoint getFrameSize() const { return { mFrame.dx, mFrame.dy }; }
