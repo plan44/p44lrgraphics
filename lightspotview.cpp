@@ -61,6 +61,14 @@ void LightSpotView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 }
 
 
+void LightSpotView::setContentAppearanceSize(double aRelDx, double aRelDy)
+{
+  // as content size for lightspots denotes the radii, these must be 1/2 of the frame at aRelDxy == 1
+  setRelativeContentSize(aRelDx/2, aRelDy/2, true);
+}
+
+
+
 PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
 {
   PixelColor pix = transparent;

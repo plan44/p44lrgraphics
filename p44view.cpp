@@ -371,6 +371,13 @@ void P44View::setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativ
 }
 
 
+void P44View::setContentAppearanceSize(double aRelDx, double aRelDy)
+{
+  // by default, just 1:1 relative to frame size
+  setRelativeContentSize(aRelDx, aRelDy, false);
+}
+
+
 void P44View::setRelativeContentSizeX(double aRelDx)
 {
   PixelPoint sz = getFrameSize();

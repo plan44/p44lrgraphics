@@ -490,6 +490,9 @@ namespace p44 {
     /// @note content size might not actually be the size of the content, for example for lightspot it denotes center and radii
     void setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativeToLargerFrameDimension);
 
+    /// set content size in a way following the logic of the content, such that a relative size of 1 is the "correct" default
+    virtual void setContentAppearanceSize(double aRelDx, double aRelDy);
+
     /// @return frame size
     PixelPoint getFrameSize() const { return { mFrame.dx, mFrame.dy }; }
 

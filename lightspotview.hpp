@@ -53,6 +53,9 @@ namespace p44 {
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;
 
+    /// set content size in a way following the appearance of the content, such that a relative size of 1 is the "correct" default
+    virtual void setContentAppearanceSize(double aRelDx, double aRelDy) P44_OVERRIDE;
+
     /// geometry has changed
     virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
