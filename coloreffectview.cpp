@@ -127,8 +127,8 @@ double ColorEffectView::gradientCurveLevel(double aProgress, GradientMode aMode)
   switch (aMode&gradient_curve_mask) {
     case gradient_curve_square: return samp>0.5 ? 1 : 0; // square
     case gradient_curve_sin: return (1+sin(samp*M_PI))/2; // one sine period per progress unit
-    case gradient_curve_cos: return (1+cos(samp*M_PI))/2; // one cosine period per progress unit
-    case gradient_curve_log: return 1.0/CURVE_EXP*log(samp*(exp(CURVE_EXP)-1)+1); // logarithmic
+    case gradient_curve_cos: return (1-cos(samp*M_PI))/2; // one cosine period per progress unit
+    case gradient_curve_log: return log(samp*(exp(CURVE_EXP)-1)+1) / CURVE_EXP; // logarithmic
     case gradient_curve_exp: return (exp(samp*CURVE_EXP)-1)/(exp(CURVE_EXP)-1); // exponential
     default:
     case gradient_curve_lin: break; // linear/triangle
