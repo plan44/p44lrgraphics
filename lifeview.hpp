@@ -102,6 +102,17 @@ namespace p44 {
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
+    /// randomly create some cells to get (re)started
+    /// @param aMinCells minimum number of cells to create
+    /// @param aMaxCells maximum number of cells to create
+    void createRandomCells(int aMinCells, int aMaxCells);
+
+    /// revive, i.e. call createRandomCells() with appropriate params depending on field size
+    void revive();
+
+    /// place one of the predefined patterns
+    void placePattern(uint16_t aPatternNo, bool aWrap=true, int aCenterX=-1, int aCenterY=-1, int aOrientation=-1);
+
   protected:
 
     /// get content pixel color
@@ -114,11 +125,8 @@ namespace p44 {
     void recalculateColoring() P44_OVERRIDE;
     void nextGeneration();
     void timeNext();
-    void revive();
     int cellindex(int aX, int aY, bool aWrap);
     void calculateGeneration();
-    void createRandomCells(int aMinCells, int aMaxCells);
-    void placePattern(uint16_t aPatternNo, bool aWrap=true, int aCenterX=-1, int aCenterY=-1, int aOrientation=-1);
   };
   typedef boost::intrusive_ptr<LifeView> LifeViewPtr;
 
@@ -126,10 +134,10 @@ namespace p44 {
 
   namespace P44Script {
 
-    /// represents a LifeView
-    class LifeViewObj : public P44lrgViewObj
+    /// represents a LifeView, but is also a Canvas
+    class LifeViewObj : public ColorEffectViewObj
     {
-      typedef P44lrgViewObj inherited;
+      typedef ColorEffectViewObj inherited;
     public:
       LifeViewObj(P44ViewPtr aView);
       LifeViewPtr life() { return boost::static_pointer_cast<LifeView>(inherited::view()); };

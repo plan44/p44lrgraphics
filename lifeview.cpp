@@ -149,7 +149,7 @@ int LifeView::cellindex(int aX, int aY, bool aWrap)
     if (!aWrap) return (int)mCells.size(); // out of range
     aY += mContent.dy;
   }
-  else if (aY>=mContent.dx) {
+  else if (aY>=mContent.dy) {
     if (!aWrap) return (int)mCells.size(); // out of range
     aY -= mContent.dy;
   }
@@ -245,11 +245,13 @@ typedef struct {
 } PixPos;
 
 typedef struct {
+  const char* name;
   int numpix;
   const PixPos *pixels;
 } PixPattern;
 
 
+static const PixPos dot[] = { {0,0} };
 static const PixPos blinker[] = { {0,-1}, {0,0}, {0,1} };
 static const PixPos toad[] = { {1,0}, {2,0}, {3,0}, {0,1}, {1,1}, {2,1} };
 static const PixPos beacon[] = { {0,0}, {1,0}, {0,1}, {3,2}, {2,3}, {3,3} };
@@ -270,18 +272,18 @@ static const PixPos diehard[] = { {-3,0}, {-2,0}, {-2,1}, {2,1}, {3,-1}, {3,1}, 
 static const PixPos acorn[] = { {-3,1}, {-2,-1}, {-2,1}, {0,0}, {1,1}, {2,1}, {3,1} };
 static const PixPos glider[] = { {0,-1}, {1,0}, {-1,1}, {0,1}, {1,1} };
 
-#define PAT(x) { sizeof(x)/sizeof(PixPos), x }
-
+#define PAT(n, x) { n, sizeof(x)/sizeof(PixPos), x }
 
 static const PixPattern patterns[] = {
-  PAT(blinker),
-  PAT(toad),
-  PAT(beacon),
-  PAT(pentadecathlon),
-  PAT(rpentomino),
-  PAT(diehard),
-  PAT(acorn),
-  PAT(glider)
+  PAT("dot", dot), // single pixel
+  PAT("blinker", blinker),
+  PAT("toad", toad),
+  PAT("beacon", beacon),
+  PAT("pentadecathlon", pentadecathlon),
+  PAT("rpentomino", rpentomino),
+  PAT("diehard", diehard),
+  PAT("acorn", acorn),
+  PAT("glider", glider)
 };
 #define NUMPATTERNS (sizeof(patterns)/sizeof(PixPattern))
 
@@ -411,6 +413,59 @@ ScriptObjPtr LifeView::newViewObj()
 }
 
 
+// addrandom(amount)
+static const BuiltInArgDesc addrandom_args[] = { { numeric|optionalarg }, { numeric|optionalarg} };
+static const size_t addrandom_numargs = sizeof(addrandom_args)/sizeof(BuiltInArgDesc);
+static void addrandom_func(BuiltinFunctionContextPtr f)
+{
+  LifeViewObj* v = dynamic_cast<LifeViewObj*>(f->thisObj().get());
+  assert(v);
+  int max = f->arg(0)->intValue();
+  if (max<=0) {
+    v->life()->revive();
+  }
+  else {
+    int min = max/3;
+    if (f->arg(1)->defined()) {
+      min = max;
+      max = f->arg(1)->intValue();
+    }
+    v->life()->createRandomCells(min, max);
+  }
+  f->finish();
+}
+
+
+// placepattern(pattern, [ x, y, orientation])
+static const BuiltInArgDesc placepattern_args[] = { { numeric|text }, { numeric|null|optionalarg }, { numeric|null|optionalarg }, { numeric|null|optionalarg } };
+static const size_t placepattern_numargs = sizeof(placepattern_args)/sizeof(BuiltInArgDesc);
+static void placepattern_func(BuiltinFunctionContextPtr f)
+{
+  LifeViewObj* v = dynamic_cast<LifeViewObj*>(f->thisObj().get());
+  assert(v);
+  int pat;
+  if (f->arg(0)->hasType(numeric)) {
+    pat = f->arg(0)->intValue();
+  }
+  else {
+    for (pat=0; pat<NUMPATTERNS; pat++) {
+      if (uequals(f->arg(0)->stringValue(), patterns[pat].name)) break;
+    }
+  }
+  if (pat<NUMPATTERNS) {
+    int x = -1; // random center X
+    if (f->arg(1)->defined()) x = f->arg(1)->intValue();
+    int y = -1; // random center Y
+    if (f->arg(2)->defined()) y = f->arg(2)->intValue();
+    int o = -1; // random orientation
+    if (f->arg(3)->defined()) o = f->arg(3)->intValue();
+    v->life()->placePattern(pat, true, x, y, o);
+  }
+  f->finish();
+}
+
+
+
 #define ACCESSOR_CLASS LifeView
 
 static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
@@ -430,6 +485,8 @@ ACC_IMPL_INT(MinStatic);
 ACC_IMPL_INT(MinPopulation);
 
 static const BuiltinMemberDescriptor lifeMembers[] = {
+  { "addrandom", executable, addrandom_numargs, addrandom_args, &addrandom_func },
+  { "placepattern", executable, placepattern_numargs, placepattern_args, &placepattern_func },
   // property accessors
   ACC_DECL("generationinterval", numeric|lvalue, GenerationIntervalS),
   ACC_DECL("maxstatic", numeric|lvalue, MaxStatic),
