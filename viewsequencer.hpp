@@ -71,10 +71,16 @@ namespace p44 {
     /// @param aView the view to add
     void pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicroSeconds aFadeInTime=0, MLMicroSeconds aFadeOutTime=0);
 
-    /// start animating
+    /// start animating the sequence
     /// @param aRepeat if set, animation will repeat
     /// @param aCompletedCB called when animation sequence ends (if repeating, it is called multiple times)
-    void startAnimation(bool aRepeat, SimpleCB aCompletedCB = NoOP);
+    void startSequence(bool aRepeat, SimpleCB aCompletedCB = NoOP);
+
+    /// stop the sequence
+    /// @note: this does not stop the animations of the views in the steps, in particular
+    ///    currently running fade-in or fade out animations will run to completion.
+    ///    To stop everything at once, use stopAnimations().
+    void stopSequence();
 
     /// stop animation
     /// @note completed callback will not be called

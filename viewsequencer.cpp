@@ -83,8 +83,7 @@ MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds
 void ViewSequencer::stopAnimations()
 {
   if (mCurrentView) mCurrentView->stopAnimations();
-  animationState = as_begin;
-  mCurrentStep = -1;
+  stopSequence();
   inherited::stopAnimations();
 }
 
@@ -167,13 +166,20 @@ MLMicroSeconds ViewSequencer::stepAnimation(MLMicroSeconds aNow)
 }
 
 
-void ViewSequencer::startAnimation(bool aRepeat, SimpleCB aCompletedCB)
+void ViewSequencer::startSequence(bool aRepeat, SimpleCB aCompletedCB)
 {
   mRepeating = aRepeat;
   mCompletedCB = aCompletedCB;
   mCurrentStep = 0;
   animationState = as_begin; // begins from start
   stepAnimation(MainLoop::now());
+}
+
+
+void ViewSequencer::stopSequence()
+{
+  animationState = as_begin;
+  mCurrentStep = -1;
 }
 
 
@@ -247,7 +253,7 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("repeat", o)) {
       doRepeat = o->boolValue();
     }
-    if (doStart) startAnimation(doRepeat);
+    if (doStart) startSequence(doRepeat);
   }
   return err;
 }
@@ -346,8 +352,18 @@ static void start_func(BuiltinFunctionContextPtr f)
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
   assert(v);
   bool repeat = f->arg(0)->boolValue();
-  v->sequencer()->startAnimation(repeat);
+  v->sequencer()->startSequence(repeat);
   // TODO: maybe make awaitable
+  f->finish();
+}
+
+
+// stop()
+static void stop_func(BuiltinFunctionContextPtr f)
+{
+  ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
+  assert(v);
+  v->sequencer()->stopSequence();
   f->finish();
 }
 
@@ -382,6 +398,7 @@ static const BuiltinMemberDescriptor viewSequencerMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
   { "pushstep", executable|null|error, pushstep_numargs, pushstep_args, &pushstep_func },
   { "start", executable|null|error, start_numargs, start_args, &start_func },
+  { "stop", executable|null|error, 0, nullptr, &stop_func },
   #endif
   // property accessors
   ACC_DECL("steps", objectvalue, Steps),
