@@ -110,10 +110,10 @@ namespace p44 {
 
   namespace P44Script {
 
-    /// represents a ColorEffectView
-    class EpxViewObj : public P44lrgViewObj
+    /// represents a EpxView, but is also a Canvas
+    class EpxViewObj : public CanvasViewObj
     {
-      typedef P44lrgViewObj inherited;
+      typedef CanvasViewObj inherited;
     public:
       EpxViewObj(P44ViewPtr aView);
       EpxViewPtr epx() { return boost::static_pointer_cast<EpxView>(inherited::view()); };
