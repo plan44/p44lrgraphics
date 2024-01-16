@@ -121,7 +121,7 @@ PixelColor ImageView::contentColorAt(PixelPoint aPt)
     if (aPt.x>=mPngImage.width) aPt.x = mPngImage.width-1;
     if (aPt.y>=mPngImage.height) aPt.y = mPngImage.height-1;
     PixelColor pc;
-    // get pixel infomration from image buffer
+    // get pixel information from image buffer
     uint8_t *pix = mPngBuffer+((mPngImage.height-1-aPt.y)*mPngImage.width+aPt.x)*4;
     pc.r = *pix++;
     pc.g = *pix++;

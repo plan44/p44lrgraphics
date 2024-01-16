@@ -472,7 +472,8 @@ static void remainingtime_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  f->finish(new NumericValue((double)v->scroller()->remainingScrollTime()/Second));
+  MLMicroSeconds r = v->scroller()->remainingScrollTime();
+  f->finish(r==Infinite ? new ScriptObj : new NumericValue((double)r/Second));
 }
 
 

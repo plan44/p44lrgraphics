@@ -141,7 +141,7 @@ namespace p44 {
 
     void setAlertEmpty(bool aAlertEmpty) { mAlertEmpty = aAlertEmpty; };
 
-    /// @return number time until scroll will need more content
+    /// @return time until scroll will need more content
     MLMicroSeconds remainingScrollTime();
 
     /// clear contents of this view
