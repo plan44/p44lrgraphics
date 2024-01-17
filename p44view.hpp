@@ -205,6 +205,7 @@ namespace p44 {
 
     // - derived values
     bool mNeedsFractionalSampling;
+    bool mSubsampling; ///< enable subsampling
     FracValue mRotSin;
     FracValue mRotCos;
 
@@ -332,6 +333,8 @@ namespace p44 {
     void setSizeToContent(bool aVal) { mSizeToContent = aVal; };
     bool getLocalTimingPriority() { return mLocalTimingPriority; };
     void setLocalTimingPriority(bool aVal) { mLocalTimingPriority = aVal; };
+    bool getSubsampling() { return mSubsampling; };
+    void setSubsampling(bool aVal) { mSubsampling = aVal; makeDirty(); };
     /// @}
 
     /// @return current content rect

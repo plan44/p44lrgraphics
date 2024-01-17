@@ -45,6 +45,7 @@ P44View::P44View() :
   mChangedGeometry(false),
   mChangedColoring(false),
   mChangedTransform(false),
+  mSubsampling(true),
   mSizeToContent(false)
 {
   resetTransforms();
@@ -707,40 +708,48 @@ PixelColor P44View::colorInFrameAt(PixelPoint aPt)
       // Note: subsampling is not centered, but always right/up from the sample point
       // samplingX/Y is now where we must sample from content
       // mShrinkX/Y is the size of the area we need to sample from
-      // - the integer coordinates to start sampling
       PixelPoint firstPt;
-      firstPt.x = FP_INT_FLOOR(samplingX);
-      firstPt.y = FP_INT_FLOOR(samplingY);
-      // - the integer coordinates to end sampling
-      PixelPoint lastPt;
-      lastPt.x = FP_INT_CEIL(samplingX+mShrinkX)-1;
-      lastPt.y = FP_INT_CEIL(samplingY+mShrinkY)-1;
-      // - the possibly fractional weight at the start
-      FracValue firstPixelWeightX = FP_FROM_INT(firstPt.x+1)-samplingX;
-      FracValue firstPixelWeightY = FP_FROM_INT(firstPt.y+1)-samplingY;
-      // - the possibly fractional weight at the end
-      FracValue lastPixelWeightX = samplingX+mShrinkX - FP_FROM_INT(lastPt.x);
-      FracValue lastPixelWeightY = samplingY+mShrinkY - FP_FROM_INT(lastPt.y);
-      // averaging loop
-      // - accumulators
-      FracValue r, g, b, a, tw;
-      prepareAverage(r, g, b, a, tw);
-      FracValue weightY = firstPixelWeightY;
-      PixelPoint samplingPt; // sampling point coordinate in content
-      for (samplingPt.y = firstPt.y; samplingPt.y<=lastPt.y; samplingPt.y++) {
-        FracValue weightX = firstPixelWeightX;
-        for (samplingPt.x = firstPt.x; samplingPt.x<=lastPt.x; samplingPt.x++) {
-          // the color to sample
-          pc = contentColorAt(samplingPt);
-          averagePixelPower(r, g, b, a, tw, pc, FP_MUL_CORR(weightY*weightX));
-          // adjust the weight
-          weightX = samplingPt.x+1==lastPt.x ? lastPixelWeightX : FP_FROM_INT(1); // possibly fractional weight on last pixel
+      if (mSubsampling) {
+        // - the integer coordinates to start sampling
+        firstPt.x = FP_INT_FLOOR(samplingX);
+        firstPt.y = FP_INT_FLOOR(samplingY);
+        // - the integer coordinates to end sampling
+        PixelPoint lastPt;
+        lastPt.x = FP_INT_CEIL(samplingX+mShrinkX)-1;
+        lastPt.y = FP_INT_CEIL(samplingY+mShrinkY)-1;
+        // - the possibly fractional weight at the start
+        FracValue firstPixelWeightX = FP_FROM_INT(firstPt.x+1)-samplingX;
+        FracValue firstPixelWeightY = FP_FROM_INT(firstPt.y+1)-samplingY;
+        // - the possibly fractional weight at the end
+        FracValue lastPixelWeightX = samplingX+mShrinkX - FP_FROM_INT(lastPt.x);
+        FracValue lastPixelWeightY = samplingY+mShrinkY - FP_FROM_INT(lastPt.y);
+        // averaging loop
+        // - accumulators
+        FracValue r, g, b, a, tw;
+        prepareAverage(r, g, b, a, tw);
+        FracValue weightY = firstPixelWeightY;
+        PixelPoint samplingPt; // sampling point coordinate in content
+        for (samplingPt.y = firstPt.y; samplingPt.y<=lastPt.y; samplingPt.y++) {
+          FracValue weightX = firstPixelWeightX;
+          for (samplingPt.x = firstPt.x; samplingPt.x<=lastPt.x; samplingPt.x++) {
+            // the color to sample
+            pc = contentColorAt(samplingPt);
+            averagePixelPower(r, g, b, a, tw, pc, FP_MUL_CORR(weightY*weightX));
+            // adjust the weight
+            weightX = samplingPt.x+1==lastPt.x ? lastPixelWeightX : FP_FROM_INT(1); // possibly fractional weight on last pixel
+          }
+          weightY = samplingPt.y+1==lastPt.y ? lastPixelWeightY : FP_FROM_INT(1); // possibly fractional weight on last pixel
         }
-        weightY = samplingPt.y+1==lastPt.y ? lastPixelWeightY : FP_FROM_INT(1); // possibly fractional weight on last pixel
+        pc = averagedPixelResult(r, g, b, a, tw);
       }
-      pc = averagedPixelResult(r, g, b, a, tw);
+      else {
+        // just get color from integer point
+        firstPt.x = FP_INT_ROUND(samplingX);
+        firstPt.y = FP_INT_ROUND(samplingY);
+        pc = contentColorAt(firstPt);
+      }
     }
-    // now aPt is the content relative coordinate for which we would like to have the color
+    // now pc is the color at specified frame coordinate point
     if (mInvertAlpha) {
       pc.a = 255-pc.a;
     }
@@ -1849,6 +1858,7 @@ ACC_IMPL_BOOL(SizeToContent)
 ACC_IMPL_BOOL(LocalTimingPriority)
 ACC_IMPL_BOOL(ContentIsMask)
 ACC_IMPL_BOOL(InvertAlpha)
+ACC_IMPL_BOOL(Subsampling)
 ACC_IMPL_DBL(ContentRotation)
 ACC_IMPL_DBL(ScrollX)
 ACC_IMPL_DBL(ScrollY)
@@ -1924,6 +1934,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
   ACC_DECL("contentismask", numeric|lvalue, ContentIsMask),
   ACC_DECL("invertalpha", numeric|lvalue, InvertAlpha),
+  ACC_DECL("subsampling", numeric|lvalue, Subsampling),
   { NULL } // terminator
 };
 
