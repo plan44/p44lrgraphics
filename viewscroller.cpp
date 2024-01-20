@@ -433,10 +433,18 @@ TypeInfo ContentNeededObj::getTypeInfo() const
   return inherited::getTypeInfo()|oneshot|freezable;
 }
 
-EventSource *ContentNeededObj::eventSource() const
+
+bool ContentNeededObj::isEventSource() const
 {
-  return static_cast<EventSource*>(mScroller.get());
+  return mScroller.get(); // yes if it exists
 }
+
+
+void ContentNeededObj::registerForFilteredEvents(EventSink* aEventSink, intptr_t aRegId)
+{
+  if (mScroller) mScroller->registerForEvents(aEventSink, aRegId); // no filtering
+}
+
 
 double ContentNeededObj::doubleValue() const
 {
