@@ -509,8 +509,7 @@ ScriptObjPtr ViewStack::layersList()
 
 
 // pushview(view [,spacing [, fullframe]])
-static const BuiltInArgDesc pushview_args[] = { { structured }, { numeric|optionalarg }, { numeric|optionalarg } };
-static const size_t pushview_numargs = sizeof(pushview_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(pushview, { structured }, { numeric|optionalarg }, { numeric|optionalarg } );
 static void pushview_func(BuiltinFunctionContextPtr f)
 {
   ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
@@ -530,8 +529,7 @@ static void pushview_func(BuiltinFunctionContextPtr f)
 
 
 // purge(dx, dy, completely)
-static const BuiltInArgDesc purge_args[] = { { numeric }, { numeric }, { numeric|optionalarg } };
-static const size_t purge_numargs = sizeof(purge_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(purge, { numeric }, { numeric }, { numeric|optionalarg } );
 static void purge_func(BuiltinFunctionContextPtr f)
 {
   ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
@@ -591,9 +589,9 @@ static ScriptObjPtr access_Layers(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 
 static const BuiltinMemberDescriptor viewStackMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "pushview", executable|null|error, pushview_numargs, pushview_args, &pushview_func },
-  { "popview", executable|null|error, 0, NULL, &popview_func },
-  { "purge", executable|null|error, purge_numargs, purge_args, &purge_func },
+  FUNC_DEF_W_ARG(pushview, executable|null|error),
+  FUNC_DEF_NOARG(popview, executable|null|error),
+  FUNC_DEF_W_ARG(purge, executable|null|error),
   #endif
   // property accessors
   ACC_DECL("positioningmode", numeric|lvalue, PositioningMode),

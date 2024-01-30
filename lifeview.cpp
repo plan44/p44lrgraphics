@@ -414,8 +414,7 @@ ScriptObjPtr LifeView::newViewObj()
 
 
 // addrandom(amount)
-static const BuiltInArgDesc addrandom_args[] = { { numeric|optionalarg }, { numeric|optionalarg} };
-static const size_t addrandom_numargs = sizeof(addrandom_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(addrandom, { numeric|optionalarg }, { numeric|optionalarg} );
 static void addrandom_func(BuiltinFunctionContextPtr f)
 {
   LifeViewObj* v = dynamic_cast<LifeViewObj*>(f->thisObj().get());
@@ -437,8 +436,7 @@ static void addrandom_func(BuiltinFunctionContextPtr f)
 
 
 // placepattern(pattern, [ x, y, orientation])
-static const BuiltInArgDesc placepattern_args[] = { { numeric|text }, { numeric|null|optionalarg }, { numeric|null|optionalarg }, { numeric|null|optionalarg } };
-static const size_t placepattern_numargs = sizeof(placepattern_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(placepattern, { numeric|text }, { numeric|null|optionalarg }, { numeric|null|optionalarg }, { numeric|null|optionalarg } );
 static void placepattern_func(BuiltinFunctionContextPtr f)
 {
   LifeViewObj* v = dynamic_cast<LifeViewObj*>(f->thisObj().get());
@@ -485,8 +483,8 @@ ACC_IMPL_INT(MinStatic);
 ACC_IMPL_INT(MinPopulation);
 
 static const BuiltinMemberDescriptor lifeMembers[] = {
-  { "addrandom", executable, addrandom_numargs, addrandom_args, &addrandom_func },
-  { "placepattern", executable, placepattern_numargs, placepattern_args, &placepattern_func },
+  FUNC_DEF_W_ARG(addrandom, executable),
+  FUNC_DEF_W_ARG(placepattern, executable),
   // property accessors
   ACC_DECL("generationinterval", numeric|lvalue, GenerationIntervalS),
   ACC_DECL("maxstatic", numeric|lvalue, MaxStatic),

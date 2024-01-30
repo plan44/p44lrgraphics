@@ -338,8 +338,7 @@ ScriptObjPtr EpxView::newViewObj()
 #if P44SCRIPT_FULL_SUPPORT
 
 // loadepx(object|filepath)
-static const BuiltInArgDesc loadepx_args[] = { { text|objectvalue|undefres } };
-static const size_t loadepx_numargs = sizeof(loadepx_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(loadepx, { text|objectvalue|undefres } );
 static void loadepx_func(BuiltinFunctionContextPtr f)
 {
   EpxViewObj* v = dynamic_cast<EpxViewObj*>(f->thisObj().get());
@@ -383,7 +382,7 @@ ACC_IMPL_BOOL(Run);
 
 static const BuiltinMemberDescriptor epxMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "loadepx", executable|null|error, loadepx_numargs, loadepx_args, &loadepx_func },
+  FUNC_DEF_W_ARG(loadepx, executable|null|error),
   #endif
   // property accessors
   ACC_DECL("run", numeric|lvalue, Run),

@@ -166,8 +166,7 @@ ScriptObjPtr ImageView::newViewObj()
 #if P44SCRIPT_FULL_SUPPORT
 
 // loadimage(filepath)
-static const BuiltInArgDesc loadimage_args[] = { { text|undefres } };
-static const size_t loadimage_numargs = sizeof(loadimage_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(loadimage, { text|undefres } );
 static void loadimage_func(BuiltinFunctionContextPtr f)
 {
   ImageViewObj* v = dynamic_cast<ImageViewObj*>(f->thisObj().get());
@@ -203,7 +202,7 @@ ACC_IMPL_RO_INT(ImageBytes);
 
 static const BuiltinMemberDescriptor imageViewMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "loadimage", executable|null|error, loadimage_numargs, loadimage_args, &loadimage_func },
+  FUNC_DEF_W_ARG(loadimage, executable|null|error),
   #endif
   // property accessors
   ACC_DECL("image_dx", numeric, ImageDx),

@@ -496,8 +496,7 @@ static void purge_func(BuiltinFunctionContextPtr f)
 
 
 // alertempty(enable)
-static const BuiltInArgDesc alertempty_args[] = { { numeric } };
-static const size_t alertempty_numargs = sizeof(alertempty_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(alertempty, { numeric } );
 static void alertempty_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
@@ -508,8 +507,7 @@ static void alertempty_func(BuiltinFunctionContextPtr f)
 
 
 // startscroll(stepX, stepY, interval, roundoffsets, numsteps=null, syncstart=0)
-static const BuiltInArgDesc startscroll_args[] = { { numeric }, { numeric }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg }, { numeric|optionalarg } };
-static const size_t startscroll_numargs = sizeof(startscroll_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(startscroll, { numeric }, { numeric }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg }, { numeric|optionalarg } );
 static void startscroll_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
@@ -581,13 +579,13 @@ static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToW
 
 static const BuiltinMemberDescriptor scrollerFunctions[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "empty", executable|objectvalue, 0, NULL, &empty_func },
-  { "remainingpixels", executable|objectvalue, 0, NULL, &remainingpixels_func },
-  { "remainingtime", executable|numeric, 0, NULL, &remainingtime_func },
-  { "alertempty", executable|objectvalue, alertempty_numargs, alertempty_args, &alertempty_func },
-  { "purge", executable|objectvalue, 0, NULL, &purge_func },
-  { "startscroll", executable|objectvalue, startscroll_numargs, startscroll_args, &startscroll_func },
-  { "stopscroll", executable|objectvalue, 0, NULL, &stopscroll_func },
+  FUNC_DEF_NOARG(empty, executable|objectvalue),
+  FUNC_DEF_NOARG(remainingpixels, executable|objectvalue),
+  FUNC_DEF_NOARG(remainingtime, executable|numeric),
+  FUNC_DEF_W_ARG(alertempty, executable|objectvalue),
+  FUNC_DEF_NOARG(purge, executable|objectvalue),
+  FUNC_DEF_W_ARG(startscroll, executable|objectvalue),
+  FUNC_DEF_NOARG(stopscroll, executable|objectvalue),
   #endif
   // property accessors
   ACC_DECL("scrolledview", objectvalue|lvalue, ScrolledView),

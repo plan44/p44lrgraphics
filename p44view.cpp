@@ -1578,8 +1578,7 @@ JsonObjectPtr P44View::viewConfigFromScriptObj(ScriptObjPtr aArg, ErrorPtr &aErr
 
 
 // findview(viewlabel)
-static const BuiltInArgDesc findview_args[] = { { text } };
-static const size_t findview_numargs = sizeof(findview_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(findview, { text } );
 static void findview_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1594,8 +1593,7 @@ static void findview_func(BuiltinFunctionContextPtr f)
 
 
 // addview(view)
-static const BuiltInArgDesc addview_args[] = { { structured } };
-static const size_t addview_numargs = sizeof(addview_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(addview, { structured } );
 static void addview_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1619,8 +1617,7 @@ static void addview_func(BuiltinFunctionContextPtr f)
 
 
 // configure(jsonconfig|filename)
-static const BuiltInArgDesc configure_args[] = { { text|objectvalue } };
-static const size_t configure_numargs = sizeof(configure_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(configure, { text|objectvalue } );
 static void configure_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1642,8 +1639,7 @@ static void configure_func(BuiltinFunctionContextPtr f)
 
 
 // content_position(x,y,centered)
-static const BuiltInArgDesc content_position_args[] = { { numeric|null }, { numeric|null }, { numeric|optionalarg } };
-static const size_t content_position_numargs = sizeof(content_position_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(content_position, { numeric|null }, { numeric|null }, { numeric|optionalarg } );
 static void content_position_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1662,8 +1658,7 @@ static void content_position_func(BuiltinFunctionContextPtr f)
 
 
 // content_size(dx,dy)
-static const BuiltInArgDesc content_size_args[] = { { numeric|null }, { numeric|null } };
-static const size_t content_size_numargs = sizeof(content_size_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(content_size, { numeric|null }, { numeric|null } );
 static void content_size_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1693,8 +1688,7 @@ static void status_func(BuiltinFunctionContextPtr f)
 #endif
 
 // set(propertyname, newvalue)   convenience function to set a single property
-static const BuiltInArgDesc set_args[] = { { text }, { anyvalid } };
-static const size_t set_numargs = sizeof(set_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(set, { text }, { anyvalid } );
 static void set_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1794,8 +1788,7 @@ static void fullframe_func(BuiltinFunctionContextPtr f)
 
 
 // get(x,y)
-static const BuiltInArgDesc get_args[] = { { numeric|undefres }, { numeric|undefres } };
-static const size_t get_numargs = sizeof(get_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(get, { numeric|undefres }, { numeric|undefres } );
 static void get_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1811,8 +1804,7 @@ static void get_func(BuiltinFunctionContextPtr f)
 #if ENABLE_ANIMATION
 
 // animator(propertyname)
-static const BuiltInArgDesc animator_args[] = { { text } };
-static const size_t animator_numargs = sizeof(animator_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(animator, { text } );
 static void animator_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
@@ -1884,26 +1876,26 @@ static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
 
 static const BuiltinMemberDescriptor viewMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "findview", executable|objectvalue, findview_numargs, findview_args, &findview_func },
-  { "addview", executable|objectvalue, addview_numargs, addview_args, &addview_func },
-  { "configure", executable|objectvalue, configure_numargs, configure_args, &configure_func },
-  { "set", executable|objectvalue, set_numargs, set_args, &set_func },
-  { "render", executable|objectvalue, 0, NULL, &render_func },
-  { "remove", executable|numeric, 0, NULL, &remove_func },
-  { "parent", executable|objectvalue, 0, NULL, &parent_func },
-  { "clear", executable|objectvalue, 0, NULL, &clear_func },
-  { "reset", executable|objectvalue, 0, NULL, &reset_func },
-  { "fullframe", executable|objectvalue, 0, NULL, &fullframe_func },
-  { "content_position", executable|objectvalue, content_position_numargs, content_position_args, &content_position_func },
-  { "content_size", executable|objectvalue, content_size_numargs, content_size_args, &content_size_func },
-  { "get", executable|text, get_numargs, get_args, &get_func },
+  FUNC_DEF_W_ARG(findview, executable|objectvalue),
+  FUNC_DEF_W_ARG(addview, executable|objectvalue),
+  FUNC_DEF_W_ARG(configure, executable|objectvalue),
+  FUNC_DEF_W_ARG(set, executable|objectvalue),
+  FUNC_DEF_NOARG(render, executable|objectvalue),
+  FUNC_DEF_NOARG(remove, executable|numeric),
+  FUNC_DEF_NOARG(parent, executable|objectvalue),
+  FUNC_DEF_NOARG(clear, executable|objectvalue),
+  FUNC_DEF_NOARG(reset, executable|objectvalue),
+  FUNC_DEF_NOARG(fullframe, executable|objectvalue),
+  FUNC_DEF_W_ARG(content_position, executable|objectvalue),
+  FUNC_DEF_W_ARG(content_size, executable|objectvalue),
+  FUNC_DEF_W_ARG(get, executable|text),
   #if ENABLE_ANIMATION
-  { "animator", executable|objectvalue, animator_numargs, animator_args, &animator_func },
-  { "stopanimations", executable|objectvalue, 0, NULL, &stopanimations_func },
-  { "animations", executable|arrayvalue, 0, NULL, &animations_func },
+  FUNC_DEF_W_ARG(animator, executable|objectvalue),
+  FUNC_DEF_NOARG(stopanimations, executable|objectvalue),
+  FUNC_DEF_NOARG(animations, executable|arrayvalue),
   #endif // ENABLE_ANIMATION
   #if ENABLE_VIEWSTATUS
-  { "status", executable|objectvalue, 0, NULL, &status_func },
+  FUNC_DEF_NOARG(status, executable|objectvalue),
   #endif // ENABLE_VIEWSTATUS
   #endif // P44SCRIPT_FULL_SUPPORT
   // property accessors
@@ -1952,8 +1944,7 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
 
 
 // makeview(jsonconfig|filename)
-static const BuiltInArgDesc makeview_args[] = { { text|objectvalue } };
-static const size_t makeview_numargs = sizeof(makeview_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(makeview, { text|objectvalue } );
 static void makeview_func(BuiltinFunctionContextPtr f)
 {
   P44ViewPtr newView;
@@ -1980,8 +1971,8 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
-  { "makeview", executable|objectvalue, makeview_numargs, makeview_args, &makeview_func },
-  { "lrg", builtinmember, 0, NULL, (BuiltinFunctionImplementation)&lrg_accessor }, // Note: correct '.accessor=&lrg_accessor' form does not work with OpenWrt g++, so need ugly cast here
+  FUNC_DEF_W_ARG(makeview, executable|objectvalue),
+  MEMBER_DEF(lrg, builtinmember),
   { NULL } // terminator
 };
 

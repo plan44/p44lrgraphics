@@ -324,8 +324,7 @@ ScriptObjPtr ViewSequencer::stepsList()
 #if P44SCRIPT_FULL_SUPPORT
 
 // pushstep(view, showtime [, fadeintime [, fadeouttime]])
-static const BuiltInArgDesc pushstep_args[] = { { structured }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg } };
-static const size_t pushstep_numargs = sizeof(pushstep_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(pushstep, { structured }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg } );
 static void pushstep_func(BuiltinFunctionContextPtr f)
 {
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
@@ -345,8 +344,7 @@ static void pushstep_func(BuiltinFunctionContextPtr f)
 
 
 // start(repeat)
-static const BuiltInArgDesc start_args[] = { { numeric|optionalarg } };
-static const size_t start_numargs = sizeof(start_args)/sizeof(BuiltInArgDesc);
+FUNC_ARG_DEFS(start, { numeric|optionalarg } );
 static void start_func(BuiltinFunctionContextPtr f)
 {
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
@@ -396,9 +394,9 @@ static ScriptObjPtr access_Steps(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 
 static const BuiltinMemberDescriptor viewSequencerMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
-  { "pushstep", executable|null|error, pushstep_numargs, pushstep_args, &pushstep_func },
-  { "start", executable|null|error, start_numargs, start_args, &start_func },
-  { "stop", executable|null|error, 0, nullptr, &stop_func },
+  FUNC_DEF_W_ARG(pushstep, executable|null|error),
+  FUNC_DEF_W_ARG(start, executable|null|error),
+  FUNC_DEF_NOARG(stop, executable|null|error),
   #endif
   // property accessors
   ACC_DECL("steps", objectvalue, Steps),
