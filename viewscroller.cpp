@@ -591,9 +591,9 @@ static const BuiltinMemberDescriptor scrollerFunctions[] = {
   ACC_DECL("scrolledview", objectvalue|lvalue, ScrolledView),
   ACC_DECL("syncscroll", numeric|lvalue, SyncScroll),
   ACC_DECL("autopurge", numeric|lvalue, AutoPurge),
-  ACC_DECL("step_x", numeric, StepX),
-  ACC_DECL("step_y", numeric, StepY),
-  ACC_DECL("interval", numeric, ScrollStepIntervalS),
+  ACC_DECL("step_x", numeric|lvalue, StepX),
+  ACC_DECL("step_y", numeric|lvalue, StepY),
+  ACC_DECL("interval", numeric|lvalue, ScrollStepIntervalS),
   ACC_DECL("steps", numeric, RemainingSteps),
   { NULL } // terminator
 };
