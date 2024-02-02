@@ -719,7 +719,7 @@ namespace p44 {
   #define ACCFN_DEF typedef P44Script::ScriptObjPtr (*ACCFN)(ACCESSOR_CLASS& aView, P44Script::ScriptObjPtr aToWrite);
   // member declaration
   #define ACC_DECL(field, types, prop) \
-    { field, builtinmember|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&property_accessor }
+    { field, builtinvalue|builtin|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&property_accessor }
   // member access implementation
   // - read/write
   #define ACC_IMPL(prop, getter, constructor) \

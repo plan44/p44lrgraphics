@@ -1173,10 +1173,10 @@ JsonObjectPtr P44View::viewStatus()
 {
   JsonObjectPtr status = JsonObject::newObj();
   ScriptObjPtr vo = newViewObj();
-  ValueIteratorPtr iter = vo->newIterator(jsonrepresentable);
+  ValueIteratorPtr iter = vo->newIterator(nonebut|jsonrepresentable);
   ScriptObjPtr name;
   while((name = iter->obtainKey(false))) {
-    ScriptObjPtr m = iter->obtainValue(jsonrepresentable);
+    ScriptObjPtr m = iter->obtainValue(nonebut|jsonrepresentable);
     if (m) status->add(name->stringValue().c_str(), m->jsonValue());
     iter->next();
   }
@@ -1972,7 +1972,7 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
   FUNC_DEF_W_ARG(makeview, executable|objectvalue),
-  MEMBER_DEF(lrg, builtinmember),
+  MEMBER_DEF(lrg, builtinvalue),
   { NULL } // terminator
 };
 
