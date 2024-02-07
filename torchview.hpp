@@ -174,9 +174,9 @@ namespace p44 {
   namespace P44Script {
 
     /// represents a TorchView
-    class TorchViewObj : public P44lrgViewObj
+    class TorchViewObj : public ColorEffectViewObj
     {
-      typedef P44lrgViewObj inherited;
+      typedef ColorEffectViewObj inherited;
     public:
       TorchViewObj(P44ViewPtr aView);
       TorchViewPtr torch() { return boost::static_pointer_cast<TorchView>(inherited::view()); };

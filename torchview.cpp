@@ -330,7 +330,7 @@ ACC_IMPL_INT(HeatCap)
 ACC_IMPL_INT(HotsparkMin)
 ACC_IMPL_STR(HotsparkColor)
 ACC_IMPL_STR(HotsparkColorInc)
-ACC_IMPL_INT(CycleTimeS)
+ACC_IMPL_DBL(CycleTimeS)
 
 static const BuiltinMemberDescriptor torchMembers[] = {
   // property accessors
