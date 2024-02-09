@@ -140,10 +140,6 @@ double ColorEffectView::gradiated(double aValue, double aProgress, double aGradi
 
 /// @param aNumGradientPixels the number of gradient pixels we need (at most, should be enough to span
 ///   the entire view)
-/// @param aPeriods how many progress periods to generate, i.e. in what range the progress parameter
-///   should sweep over the entire gradient.
-///   Note that "periods" are NOT necessarily the periods of the H,S,V curves, only if the gradient parameter is==1
-///   Usually gradients are less than 1, meaning the respective H,S,V curve spans more than 1 period
 void ColorEffectView::calculateGradient(int aNumGradientPixels)
 {
   mGradientPixels.clear();

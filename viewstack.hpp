@@ -112,6 +112,9 @@ namespace p44 {
     /// child view has changed geometry (frame, content rect)
     virtual void childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
+    /// my own geometry has changed
+    virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
+
     #if ENABLE_VIEWCONFIG
 
     /// configure view from JSON

@@ -65,6 +65,7 @@ void ViewSequencer::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicro
   s.mFadeInTime = aFadeInTime;
   s.mFadeOutTime = aFadeOutTime;
   mSequence.push_back(s);
+  if (s.mView) s.mView->autoAdjustTo(mFrame);
   makeDirty();
 }
 
@@ -196,6 +197,16 @@ void ViewSequencer::updated()
   inherited::updated();
   if (mCurrentView) mCurrentView->updated();
 }
+
+
+void ViewSequencer::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
+{
+  for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
+    P44ViewPtr v = pos->mView;
+    if (v) v->autoAdjustTo(mFrame);
+  }
+}
+
 
 
 PixelColor ViewSequencer::contentColorAt(PixelPoint aPt)

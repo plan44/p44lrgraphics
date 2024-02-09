@@ -102,6 +102,9 @@ namespace p44 {
     /// call when display is updated
     virtual void updated() P44_OVERRIDE;
 
+    /// my own geometry has changed
+    virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
+
     #if ENABLE_VIEWCONFIG
 
     /// configure view from JSON

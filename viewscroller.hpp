@@ -80,7 +80,7 @@ namespace p44 {
 
     /// set the to be scrolled view
     /// @param aScrolledView the view of which a part should be shown in this view.
-    void setScrolledView(P44ViewPtr aScrolledView) { mScrolledView = aScrolledView; if (aScrolledView) aScrolledView->setParent(this); makeDirty(); }
+    void setScrolledView(P44ViewPtr aScrolledView);
 
     /// @return the view being scrolled
     P44ViewPtr getScrolledView() { return mScrolledView; }
@@ -158,6 +158,9 @@ namespace p44 {
 
     /// call when display is updated
     virtual void updated() P44_OVERRIDE;
+
+    /// my own geometry has changed
+    virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
 
     #if ENABLE_VIEWCONFIG
 

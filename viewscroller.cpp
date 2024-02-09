@@ -251,6 +251,25 @@ void ViewScroller::updated()
 }
 
 
+void ViewScroller::setScrolledView(P44ViewPtr aScrolledView)
+{
+  mScrolledView = aScrolledView;
+  if (mScrolledView) {
+    mScrolledView->setParent(this);
+    mScrolledView->autoAdjustTo(mFrame);
+  }
+  makeDirty();
+}
+
+
+void ViewScroller::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
+{
+  inherited::geometryChanged(aOldFrame, aOldContent);
+  if (mScrolledView) mScrolledView->autoAdjustTo(mFrame);
+}
+
+
+
 PixelColor ViewScroller::contentColorAt(PixelPoint aPt)
 {
   if (!mScrolledView) return transparent;

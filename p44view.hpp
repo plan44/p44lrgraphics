@@ -129,7 +129,7 @@ namespace p44 {
       clipY = clipYmin|clipYmax, // clip content vertically
       clipXY = clipX|clipY, // clip content
       clipMask = clipXY, // mask for clip bits
-      noAdjust = clipXY, // for positioning: do not adjust content rectangle
+      noAdjust = clipXY, // for positioning: do not adjust CONTENT rectangle
       appendLeft = repeatXmin, // for positioning: extend to the left
       appendRight = repeatXmax, // for positioning: extend to the right
       fillX = repeatXmin|repeatXmax, // for positioning: set frame size fill parent in X direction
@@ -137,6 +137,7 @@ namespace p44 {
       appendTop = repeatYmax, // for positioning: extend towards top
       fillY = repeatYmin|repeatYmax, // for positioning: set frame size fill parent in Y direction
       fillXY = fillX|fillY, // for positioning: set frame size fill parent frame
+      adjustmentMask = repeatXY, // mask for adjustment bits
     };
     typedef uint8_t FramingMode;
 
@@ -191,6 +192,7 @@ namespace p44 {
     PixelRect mContent; ///< content offset and size relative to frame (but in content coordinates, i.e. possibly orientation, scroll and zoom translated!). Size might not be the actual size, but just a sizing parameter (e.g. lightspot: 1st quadrant)
     Orientation mContentOrientation; ///< orientation of content in frame
     FramingMode mFramingMode; ///< content wrap mode in frame area
+    FramingMode mAutoAdjust; ///< adjustments to apply when parent view changes geometry
     bool mContentIsMask; ///< if set, only alpha of content is used on foreground color
     bool mInvertAlpha; ///< invert alpha provided by content
     bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
@@ -378,13 +380,21 @@ namespace p44 {
     /// get foreground color
     PixelColor getForegroundColor() const { return mForegroundColor; }
 
-    /// set frame mode (clipping, repeating, autopositioning)
+    /// set framing mode (clipping, repeating)
     /// @param aFramingMode the new framing mode
     void setFramingMode(FramingMode aFramingMode) { mFramingMode = aFramingMode; makeDirty(); }
 
     /// get current framing mode
     /// @return current framing mode
     FramingMode getFramingMode() { return mFramingMode; }
+
+    /// set autoadjust mode
+    /// @param aFramingMode the new autoadjust mode
+    void setAutoAdjust(FramingMode aAutoAdjust) { mAutoAdjust = aAutoAdjust; }
+
+    /// get current autoadjust mode
+    /// @return current autoadjust mode
+    FramingMode getAutoAdjust() { return mAutoAdjust; }
 
     /// set view label
     /// @note this is for referencing views in reconfigure operations
@@ -505,6 +515,10 @@ namespace p44 {
 
     /// size frame to content (but no move)
     void sizeFrameToContent();
+
+    /// re-adjust this view according to mAutoAdjust to passed reference rectangle
+    /// @param aReferenceRect the reference rectangle (usually parent frame or content rect)
+    void autoAdjustTo(PixelRect aReferenceRect);
 
     /// move frame such that its new origin is at the point where the content area starts
     /// @note the pixel that appears at the new frame origin is one corner of the contents, but not necessarily the origin,

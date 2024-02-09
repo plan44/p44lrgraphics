@@ -113,6 +113,8 @@ void ViewStack::pushView(P44ViewPtr aView, int aSpacing, bool aFullFrame)
   if (aFullFrame && ((mPositioningMode&fillX)==fillX || (mPositioningMode&fillY)==fillY)) {
     aView->setFullFrameContent();
   }
+  // allow the view to auto-adjust to the containing frame
+  aView->autoAdjustTo(mFrame);
 }
 
 
@@ -317,6 +319,14 @@ void ViewStack::updated()
   }
 }
 
+
+void ViewStack::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
+{
+  inherited::geometryChanged(aOldFrame, aOldContent);
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
+    (*pos)->autoAdjustTo(mFrame);
+  }
+}
 
 
 void ViewStack::childGeometryChanged(P44ViewPtr aChildView, PixelRect aOldFrame, PixelRect aOldContent)

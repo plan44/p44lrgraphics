@@ -55,6 +55,8 @@ P44View::P44View() :
   mContentOrientation = right;
   // default to clip to frame, no content repeating
   mFramingMode = clipXY;
+  // no automatic adjustment when parent's geometry changes
+  mAutoAdjust = noFraming;
   // default content size is same as view's
   setContent(zeroRect);
   mBackgroundColor = { .r=0, .g=0, .b=0, .a=0 }; // transparent background,
@@ -456,6 +458,24 @@ void P44View::sizeFrameToContent()
   f.dx = sz.x;
   f.dy = sz.y;
   changeGeometryRect(mFrame, f);
+}
+
+
+void P44View::autoAdjustTo(PixelRect aReferenceRect)
+{
+  announceChanges(true);
+  if (mAutoAdjust & adjustmentMask) {
+    if ((mAutoAdjust & fillX)==fillX) {
+      mFrame.dx = aReferenceRect.dx;
+    }
+    if ((mAutoAdjust & fillY)==fillY) {
+      mFrame.dy = aReferenceRect.dy;
+    }
+    if ((mAutoAdjust & noAdjust)!=noAdjust) {
+      setFullFrameContent();
+    }
+  }
+  announceChanges(false);
 }
 
 
@@ -1865,6 +1885,15 @@ static ScriptObjPtr access_FramingMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWr
   return aToWrite; /* reflect back to indicate writable */
 }
 
+static ScriptObjPtr access_AutoAdjust(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
+{
+  if (!aToWrite) return new StringValue(P44View::framingModeToText(aView.getAutoAdjust(), true));
+  if (aToWrite->hasType(numeric)) aView.setFramingMode(aToWrite->intValue());
+  else aView.setAutoAdjust(P44View::textToFramingMode(aToWrite->stringValue().c_str()));
+  return aToWrite; /* reflect back to indicate writable */
+}
+
+
 static ScriptObjPtr access_Orientation(P44View& aView, ScriptObjPtr aToWrite)
 {
   if (!aToWrite) return new StringValue(P44View::orientationToText(aView.getOrientation()));
@@ -1921,6 +1950,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("visible", numeric|lvalue, Visible),
   ACC_DECL("z_order", numeric|lvalue, ZOrder),
   ACC_DECL("framing", text|numeric|lvalue, FramingMode),
+  ACC_DECL("autoadjust", text|numeric|lvalue, AutoAdjust),
   ACC_DECL("orientation", text|numeric|lvalue, Orientation),
   ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
@@ -1938,7 +1968,7 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
   if (sharedViewMemberLookupP==NULL) {
     sharedViewMemberLookupP = new BuiltInMemberLookup(viewMembers);
     sharedViewMemberLookupP->isMemberVariable(); // disable refcounting
-  }
+}
   registerMemberLookup(sharedViewMemberLookupP);
 }
 
