@@ -24,13 +24,14 @@
 #define _p44lrgraphics_canvasview_hpp__
 
 #include "p44lrg_common.hpp"
+#include "coloreffectview.hpp"
 
 
 namespace p44 {
 
-  class CanvasView : public P44View
+  class CanvasView : public ColorEffectView
   {
-    typedef P44View inherited;
+    typedef ColorEffectView inherited;
 
     PixelColor* mCanvasBuffer;
     size_t mNumPixels;
@@ -50,6 +51,12 @@ namespace p44 {
     void setPixel(PixelColor aColor, PixelCoord aPixelIndex);
     void setPixel(PixelColor aColor, PixelPoint aPixelPoint);
 
+
+    /// draw line in foreground color (using gradient if enabled)
+    void drawLine(PixelPoint aStart, PixelPoint aEnd);
+
+    /// color effect params have changed
+    virtual void recalculateColoring() P44_OVERRIDE;
 
     /// @name trivial property getters/setters
     /// @{
@@ -89,9 +96,9 @@ namespace p44 {
   namespace P44Script {
 
     /// represents a CanvasView
-    class CanvasViewObj : public P44lrgViewObj
+    class CanvasViewObj : public ColorEffectViewObj
     {
-      typedef P44lrgViewObj inherited;
+      typedef ColorEffectViewObj inherited;
     public:
       CanvasViewObj(P44ViewPtr aView);
       CanvasViewPtr canvas() { return boost::static_pointer_cast<CanvasView>(inherited::view()); };

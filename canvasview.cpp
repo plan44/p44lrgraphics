@@ -89,6 +89,15 @@ void CanvasView::geometryChanged(PixelRect aOldFrame, PixelRect aOldContent)
 }
 
 
+#define GRADIENT_SIZE 256
+
+void CanvasView::recalculateColoring()
+{
+  calculateGradient(GRADIENT_SIZE);
+  inherited::recalculateColoring();
+}
+
+
 PixelColor CanvasView::contentColorAt(PixelPoint aPt)
 {
   if (!mCanvasBuffer || !isInContentSize(aPt)) {
@@ -113,6 +122,37 @@ void CanvasView::setPixel(PixelColor aColor, PixelPoint aPixelPoint)
 {
   setPixel(aColor, aPixelPoint.y*mContent.dx+aPixelPoint.x);
 }
+
+
+void CanvasView::drawLine(PixelPoint aStart, PixelPoint aEnd)
+{
+  // van Bresenham balancing positive and negative error between x and y
+  PixelCoord dx = abs(aEnd.x-aStart.x);
+  int sign_x = aStart.x<aEnd.x ? 1 : -1;
+  PixelCoord dy = -abs(aEnd.y-aStart.y);
+  int sign_y = aStart.y<aEnd.y ? 1 : -1;
+  int error = dx+dy;
+  int m = max(dx, -dy);
+  double progressfactor = m ? (double)GRADIENT_SIZE/m : 0;
+  int steps = 0;
+  while (true) {
+    setPixel(gradientPixel(progressfactor*steps, false), aStart);
+    steps++;
+    if (aStart.x==aEnd.x && aStart.y==aEnd.y) break;
+    int e2 = error*2;
+    if (e2>=dy) {
+      if (aStart.x==aEnd.x) break;
+      error += dy;
+      aStart.x += sign_x;
+    }
+    if (e2<=dx) {
+      if (aStart.y==aEnd.y) break;
+      error += dx;
+      aStart.y += sign_y;
+    }
+  }
+}
+
 
 
 #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
@@ -167,6 +207,23 @@ static void dot_func(BuiltinFunctionContextPtr f)
   f->finish(v); // allow chaining
 }
 
+
+// line(x0,y0,x1,x1)
+FUNC_ARG_DEFS(line, { numeric|undefres }, { numeric|undefres }, { numeric|undefres }, { numeric|undefres } );
+static void line_func(BuiltinFunctionContextPtr f)
+{
+  CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
+  assert(v);
+  PixelPoint start, end;
+  start.x = f->arg(0)->intValue();
+  start.y = f->arg(1)->intValue();
+  end.x = f->arg(2)->intValue();
+  end.y = f->arg(3)->intValue();
+  v->canvas()->drawLine(start, end);
+  f->finish(v); // allow chaining
+}
+
+
 #endif // P44SCRIPT_FULL_SUPPORT
 
 #define ACCESSOR_CLASS CanvasView
@@ -188,7 +245,7 @@ ACC_IMPL_RO_INT(NumPixels);
 static const BuiltinMemberDescriptor canvasViewMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
   FUNC_DEF_W_ARG(dot, executable|null),
-//  FUNC_DEF_W_ARG(line, executable|null),
+  FUNC_DEF_W_ARG(line, executable|null),
 //  FUNC_DEF_W_ARG(rect, executable|null),
 //  FUNC_DEF_W_ARG(oval, executable|null),
   #endif
