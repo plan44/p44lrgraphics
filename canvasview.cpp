@@ -203,11 +203,7 @@ static BuiltInMemberLookup* sharedCanvasMemberLookupP = NULL;
 CanvasViewObj::CanvasViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedCanvasMemberLookupP==NULL) {
-    sharedCanvasMemberLookupP = new BuiltInMemberLookup(canvasViewMembers);
-    sharedCanvasMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedCanvasMemberLookupP);
+  registerSharedLookup(sharedCanvasMemberLookupP, canvasViewMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

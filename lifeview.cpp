@@ -498,11 +498,7 @@ static BuiltInMemberLookup* sharedLifeMemberLookupP = NULL;
 LifeViewObj::LifeViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedLifeMemberLookupP==NULL) {
-    sharedLifeMemberLookupP = new BuiltInMemberLookup(lifeMembers);
-    sharedLifeMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedLifeMemberLookupP);
+  registerSharedLookup(sharedLifeMemberLookupP, lifeMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

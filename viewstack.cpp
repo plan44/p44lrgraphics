@@ -614,11 +614,7 @@ static BuiltInMemberLookup* sharedViewStackMemberLookupP = NULL;
 ViewStackObj::ViewStackObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedViewStackMemberLookupP==NULL) {
-    sharedViewStackMemberLookupP = new BuiltInMemberLookup(viewStackMembers);
-    sharedViewStackMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedViewStackMemberLookupP);
+  registerSharedLookup(sharedViewStackMemberLookupP, viewStackMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

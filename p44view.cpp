@@ -1965,11 +1965,7 @@ static BuiltInMemberLookup* sharedViewMemberLookupP = NULL;
 P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
   mView(aView)
 {
-  if (sharedViewMemberLookupP==NULL) {
-    sharedViewMemberLookupP = new BuiltInMemberLookup(viewMembers);
-    sharedViewMemberLookupP->isMemberVariable(); // disable refcounting
-}
-  registerMemberLookup(sharedViewMemberLookupP);
+  registerSharedLookup(sharedViewMemberLookupP, viewMembers);
 }
 
 

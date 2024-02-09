@@ -419,11 +419,7 @@ static BuiltInMemberLookup* sharedViewSequencerMemberLookupP = NULL;
 ViewSequencerObj::ViewSequencerObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedViewSequencerMemberLookupP==NULL) {
-    sharedViewSequencerMemberLookupP = new BuiltInMemberLookup(viewSequencerMembers);
-    sharedViewSequencerMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedViewSequencerMemberLookupP);
+  registerSharedLookup(sharedViewSequencerMemberLookupP, viewSequencerMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

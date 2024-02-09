@@ -394,11 +394,7 @@ static BuiltInMemberLookup* sharedEpxMemberLookupP = NULL;
 EpxViewObj::EpxViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedEpxMemberLookupP==NULL) {
-    sharedEpxMemberLookupP = new BuiltInMemberLookup(epxMembers);
-    sharedEpxMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedEpxMemberLookupP);
+  registerSharedLookup(sharedEpxMemberLookupP, epxMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

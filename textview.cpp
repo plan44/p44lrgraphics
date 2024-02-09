@@ -544,11 +544,7 @@ static BuiltInMemberLookup* sharedTextMemberLookupP = NULL;
 TextViewObj::TextViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedTextMemberLookupP==NULL) {
-    sharedTextMemberLookupP = new BuiltInMemberLookup(textViewMembers);
-    sharedTextMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedTextMemberLookupP);
+  registerSharedLookup(sharedTextMemberLookupP, textViewMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

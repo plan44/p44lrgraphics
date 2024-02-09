@@ -216,11 +216,7 @@ static BuiltInMemberLookup* sharedImageMemberLookupP = NULL;
 ImageViewObj::ImageViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedImageMemberLookupP==NULL) {
-    sharedImageMemberLookupP = new BuiltInMemberLookup(imageViewMembers);
-    sharedImageMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedImageMemberLookupP);
+  registerSharedLookup(sharedImageMemberLookupP, imageViewMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

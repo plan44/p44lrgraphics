@@ -436,11 +436,7 @@ static BuiltInMemberLookup* sharedColorEffectMemberLookupP = NULL;
 ColorEffectViewObj::ColorEffectViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedColorEffectMemberLookupP==NULL) {
-    sharedColorEffectMemberLookupP = new BuiltInMemberLookup(colorEffectMembers);
-    sharedColorEffectMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedColorEffectMemberLookupP);
+  registerSharedLookup(sharedColorEffectMemberLookupP, colorEffectMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

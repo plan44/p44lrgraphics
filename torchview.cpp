@@ -353,11 +353,7 @@ static BuiltInMemberLookup* sharedTorchMemberLookupP = NULL;
 TorchViewObj::TorchViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedTorchMemberLookupP==NULL) {
-    sharedTorchMemberLookupP = new BuiltInMemberLookup(torchMembers);
-    sharedTorchMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedTorchMemberLookupP);
+  registerSharedLookup(sharedTorchMemberLookupP, torchMembers);
 }
 
 #endif // ENABLE_P44SCRIPT

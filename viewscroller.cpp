@@ -622,11 +622,7 @@ static BuiltInMemberLookup* sharedScrollerMemberLookupP = NULL;
 ScrollerViewObj::ScrollerViewObj(P44ViewPtr aView) :
   inherited(aView)
 {
-  if (sharedScrollerMemberLookupP==NULL) {
-    sharedScrollerMemberLookupP = new BuiltInMemberLookup(scrollerFunctions);
-    sharedScrollerMemberLookupP->isMemberVariable(); // disable refcounting
-  }
-  registerMemberLookup(sharedScrollerMemberLookupP);
+  registerSharedLookup(sharedScrollerMemberLookupP, scrollerFunctions);
 }
 
 #endif // ENABLE_P44SCRIPT
