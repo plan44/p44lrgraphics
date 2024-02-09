@@ -43,13 +43,8 @@ ColorEffectView::ColorEffectView() :
   // make sure we start dark!
   setForegroundColor(black);
   setBackgroundColor(transparent);
-  #if NEW_COLORING
   mEffectCycles = 1; // single cycle (gradient = 1 -> covers full gradient)
   mEffectZoom = 1; // standard effect size (relative to content size)
-  #else
-  mExtent.x = 10;
-  mExtent.y = 10;
-  #endif
 }
 
 ColorEffectView::~ColorEffectView()
@@ -78,25 +73,6 @@ void ColorEffectView::setColoringParameters(
     makeColorDirty();
   }
 }
-
-
-#if !NEW_COLORING
-
-void ColorEffectView::setExtent(PixelPoint aExtent)
-{
-  mExtent = aExtent;
-  makeColorDirty(); // because it also affects gradient
-}
-
-
-void ColorEffectView::setRelativeExtent(double aRelativeExtent)
-{
-  mExtent.x = aRelativeExtent*mContent.dx/2;
-  mExtent.y = aRelativeExtent*mContent.dy/2;
-  makeColorDirty(); // because it also affects gradient
-}
-
-#endif
 
 
 double ColorEffectView::gradientCycles(double aValue, GradientMode aMode)
@@ -168,11 +144,7 @@ double ColorEffectView::gradiated(double aValue, double aProgress, double aGradi
 ///   should sweep over the entire gradient.
 ///   Note that "periods" are NOT necessarily the periods of the H,S,V curves, only if the gradient parameter is==1
 ///   Usually gradients are less than 1, meaning the respective H,S,V curve spans more than 1 period
-#if NEW_COLORING
 void ColorEffectView::calculateGradient(int aNumGradientPixels)
-#else
-void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixels)
-#endif
 {
   mGradientPixels.clear();
   if (mBriGradient==0 && mHueGradient==0 && mSatGradient==0) return; // optimized
@@ -183,11 +155,7 @@ void ColorEffectView::calculateGradient(int aNumGradientPixels, int aExtentPixel
   // now create gradient pixels covering extent dimension
   for (int i=0; i<aNumGradientPixels; i++) {
     // progress within the extent (0..1)
-    #if NEW_COLORING
     double pr = (double)i*mEffectCycles/aNumGradientPixels;
-    #else
-    double pr = aExtentPixels>0 ? (double)i/aExtentPixels : 0;
-    #endif
     // - hue
     h = gradiated(base_h, pr, mHueGradient, mHueMode, 360, true);
     // - saturation
@@ -390,7 +358,6 @@ ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double&
     aCurrentValue = mSatGradient;
     return boost::bind(&ColorEffectView::coloringPropertySetter, this, mSatGradient, _1);
   }
-  #if NEW_COLORING
   else if (uequals(aProperty, "effect_cycles")) {
     aCurrentValue = mEffectCycles;
     return boost::bind(&ColorEffectView::setEffectCycles, this, _1);
@@ -399,18 +366,6 @@ ValueSetterCB ColorEffectView::getPropertySetter(const string aProperty, double&
     aCurrentValue = mEffectZoom;
     return boost::bind(&ColorEffectView::setEffectZoom, this, _1);
   }
-  #else
-  else if (uequals(aProperty, "extent_x")) {
-    return getCoordPropertySetter(mExtent.x, aCurrentValue);
-  }
-  else if (uequals(aProperty, "extent_y")) {
-    return getCoordPropertySetter(mExtent.y, aCurrentValue);
-  }
-  if (uequals(aProperty, "rel_extent")) {
-    aCurrentValue = 0; // dummy
-    return boost::bind(&ColorEffectView::setRelativeExtent, this, _1);
-  }
-  #endif
   // unknown at this level
   return inherited::getPropertySetter(aProperty, aCurrentValue);
 }
@@ -457,14 +412,9 @@ ACC_IMPL_DBL(SatGradient);
 ACC_IMPL_GMODE(BriMode);
 ACC_IMPL_GMODE(HueMode);
 ACC_IMPL_GMODE(SatMode);
-#if NEW_COLORING
 ACC_IMPL_DBL(EffectCycles);
 ACC_IMPL_DBL(EffectZoom);
 ACC_IMPL_BOOL(EffectWrap);
-#else
-ACC_IMPL_DBL(ExtentX);
-ACC_IMPL_DBL(ExtentY);
-#endif
 ACC_IMPL_BOOL(Radial);
 ACC_IMPL_BOOL(TransparentFade);
 
@@ -477,14 +427,9 @@ static const BuiltinMemberDescriptor colorEffectMembers[] = {
   ACC_DECL("brightness_mode", numeric|lvalue, BriMode),
   ACC_DECL("hue_mode", numeric|lvalue, HueMode),
   ACC_DECL("saturation_mode", numeric|lvalue, SatMode),
-  #if NEW_COLORING
   ACC_DECL("effect_cycles", numeric|lvalue, EffectCycles),
   ACC_DECL("effect_zoom", numeric|lvalue, EffectZoom),
   ACC_DECL("effect_wrap", numeric|lvalue, EffectWrap),
-  #else
-  ACC_DECL("extent_x", numeric|lvalue, ExtentX),
-  ACC_DECL("extent_y", numeric|lvalue, ExtentY),
-  #endif
   ACC_DECL("radial", numeric|lvalue, Radial),
   ACC_DECL("transparent_fade", numeric|lvalue, TransparentFade),
   { NULL } // terminator

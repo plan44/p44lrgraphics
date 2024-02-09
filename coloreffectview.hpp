@@ -25,11 +25,6 @@
 
 #include "p44lrg_common.hpp"
 
-#ifndef NEW_COLORING
-  // FIXME: remove ifdefs once new coloring is ok, or make NEW_COLORING the default at least
-  #define NEW_COLORING 1
-#endif
-
 namespace p44 {
 
   typedef enum : uint8_t {
@@ -72,13 +67,9 @@ namespace p44 {
     GradientMode mSatMode;
     bool mTransparentFade; ///< if set, brightness gradient controls alpha, otherwise color itself
 
-    #if NEW_COLORING
     double mEffectCycles; ///< how many overall effect cycles to run within the effect - depends on effect itself what it actually means
     double mEffectZoom; ///< zoom for effect (relative to content size), 1=standard - depends on effect itself what it actually means, negative/Infinite -> unlimited
     bool mEffectWrap; ///< repeat/wrap effect - depends on effect itself what it actually means
-    #else
-    PixelCoord mExtent; ///< extent of effect in pixels (depends on effect itself what this actually means)
-    #endif
 
   public :
 
@@ -113,7 +104,6 @@ namespace p44 {
     void setHueMode(GradientMode aVal) { mHueMode = aVal; flagColorChange(); };
     GradientMode getSatMode() { return mSatMode; };
     void setSatMode(GradientMode aVal) { mSatMode = aVal; flagColorChange(); };
-    #if NEW_COLORING
     // - effect cycles
     double getEffectCycles() { return mEffectCycles; };
     void setEffectCycles(double aVal) { mEffectCycles = aVal; flagColorChange(); };
@@ -122,13 +112,6 @@ namespace p44 {
     void setEffectZoom(double aVal) { mEffectZoom = aVal; makeDirty(); };
     bool getEffectWrap() { return mEffectWrap; };
     void setEffectWrap(bool aVal) { mEffectWrap = aVal; makeDirty(); };
-    #else
-    // - extent
-    double getExtentX() { return mExtent.x; };
-    void setExtentX(double aVal) { mExtent.x = aVal;  makeDirty(); };
-    double getExtentY() { return mExtent.y; };
-    void setExtentY(double aVal) { mExtent.y = aVal;  makeDirty(); };
-    #endif
     // - flags
     bool getRadial() { return mRadial; };
     void setRadial(bool aVal) { mRadial = aVal; makeColorDirty(); };
@@ -136,27 +119,12 @@ namespace p44 {
     void setTransparentFade(bool aVal) { mTransparentFade = aVal; makeColorDirty(); };
     /// @}
 
-    #if !NEW_COLORING
-    /// set extent (how many pixels the light field reaches out around the center)
-    /// @param aExtent the extent radii of the light in x and y direction
-    /// @note extent(0,0) means single pixel at the center
-    void setExtent(PixelPoint aExtent);
-
-    /// set extent relative to the content size
-    /// @param aRelativeExtent 0 = single pixel, 1 = half the content size in both x/y direction
-    void setRelativeExtent(double aRelativeExtent);
-    #endif
-
     /// gradient utilities
     static double gradientCycles(double aValue, GradientMode aMode);
     static double gradientCurveLevel(double aProgress, GradientMode aMode);
     static double gradiated(double aValue, double aProgress, double aGradient, GradientMode aMode, double aMax, bool aWrap);
 
-    #if NEW_COLORING
     void calculateGradient(int aNumGradientPixels);
-    #else
-    void calculateGradient(int aNumGradientPixels, int aExtentPixels);
-    #endif
 
     #if ENABLE_VIEWCONFIG
 

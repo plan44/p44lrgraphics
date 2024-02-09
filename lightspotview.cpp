@@ -44,11 +44,7 @@ LightSpotView::~LightSpotView()
 void LightSpotView::recalculateColoring()
 {
   // enough pixels so the gradient's resolution is enough to cover the maximum frame dimension
-  #if NEW_COLORING
   calculateGradient(mRadial ? max(mFrame.dx, mFrame.dy) : mFrame.dx);
-  #else
-  calculateGradient(mRadial ? max(mFrame.dx, mFrame.dy) : mFrame.dx,  mRadial ? max(mExtent.x, mExtent.y) : mExtent.x);
-  #endif
   inherited::recalculateColoring();
 }
 
@@ -84,7 +80,6 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
   }
   #endif
 
-  #if NEW_COLORING
   // - factor relative to the size (0..1) = where within the content size
   if (mContent.dx>0) {
     double xf = mContent.dx ? (double)aPt.x/mContent.dx : 0;
@@ -106,34 +101,6 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
       pix = gradientPixel(progress*numGPixels, mEffectWrap);
     }
   }
-  #else
-  // - factor relative to the size (0..1) = where within the extent
-  double xf = (double)aPt.x/mExtent.x;
-  int extentPixels;
-  double progress;
-  if (mRadial) {
-    // radial
-    double yf = (double)aPt.y/mExtent.y;
-    extentPixels = max(mExtent.x, mExtent.y);
-    progress = sqrt(xf*xf+yf*yf);
-  }
-  else {
-    // linear
-    extentPixels = mExtent.x;
-    progress = fabs(xf);
-  }
-  // extent pixels = size of
-  // FIXME: special clipping test here, completely irregular, to allow lightspot extend beyond EXTENT?!?
-  if (progress<1 || (progress==1 && xf<0)  || (mFramingMode&clipXY)==0) {
-    if (numGPixels>0) {
-      int i = progress*extentPixels;
-      pix = gradientPixel(i);
-    }
-    else {
-      pix = mForegroundColor;
-    }
-  }
-  #endif
   return pix;
 }
 
