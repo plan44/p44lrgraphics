@@ -35,6 +35,7 @@
 #include "canvasview.hpp"
 #include "lifeview.hpp"
 #include "torchview.hpp"
+#include "blocksview.hpp"
 
 #if ENABLE_VIEWCONFIG
 

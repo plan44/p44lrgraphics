@@ -169,8 +169,8 @@ void CanvasView::copyPixels(P44ViewPtr aSourceView, bool aFromContent, PixelRect
   dist.x = aDestOrigin.x-aSrcRect.x;
   dist.y = aDestOrigin.y-aSrcRect.y;
   // determine copy direction
-  int xdir = !sameview || dist.x<0 ? 1 : -1; // start at left when moving left
-  int ydir = !sameview || dist.y<0 ? 1 : -1; // start at bottom when moving down
+  int xdir = !sameview || dist.x<=0 ? 1 : -1; // start at left when moving left
+  int ydir = !sameview || dist.y<=0 ? 1 : -1; // start at bottom when moving down
   PixelPoint src;
   src.y = aSrcRect.y + (ydir<0 ? aSrcRect.dy-1 : 0);
   for (PixelCoord ny = aSrcRect.dy; ny>0; ny--) {

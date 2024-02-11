@@ -63,6 +63,11 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
       aNewView = P44ViewPtr(new EpxView);
     }
     #endif
+    #if P44SCRIPT_FULL_SUPPORT
+    else if (vt==BlocksView::staticTypeName()) {
+      aNewView = P44ViewPtr(new BlocksView);
+    }
+    #endif
     else if (vt==CanvasView::staticTypeName()) {
       aNewView = CanvasViewPtr(new CanvasView);
     }
