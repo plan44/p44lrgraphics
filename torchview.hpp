@@ -146,13 +146,13 @@ namespace p44 {
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
-  protected:
-
     /// get content pixel color
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
     virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
+
+  protected:
 
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;

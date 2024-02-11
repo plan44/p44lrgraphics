@@ -69,8 +69,6 @@ namespace p44 {
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
-  protected:
-
     /// get content color at aPt
     virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 

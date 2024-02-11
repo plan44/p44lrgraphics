@@ -1,6 +1,6 @@
 //  SPDX-License-Identifier: GPL-3.0-or-later
 //
-//  Copyright (c) 2016-2023 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2016-2024 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -66,6 +66,9 @@ namespace p44 {
 
   /// @return true if rectangles intersect
   bool rectIntersectsRect(const PixelRect &aRect1, const PixelRect &aRect2);
+
+  /// Normalizes a rectangle to have positive sizes
+  void normalizeRect(PixelRect &aRect);
 
   /// @}
 
@@ -159,6 +162,13 @@ namespace p44 {
     /// flag a transform change
     void flagTransformChange() { flagChange(mChangedTransform); }
 
+    /// get content pixel color
+    /// @param aPt content coordinate
+    /// @note aPt is NOT required to be within actual content as defined by contentSize
+    ///   implementation must check this!
+    /// @note this default base class implementation shows the foreground color on all pixels within contentSize, background otherwise
+    /// @note subclasses should not call inherited normally, but directly return foreground or background colors (or calculated other colors)
+    virtual PixelColor contentColorAt(PixelPoint aPt);
 
   protected:
 
@@ -232,15 +242,6 @@ namespace p44 {
     /// transform content to frame coordinates
     /// @note transforming from content to frame coords is: add content.x/y -> orientateCoord() -> flipCoordInFrame()
     void contentToInFrameCoord(PixelPoint &aCoord);
-
-
-    /// get content pixel color
-    /// @param aPt content coordinate
-    /// @note aPt is NOT required to be within actual content as defined by contentSize
-    ///   implementation must check this!
-    /// @note this default base class implementation shows the foreground color on all pixels within contentSize, background otherwise
-    /// @note subclasses should not call inherited normally, but directly return foreground or background colors (or calculated other colors)
-    virtual PixelColor contentColorAt(PixelPoint aPt);
 
     /// helper for implementations: check if aPt within set content size
     /// @note not all content is actually in the mContent rect, mContent might be just a meaningful dimension for the content geometry (such as center + radii in lightspot)

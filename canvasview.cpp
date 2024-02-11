@@ -1,6 +1,6 @@
 //  SPDX-License-Identifier: GPL-3.0-or-later
 //
-//  Copyright (c) 2020 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2020-2024 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -154,6 +154,43 @@ void CanvasView::drawLine(PixelPoint aStart, PixelPoint aEnd)
 }
 
 
+void CanvasView::copyPixels(P44ViewPtr aSourceView, bool aFromContent, PixelRect aSrcRect, PixelPoint aDestOrigin, bool aNonTransparentOnly)
+{
+  bool sameview;
+  if (!aSourceView) {
+    aSourceView = this; // use myself
+    sameview = true;
+  }
+  else {
+    sameview = aSourceView.get()==this;
+  }
+  normalizeRect(aSrcRect);
+  PixelPoint dist;
+  dist.x = aDestOrigin.x-aSrcRect.x;
+  dist.y = aDestOrigin.y-aSrcRect.y;
+  // determine copy direction
+  int xdir = !sameview || dist.x<0 ? 1 : -1; // start at left when moving left
+  int ydir = !sameview || dist.y<0 ? 1 : -1; // start at bottom when moving down
+  PixelPoint src;
+  src.y = aSrcRect.y + (ydir<0 ? aSrcRect.dy-1 : 0);
+  for (PixelCoord ny = aSrcRect.dy; ny>0; ny--) {
+    src.x = aSrcRect.x + (xdir<0 ? aSrcRect.dx-1 : 0);
+    for (PixelCoord nx = aSrcRect.dx; nx>0; nx--) {
+      PixelColor pix;
+      // get pixel
+      if (aFromContent) pix = aSourceView->contentColorAt(src);
+      else pix = aSourceView->colorInFrameAt(src);
+      if (!aNonTransparentOnly || pix.a>0) {
+        // put pixel to canvas at new position
+        setPixel(pix, { src.x+dist.x, src.y+dist.y });
+      }
+      src.x += xdir;
+    }
+    src.y += ydir;
+  }
+  makeDirty();
+}
+
 
 #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
 
@@ -195,7 +232,7 @@ ScriptObjPtr CanvasView::newViewObj()
 #if P44SCRIPT_FULL_SUPPORT
 
 // dot(x,y)
-FUNC_ARG_DEFS(dot, { numeric|undefres }, { numeric|undefres } );
+FUNC_ARG_DEFS(dot, { numeric }, { numeric } );
 static void dot_func(BuiltinFunctionContextPtr f)
 {
   CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
@@ -209,7 +246,7 @@ static void dot_func(BuiltinFunctionContextPtr f)
 
 
 // line(x0,y0,x1,x1)
-FUNC_ARG_DEFS(line, { numeric|undefres }, { numeric|undefres }, { numeric|undefres }, { numeric|undefres } );
+FUNC_ARG_DEFS(line, { numeric }, { numeric }, { numeric }, { numeric } );
 static void line_func(BuiltinFunctionContextPtr f)
 {
   CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
@@ -220,6 +257,39 @@ static void line_func(BuiltinFunctionContextPtr f)
   end.x = f->arg(2)->intValue();
   end.y = f->arg(3)->intValue();
   v->canvas()->drawLine(start, end);
+  f->finish(v); // allow chaining
+}
+
+
+// copy([sourceview ,] x, y, dx, dy, dest_x, dest_y [, transparentonly [, fromContent])
+FUNC_ARG_DEFS(copy, { anyvalid }, { numeric }, { numeric }, { numeric }, { numeric }, { numeric }, { numeric|optionalarg }, { numeric|optionalarg }, { numeric|optionalarg } );
+static void copy_func(BuiltinFunctionContextPtr f)
+{
+  CanvasViewObj* v = dynamic_cast<CanvasViewObj*>(f->thisObj().get());
+  assert(v);
+  PixelRect src;
+  PixelPoint dest;
+  P44ViewPtr foreignview;
+  int ai = 0;
+  if (!f->arg(ai)->hasType(numeric)) {
+    // must be a view
+    P44lrgViewObj* vo = dynamic_cast<P44lrgViewObj*>(f->arg(ai).get());
+    if (!vo) {
+      f->finish(new ErrorValue(ScriptError::Invalid, "first argument must be number or view"));
+      return;
+    }
+    foreignview = vo->view();
+    ai++;
+  }
+  src.x = f->arg(ai++)->intValue();
+  src.y = f->arg(ai++)->intValue();
+  src.dx = f->arg(ai++)->intValue();
+  src.dy = f->arg(ai++)->intValue();
+  dest.x = f->arg(ai++)->intValue();
+  dest.y = f->arg(ai++)->intValue();
+  bool transparentOnly = f->arg(ai++)->boolValue();
+  bool fromContent = f->arg(ai++)->boolValue();
+  v->canvas()->copyPixels(foreignview, fromContent, src, dest, transparentOnly);
   f->finish(v); // allow chaining
 }
 
@@ -246,6 +316,7 @@ static const BuiltinMemberDescriptor canvasViewMembers[] = {
   #if P44SCRIPT_FULL_SUPPORT
   FUNC_DEF_W_ARG(dot, executable|null),
   FUNC_DEF_W_ARG(line, executable|null),
+  FUNC_DEF_W_ARG(copy, executable|null),
 //  FUNC_DEF_W_ARG(rect, executable|null),
 //  FUNC_DEF_W_ARG(oval, executable|null),
   #endif

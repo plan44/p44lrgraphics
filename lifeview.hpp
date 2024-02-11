@@ -113,13 +113,14 @@ namespace p44 {
     /// place one of the predefined patterns
     void placePattern(uint16_t aPatternNo, bool aWrap=true, int aCenterX=-1, int aCenterY=-1, int aOrientation=-1);
 
-  protected:
 
     /// get content pixel color
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
     virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
+
+  protected:
 
     bool prepareCells();
     void recalculateColoring() P44_OVERRIDE;

@@ -135,9 +135,6 @@ namespace p44 {
 
     #endif
 
-
-  protected:
-
     /// get content pixel color
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize

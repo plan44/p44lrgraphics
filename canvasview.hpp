@@ -1,6 +1,6 @@
 //  SPDX-License-Identifier: GPL-3.0-or-later
 //
-//  Copyright (c) 2020 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2020-2024 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -51,9 +51,16 @@ namespace p44 {
     void setPixel(PixelColor aColor, PixelCoord aPixelIndex);
     void setPixel(PixelColor aColor, PixelPoint aPixelPoint);
 
-
     /// draw line in foreground color (using gradient if enabled)
     void drawLine(PixelPoint aStart, PixelPoint aEnd);
+
+    /// copy pixels in specified rectangle
+    /// @param aSourceView if set to nullptr, copying is from myself. Otherwise, pixels are copied from specified view
+    /// @param aFromContent if set, pixels are copied from content, otherwise from frame (including scroll/rotate/zoom transforms)
+    /// @param aSrcRect where from to copy the pixels (in aSourceView coordinates)
+    /// @param aDestOrigin where to copy the pixels to (bottom left)
+    /// @param aNonTransparentOnly if set, only non-fully-transparent pixels are copied
+    void copyPixels(P44ViewPtr aSourceView, bool aFromContent, PixelRect aSrcRect, PixelPoint aDestOrigin, bool aNonTransparentOnly);
 
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;
@@ -74,10 +81,10 @@ namespace p44 {
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
-  protected:
-
     /// get content color at aPt
     virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
+
+  protected:
 
     /// geometry has changed
     virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;

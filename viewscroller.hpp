@@ -61,15 +61,13 @@ namespace p44 {
     bool mAlertEmpty; ///< alert scroller getting empty as event
     #endif
 
-  protected:
+  public:
 
     /// get content pixel color
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
     virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
-
-  public :
 
     /// create view
     ViewScroller();

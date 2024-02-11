@@ -1,6 +1,6 @@
 //  SPDX-License-Identifier: GPL-3.0-or-later
 //
-//  Copyright (c) 2016-2023 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2016-2024 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -99,6 +99,7 @@ PixelColor P44View::contentColorAt(PixelPoint aPt)
 
 void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 {
+  normalizeRect(aArea);
   aLedRGB.reserve(aArea.dx*aArea.dy*6+1); // one extra for a message terminator
   // pixel data row by row
   for (int y=0; y<aArea.dy; ++y) {
@@ -254,6 +255,7 @@ void P44View::contentToInFrameCoord(PixelPoint &aCoord)
 /// change rect and trigger geometry change when actually changed
 void P44View::changeGeometryRect(PixelRect &aRect, PixelRect aNewRect)
 {
+  normalizeRect(aNewRect);
   if (aNewRect.x!=aRect.x) {
     aRect.x = aNewRect.x;
     flagGeometryChange();
@@ -463,6 +465,7 @@ void P44View::sizeFrameToContent()
 
 void P44View::autoAdjustTo(PixelRect aReferenceRect)
 {
+  normalizeRect(aReferenceRect);
   announceChanges(true);
   if (mAutoAdjust & adjustmentMask) {
     if ((mAutoAdjust & fillX)==fillX) {
@@ -816,6 +819,7 @@ bool p44::rectContainsRect(const PixelRect &aParentRect, const PixelRect &aChild
     aChildRect.y+aChildRect.dy<=aParentRect.y+aParentRect.dy;
 }
 
+
 bool p44::rectIntersectsRect(const PixelRect &aRect1, const PixelRect &aRect2)
 {
   return
@@ -826,6 +830,11 @@ bool p44::rectIntersectsRect(const PixelRect &aRect1, const PixelRect &aRect2)
 }
 
 
+void p44::normalizeRect(PixelRect &aRect)
+{
+  if (aRect.dx<0) { aRect.x+=aRect.dx; aRect.dx = -aRect.dx; }
+  if (aRect.dy<0) { aRect.y+=aRect.dy; aRect.dy = -aRect.dy; }
+}
 
 
 
@@ -1518,7 +1527,6 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
 
 void P44View::stopAnimations()
 {
-  // always available as base implementation for other animations (such as in viewseqencer)
   #if ENABLE_ANIMATION
   for (AnimationsList::iterator pos = mAnimations.begin(); pos!=mAnimations.end(); ++pos) {
     (*pos)->stop(false); // stop with no callback

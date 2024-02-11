@@ -42,13 +42,13 @@ namespace p44 {
     static const char* staticTypeName() { return "lightspot"; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
-  protected:
-
     /// get content pixel color
     /// @param aPt content coordinate
     /// @note aPt is NOT guaranteed to be within actual content as defined by contentSize
     ///   implementation must check this!
     virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
+
+  protected:
 
     /// color effect params have changed
     virtual void recalculateColoring() P44_OVERRIDE;

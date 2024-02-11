@@ -117,6 +117,9 @@ namespace p44 {
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
     #endif
 
+    /// get content color at aPt
+    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
+
   protected:
 
     /// color effect params have changed
@@ -124,9 +127,6 @@ namespace p44 {
 
     /// geometry has changed
     virtual void geometryChanged(PixelRect aOldFrame, PixelRect aOldContent) P44_OVERRIDE;
-
-    /// get content color at aPt
-    virtual PixelColor contentColorAt(PixelPoint aPt) P44_OVERRIDE;
 
   private:
 
