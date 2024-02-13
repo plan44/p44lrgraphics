@@ -396,6 +396,31 @@ void BlocksView::recolorBlock(PixelColor aColor, bool aLower)
 }
 
 
+void BlocksView::positionBlock(PixelPoint aPosition, int aRotation, bool aLower)
+{
+  BlockRunner *b = &mActiveBlocks[aLower ? 1 : 0];
+  if (!b->block) return;
+  b->block->show(false);
+  b->block->position(
+    {
+      aPosition.x>=0 ? aPosition.x : b->block->mPos.x,
+      aPosition.y>=0 ? aPosition.y : b->block->mPos.y,
+    },
+    aRotation>=0 ? aRotation : b->block->mPartRotation,
+    aLower
+  );
+  b->block->show(true);
+}
+
+
+void BlocksView::setBlockInterval(MLMicroSeconds aInterval, bool aLower)
+{
+  BlockRunner *b = &mActiveBlocks[aLower ? 1 : 0];
+  if (!b->block) return;
+  b->stepInterval = aInterval;
+}
+
+
 
 // MARK: - scripting support
 
@@ -514,6 +539,32 @@ static void move_func(BuiltinFunctionContextPtr f)
 }
 
 
+// position(x, y, rotation [, reverse])
+FUNC_ARG_DEFS(position, { numeric|null }, { numeric|null }, { numeric|null }, { numeric|optionalarg } );
+static void position_func(BuiltinFunctionContextPtr f)
+{
+  BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
+  assert(v);
+  PixelPoint newpos;
+  newpos.x = f->arg(0)->defined() ? f->arg(0)->intValue() : -1;
+  newpos.y = f->arg(1)->defined() ? f->arg(1)->intValue() : -1;
+  int newrot = f->arg(2)->defined() ? f->arg(2)->intValue() : -1;
+  v->blocks()->positionBlock(newpos, newrot, f->arg(3)->boolValue());
+  f->finish();
+}
+
+
+// speed(newinterval [, reverse])
+FUNC_ARG_DEFS(speed, { numeric }, { numeric|optionalarg } );
+static void speed_func(BuiltinFunctionContextPtr f)
+{
+  BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
+  assert(v);
+  v->blocks()->setBlockInterval(f->arg(0)->doubleValue()*Second, f->arg(1)->boolValue());
+  f->finish();
+}
+
+
 // drop(dropinterval [, reverse])
 FUNC_ARG_DEFS(drop, { numeric }, { numeric|optionalarg } );
 static void drop_func(BuiltinFunctionContextPtr f)
@@ -594,6 +645,8 @@ static const BuiltinMemberDescriptor blocksViewMembers[] = {
   FUNC_DEF_W_ARG(show, executable|null),
   FUNC_DEF_W_ARG(launch, executable|null),
   FUNC_DEF_W_ARG(move, executable|null),
+  FUNC_DEF_W_ARG(position, executable|null),
+  FUNC_DEF_W_ARG(speed, executable|null),
   FUNC_DEF_W_ARG(drop, executable|null),
   FUNC_DEF_W_ARG(setdown, executable|null),
   FUNC_DEF_W_ARG(recolor, executable|null),

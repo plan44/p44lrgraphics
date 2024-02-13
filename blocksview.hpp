@@ -187,6 +187,17 @@ namespace p44 {
     /// @param aLower address the block "falling up"
     void moveBlock(PixelPoint aDistance, int aRot, bool aLower);
 
+    /// position block
+    /// @param aPosition new position, <0 for a coordinate means no change
+    /// @param aRotation new rotation, <0 means no change
+    /// @param aLower address the block "falling up"
+    void positionBlock(PixelPoint aPosition, int aRotation, bool aLower);
+
+    /// set new speed for a running block
+    /// @param aInterval new falling speed
+    /// @param aLower address the block "falling up"
+    void setBlockInterval(MLMicroSeconds aInterval, bool aLower);
+
     /// change speed of block
     /// @param aLower address the block "falling up"
     void dropBlock(MLMicroSeconds aDropStepInterval, bool aLower);
