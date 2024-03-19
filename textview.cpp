@@ -43,6 +43,7 @@ using namespace p44;
 #define DEFAULT_FONT font_5x7
 
 // Font data includes
+#include "fonts/font_3x3.cpp"
 #include "fonts/font_5x5.cpp"
 #include "fonts/font_5x7.cpp"
 #include "fonts/font_5x8.cpp"
@@ -55,6 +56,7 @@ using namespace p44;
 
 // Font table
 const font_t* fonts[] {
+  &font_3x3,
   &font_5x5,
   &font_5x7,
   &font_5x8,
