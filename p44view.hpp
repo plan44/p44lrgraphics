@@ -675,6 +675,7 @@ namespace p44 {
 
     ValueSetterCB getGeometryPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
     ValueSetterCB getTransformPropertySetter(FracValue& aTransformValue, double& aCurrentValue);
+    ValueSetterCB getZoomPropertySetter(FracValue& aShrinkValue, double &aCurrentZoomValue);
     ValueSetterCB getCoordPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
     ValueSetterCB getColorComponentSetter(const string aComponent, PixelColor& aPixelColor, double& aCurrentValue);
 
@@ -692,6 +693,8 @@ namespace p44 {
     void derivedColorComponentSetter(int aHSBIndex, PixelColor* aPixelColorP, double aNewValue);
     /// setter for transform properties
     void transformPropertySetter(FracValue* aTransformValueP, double aNewValue);
+    /// setter for zoom properties (reciprocal values)
+    void zoomPropertySetter(FracValue* aShrinkValueP, double aNewZoomValue);
 
     void configureAnimation(JsonObjectPtr aAnimationCfg);
 

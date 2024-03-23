@@ -1344,6 +1344,24 @@ ValueSetterCB P44View::getTransformPropertySetter(FracValue& aTransformValue, do
 }
 
 
+void P44View::zoomPropertySetter(FracValue* aShrinkValueP, double aNewZoomValue)
+{
+  double newValue = aNewZoomValue<=0 ? 0 : 1.0/aNewZoomValue;
+  if (FP_FROM_DBL(newValue)!=*aShrinkValueP) {
+    announceChanges(true);
+    *aShrinkValueP = FP_FROM_DBL(newValue);
+    flagTransformChange();
+    announceChanges(false);
+  }
+}
+
+ValueSetterCB P44View::getZoomPropertySetter(FracValue& aShrinkValue, double &aCurrentZoomValue)
+{
+  aCurrentZoomValue = aShrinkValue<=0 ? 0 : 1/FP_DBL_VAL(aShrinkValue);
+  return boost::bind(&P44View::transformPropertySetter, this, &aShrinkValue, _1);
+}
+
+
 void P44View::coordPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
 {
   PixelCoord newValue = aNewValue;
@@ -1484,10 +1502,10 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
     return getTransformPropertySetter(mScrollY, aCurrentValue);
   }
   else if (uequals(aProperty, "zoom_x")) {
-    return getTransformPropertySetter(mShrinkX, aCurrentValue);
+    return getZoomPropertySetter(mShrinkX, aCurrentValue);
   }
   else if (uequals(aProperty, "zoom_y")) {
-    return getTransformPropertySetter(mShrinkY, aCurrentValue);
+    return getZoomPropertySetter(mShrinkY, aCurrentValue);
   }
   else if (uequals(aProperty, "rotation")) {
     return getTransformPropertySetter(mContentRotation, aCurrentValue);
