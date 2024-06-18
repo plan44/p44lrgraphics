@@ -323,9 +323,9 @@ ScriptObjPtr ViewSequencer::stepsList()
   for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
     ObjectValuePtr step = new ObjectValue();
     step->setMemberByName("view", pos->mView->newViewObj());
-    step->setMemberByName("showtime", new NumericValue(pos->mShowTime/Second));
-    step->setMemberByName("fadeintime", new NumericValue(pos->mFadeInTime/Second));
-    step->setMemberByName("fadeouttime", new NumericValue(pos->mFadeOutTime/Second));
+    step->setMemberByName("showtime", new NumericValue((double)pos->mShowTime/Second));
+    step->setMemberByName("fadeintime", new NumericValue((double)pos->mFadeInTime/Second));
+    step->setMemberByName("fadeouttime", new NumericValue((double)pos->mFadeOutTime/Second));
     steps->appendMember(step);
   }
   return steps;
