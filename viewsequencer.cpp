@@ -29,7 +29,9 @@
 using namespace p44;
 
 
-// MARK: ===== ViewAnimator
+// MARK: ===== ViewSequencer
+
+static ViewRegistrar r(ViewSequencer::staticTypeName(), &ViewSequencer::newInstance);
 
 ViewSequencer::ViewSequencer() :
   mRepeating(false),

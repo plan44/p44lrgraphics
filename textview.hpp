@@ -68,6 +68,7 @@ namespace p44 {
     virtual ~TextView();
 
     static const char* staticTypeName() { return "text"; };
+    static P44View* newInstance() { return new TextView; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     virtual void beginChanges() P44_OVERRIDE { inherited::beginChanges(); mTextChanges = false; }
@@ -115,6 +116,9 @@ namespace p44 {
     #if ENABLE_P44SCRIPT
     /// @return ScriptObj representing this view
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
+
+    /// @return ArrayObj listing all available fonts
+    static P44Script::ScriptObjPtr fontsArray();
     #endif
 
     /// get content color at aPt

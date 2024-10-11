@@ -28,6 +28,7 @@ using namespace p44;
 
 // MARK: ===== Light Spot View
 
+static ViewRegistrar r(LightSpotView::staticTypeName(), &LightSpotView::newInstance);
 
 LightSpotView::LightSpotView()
 {

@@ -43,6 +43,7 @@ namespace p44 {
     virtual ~ViewStack();
 
     static const char* staticTypeName() { return "stack"; };
+    static P44View* newInstance() { return new ViewStack; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set the positioning, purging and autosizing mode

@@ -27,6 +27,7 @@ using namespace p44;
 
 // MARK: ===== TorchView
 
+static ViewRegistrar r(TorchView::staticTypeName(), &TorchView::newInstance);
 
 TorchView::TorchView() :
   mNextCalculation(Never)

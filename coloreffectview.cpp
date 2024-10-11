@@ -28,6 +28,7 @@ using namespace p44;
 
 // MARK: ===== Color Effect View
 
+// Note: is a base class, not an independent view, so not registered to the factory
 
 ColorEffectView::ColorEffectView() :
   mRadial(true),

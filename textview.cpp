@@ -301,6 +301,7 @@ static void generateFontSource(const font_t& aFont, const char** aGlyphStrings, 
 
 // MARK: ===== TextView
 
+static ViewRegistrar r(TextView::staticTypeName(), &TextView::newInstance);
 
 TextView::TextView()
 {
@@ -511,6 +512,18 @@ ScriptObjPtr TextView::newViewObj()
 }
 
 
+ScriptObjPtr TextView::fontsArray()
+{
+  ArrayValuePtr farr = new ArrayValue();
+  size_t fi = 0;
+  while (fonts[fi]) {
+    farr->appendMember(new StringValue(fonts[fi]->fontName));
+    fi++;
+  }
+  return farr;
+}
+
+
 #define ACCESSOR_CLASS TextView
 
 static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, const struct BuiltinMemberDescriptor* aMemberDescriptor)
@@ -532,22 +545,6 @@ ACC_IMPL_INT(Stretch);
 ACC_IMPL_BOOL(Collapsed);
 
 
-static ScriptObjPtr access_Fonts(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
-{
-  ScriptObjPtr ret;
-  if (!aToWrite) { // not writable
-    ArrayValuePtr farr = new ArrayValue();
-    size_t fi = 0;
-    while (fonts[fi]) {
-      farr->setMemberAtIndex(fi, new StringValue(fonts[fi]->fontName));
-      fi++;
-    }
-    ret = farr;
-  }
-  return ret;
-}
-
-
 static const BuiltinMemberDescriptor textViewMembers[] = {
   // property accessors
   ACC_DECL("text", text|lvalue, Text),
@@ -556,7 +553,6 @@ static const BuiltinMemberDescriptor textViewMembers[] = {
   ACC_DECL("spacing", numeric|lvalue, TextSpacing),
   ACC_DECL("stretch", numeric|lvalue, Stretch),
   ACC_DECL("bolden", numeric|lvalue, Bolden),
-  ACC_DECL("fonts", objectvalue, Fonts),
   { NULL } // terminator
 };
 

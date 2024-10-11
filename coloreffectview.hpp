@@ -77,6 +77,7 @@ namespace p44 {
     virtual ~ColorEffectView();
 
     static const char* staticTypeName() { return "coloreffect"; };
+    static P44View* newInstance() { return new ColorEffectView; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set coloring parameters

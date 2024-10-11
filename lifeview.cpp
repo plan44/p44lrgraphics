@@ -28,6 +28,7 @@ using namespace p44;
 
 // MARK: ===== LifeView
 
+static ViewRegistrar r(LifeView::staticTypeName(), &LifeView::newInstance);
 
 LifeView::LifeView() :
   mGenerationInterval(777*MilliSecond),

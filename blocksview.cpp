@@ -161,6 +161,8 @@ bool Block::move(PixelPoint aDistance, int aRot, bool aOpenAtBottom)
 
 // MARK: ===== BlocksView
 
+static ViewRegistrar r(BlocksView::staticTypeName(), &BlocksView::newInstance);
+
 BlocksView::BlocksView() :
   mPause(false),
   mNextCalculation(Never)

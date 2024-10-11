@@ -25,6 +25,7 @@
 #if ENABLE_VIEWCONFIG
 
 #include "extutils.hpp"
+#include "textview.hpp" // for lrgfonts() introspection
 
 using namespace p44;
 
@@ -44,53 +45,28 @@ ErrorPtr p44::createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const st
 
 #endif // ENABLE_JSON_APPLICATION
 
+
+typedef std::map<string, ViewConstructor> AvailableViewsMap;
+static AvailableViewsMap *availableViewsP = nullptr; // cannot be a static object, because it might be constructed too late
+
+void p44::registerView(const char* aViewType, ViewConstructor aViewConstructor)
+{
+  if (!availableViewsP) {
+    availableViewsP = new AvailableViewsMap;
+  }
+  (*availableViewsP)[aViewType] = aViewConstructor;
+}
+
+
 ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewView, P44ViewPtr aParentView)
 {
   LOG(LOG_DEBUG, "createViewFromConfig: %s", aViewConfig->c_strValue());
   JsonObjectPtr o;
   if (aViewConfig->get("type", o)) {
     string vt = o->stringValue();
-    if (vt==TextView::staticTypeName()) {
-      aNewView = P44ViewPtr(new TextView);
-    }
-    #if ENABLE_IMAGE_SUPPORT
-    else if (vt==ImageView::staticTypeName()) {
-      aNewView = P44ViewPtr(new ImageView);
-    }
-    #endif
-    #if ENABLE_EPX_SUPPORT
-    else if (vt==EpxView::staticTypeName()) {
-      aNewView = P44ViewPtr(new EpxView);
-    }
-    #endif
-    #if P44SCRIPT_FULL_SUPPORT
-    else if (vt==BlocksView::staticTypeName()) {
-      aNewView = P44ViewPtr(new BlocksView);
-    }
-    #endif
-    else if (vt==CanvasView::staticTypeName()) {
-      aNewView = CanvasViewPtr(new CanvasView);
-    }
-    else if (vt==ViewSequencer::staticTypeName()) {
-      aNewView = P44ViewPtr(new ViewSequencer);
-    }
-    else if (vt==ViewStack::staticTypeName()) {
-      aNewView = P44ViewPtr(new ViewStack);
-    }
-    else if (vt==ViewScroller::staticTypeName()) {
-      aNewView = P44ViewPtr(new ViewScroller);
-    }
-    else if (vt==LifeView::staticTypeName()) {
-      aNewView = P44ViewPtr(new LifeView);
-    }
-    else if (vt==TorchView::staticTypeName()) {
-      aNewView = P44ViewPtr(new TorchView);
-    }
-    else if (vt==LightSpotView::staticTypeName()) {
-      aNewView = P44ViewPtr(new LightSpotView);
-    }
-    else if (vt==P44View::staticTypeName()) {
-      aNewView = P44ViewPtr(new P44View);
+    auto pos = availableViewsP->find(vt);
+    if (pos!=availableViewsP->end()) {
+      aNewView = (pos->second)();
     }
     else {
       return TextError::err("unknown view type '%s'", vt.c_str());
@@ -104,6 +80,71 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
   // now let view configure itself
   return aNewView->configureView(aViewConfig);
 }
+
+
+#if ENABLE_P44SCRIPT
+
+using namespace P44Script;
+
+// makeview(jsonconfig|filename)
+FUNC_ARG_DEFS(makeview, { text|objectvalue } );
+static void makeview_func(BuiltinFunctionContextPtr f)
+{
+  P44ViewPtr newView;
+  ErrorPtr err;
+  JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(f->arg(0), err);
+  if (Error::isOK(err)) {
+    err = createViewFromConfig(viewCfgJSON, newView, P44ViewPtr());
+  }
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
+    return;
+  }
+  f->finish(newView->newViewObj());
+}
+
+
+static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, BuiltinMemberDescriptor*)
+{
+  P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
+  P44ViewPtr rv = l->rootView();
+  if (!rv) return new AnnotatedNullValue("no root view");
+  return rv->newViewObj();
+}
+
+
+static void lrgfonts_func(BuiltinFunctionContextPtr f)
+{
+  f->finish(TextView::fontsArray());
+}
+
+
+static void lrgviews_func(BuiltinFunctionContextPtr f)
+{
+  ArrayValuePtr varr = new ArrayValue();
+  for (auto pos = availableViewsP->begin(); pos!=availableViewsP->end(); ++pos) {
+    varr->appendMember(new StringValue(pos->first));
+  }
+  f->finish(varr);
+}
+
+
+static const BuiltinMemberDescriptor lrgGlobals[] = {
+  FUNC_DEF_W_ARG(makeview, executable|objectvalue),
+  FUNC_DEF_NOARG(lrgfonts, executable|objectvalue),
+  FUNC_DEF_NOARG(lrgviews, executable|objectvalue),
+  MEMBER_DEF(lrg, builtinvalue),
+  { NULL } // terminator
+};
+
+
+P44lrgLookup::P44lrgLookup(P44ViewPtr *aRootViewPtrP) :
+  inherited(lrgGlobals),
+  mRootViewPtrP(aRootViewPtrP)
+{
+}
+
+#endif // ENABLE_P44SCRIPT
 
 #endif // ENABLE_VIEWCONFIG
 

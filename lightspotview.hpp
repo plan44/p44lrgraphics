@@ -40,6 +40,7 @@ namespace p44 {
     virtual ~LightSpotView();
 
     static const char* staticTypeName() { return "lightspot"; };
+    static P44View* newInstance() { return new LightSpotView; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// get content pixel color

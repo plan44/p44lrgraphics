@@ -40,6 +40,8 @@ using namespace p44;
 
 // MARK: ===== ViewStack
 
+static ViewRegistrar r(ViewStack::staticTypeName(), &ViewStack::newInstance);
+
 ViewStack::ViewStack()
 {
   mPositioningMode = noFraming+noAdjust;

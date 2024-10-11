@@ -127,6 +127,7 @@ namespace p44 {
     virtual ~BlocksView();
 
     static const char* staticTypeName() { return "blocks"; };
+    static P44View* newInstance() { return new BlocksView; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// @return ScriptObj representing this view

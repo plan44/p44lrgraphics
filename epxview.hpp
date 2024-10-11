@@ -57,6 +57,7 @@ namespace p44 {
     virtual ~EpxView();
 
     static const char* staticTypeName() { return "epx"; };
+    static P44View* newInstance() { return new EpxView; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// clear the content

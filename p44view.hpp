@@ -278,7 +278,8 @@ namespace p44 {
     virtual ~P44View();
 
     static const char* staticTypeName() { return "plain"; };
-    
+    static P44View* newInstance() { return new P44View; };
+
     virtual const char* getTypeName() const { return staticTypeName(); }
 
     /// set the frame within the parent coordinate system
@@ -700,6 +701,14 @@ namespace p44 {
 
     #endif // ENABLE_ANIMATION
 
+  };
+
+  typedef P44View* (*ViewConstructor)();
+
+  class ViewRegistrar
+  {
+  public:
+    ViewRegistrar(const char* aName, ViewConstructor aConstructor);
   };
 
 

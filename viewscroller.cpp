@@ -41,6 +41,7 @@ using namespace p44;
 
 // MARK: ===== ViewScroller
 
+static ViewRegistrar r(ViewScroller::staticTypeName(), &ViewScroller::newInstance);
 
 ViewScroller::ViewScroller() :
   mScrollStepX(0),

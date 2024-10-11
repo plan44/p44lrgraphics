@@ -34,6 +34,8 @@ using namespace p44;
 
 // MARK: ===== CanvasView
 
+static ViewRegistrar r(CanvasView::staticTypeName(), &CanvasView::newInstance);
+
 CanvasView::CanvasView() :
   mCanvasBuffer(NULL),
   mNumPixels(0)

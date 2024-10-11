@@ -74,6 +74,7 @@ namespace p44 {
     virtual ~ViewScroller();
 
     static const char* staticTypeName() { return "scroller"; };
+    static P44View* newInstance() { return new ViewScroller; };
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set the to be scrolled view

@@ -25,17 +25,11 @@
 
 #include "p44lrg_common.hpp"
 
-#include "imageview.hpp"
-#include "epxview.hpp"
-#include "textview.hpp"
-#include "viewsequencer.hpp"
-#include "viewstack.hpp"
-#include "viewscroller.hpp"
-#include "lightspotview.hpp"
-#include "canvasview.hpp"
-#include "lifeview.hpp"
-#include "torchview.hpp"
-#include "blocksview.hpp"
+#include "p44view.hpp"
+
+#if ENABLE_P44SCRIPT
+#include "p44script.hpp"
+#endif
 
 #if ENABLE_VIEWCONFIG
 
@@ -62,6 +56,9 @@ namespace p44 {
   /// @return OK or error
   ErrorPtr createViewFromResourceOrObj(JsonObjectPtr aResourceOrObj, const string aResourcePrefix, P44ViewPtr &aNewView, P44ViewPtr aParentView);
   #endif // ENABLE_JSON_APPLICATION
+
+  /// register a view to the factory
+  void registerView(const char* aViewType, ViewConstructor aViewConstructor);
 
 } // namespace p44
 

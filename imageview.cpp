@@ -40,6 +40,7 @@ using namespace p44;
 
 // MARK: ===== ImageView
 
+static ViewRegistrar r(ImageView::staticTypeName(), &ImageView::newInstance);
 
 ImageView::ImageView() :
   mPngBuffer(NULL)

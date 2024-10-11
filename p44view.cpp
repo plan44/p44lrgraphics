@@ -29,12 +29,23 @@
 
 #include "p44view.hpp"
 #include "ledchaincomm.hpp" // for brightnessToPwm and pwmToBrightness
+#include "viewfactory.hpp" // for registering views
 
 #include <math.h>
 
 using namespace p44;
 
+// MARK: ===== ViewRegistrar
+
+ViewRegistrar::ViewRegistrar(const char* aName, ViewConstructor aConstructor)
+{
+  p44::registerView(aName, aConstructor);
+}
+
+
 // MARK: ===== View
+
+static ViewRegistrar r(P44View::staticTypeName(), &P44View::newInstance);
 
 P44View::P44View() :
   mParentView(NULL),
@@ -1994,45 +2005,5 @@ P44lrgViewObj::P44lrgViewObj(P44ViewPtr aView) :
   registerSharedLookup(sharedViewMemberLookupP, viewMembers);
 }
 
-
-// makeview(jsonconfig|filename)
-FUNC_ARG_DEFS(makeview, { text|objectvalue } );
-static void makeview_func(BuiltinFunctionContextPtr f)
-{
-  P44ViewPtr newView;
-  ErrorPtr err;
-  JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(f->arg(0), err);
-  if (Error::isOK(err)) {
-    err = createViewFromConfig(viewCfgJSON, newView, P44ViewPtr());
-  }
-  if (Error::notOK(err)) {
-    f->finish(new ErrorValue(err));
-    return;
-  }
-  f->finish(newView->newViewObj());
-}
-
-
-static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPtr aParentObj, ScriptObjPtr aObjToWrite, BuiltinMemberDescriptor*)
-{
-  P44lrgLookup* l = dynamic_cast<P44lrgLookup*>(&aMemberLookup);
-  P44ViewPtr rv = l->rootView();
-  if (!rv) return new AnnotatedNullValue("no root view");
-  return rv->newViewObj();
-}
-
-
-static const BuiltinMemberDescriptor lrgGlobals[] = {
-  FUNC_DEF_W_ARG(makeview, executable|objectvalue),
-  MEMBER_DEF(lrg, builtinvalue),
-  { NULL } // terminator
-};
-
-
-P44lrgLookup::P44lrgLookup(P44ViewPtr *aRootViewPtrP) :
-  inherited(lrgGlobals),
-  mRootViewPtrP(aRootViewPtrP)
-{
-}
 
 #endif // ENABLE_P44SCRIPT

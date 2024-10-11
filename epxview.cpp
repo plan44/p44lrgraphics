@@ -40,6 +40,8 @@ using namespace p44;
 
 // MARK: ===== EpxView
 
+static ViewRegistrar r(EpxView::staticTypeName(), &EpxView::newInstance);
+
 EpxView::EpxView() :
   mPaletteBuffer(NULL),
   mNumPaletteEntries(0),
