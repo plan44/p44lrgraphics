@@ -6,7 +6,7 @@
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-// Include this file into a p44lrgraphics build to define a built-in font
+//  Include this file into a p44lrgraphics build to define a built-in font
 
 #include "fonts.hpp"
 

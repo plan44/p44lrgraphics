@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: CC0-1.0
+//  SPDX-License-Identifier: CC0-1.0
 //
-// Original Font Author's notice
-//   Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.
-//   github: https://github.com/Michaelangel007/nanofont3x4
+//  Original Font Author's notice
+//    Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.
+//    github: https://github.com/Michaelangel007/nanofont3x4
 
-// Include this file into a p44lrgraphics build to define a built-in font
+//  Include this file into a p44lrgraphics build to define a built-in font
 
 #include "fonts.hpp"
 
