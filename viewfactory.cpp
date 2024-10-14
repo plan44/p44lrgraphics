@@ -25,7 +25,7 @@
 #if ENABLE_VIEWCONFIG
 
 #include "extutils.hpp"
-#include "textview.hpp" // for lrgfonts() introspection
+#include "fonts.hpp"
 
 using namespace p44;
 
@@ -113,9 +113,33 @@ static ScriptObjPtr lrg_accessor(BuiltInMemberLookup& aMemberLookup, ScriptObjPt
 }
 
 
+// loadfont(filename)
+FUNC_ARG_DEFS(loadfont, { text } );
+static void loadfont_func(BuiltinFunctionContextPtr f)
+{
+  string fn = f->arg(0)->stringValue();
+  // user level 1 is allowed to read everywhere
+  Application::PathType ty = Application::sharedApplication()->getPathType(fn, 1, true);
+  if (ty==Application::empty) {
+    f->finish(new ErrorValue(ScriptError::Invalid, "no filename"));
+    return;
+  }
+  if (ty==Application::notallowed) {
+    f->finish(new ErrorValue(ScriptError::NoPrivilege, "no reading privileges for this path"));
+    return;
+  }
+  ErrorPtr err = LrgFonts::sharedFonts().addFontFromFile(Application::sharedApplication()->resourcePath(fn));
+  if (Error::notOK(err)) {
+    f->finish(new ErrorValue(err));
+    return;
+  }
+  f->finish();
+}
+
+
 static void lrgfonts_func(BuiltinFunctionContextPtr f)
 {
-  f->finish(TextView::fontsArray());
+  f->finish(LrgFonts::sharedFonts().fontsArray());
 }
 
 
@@ -131,8 +155,9 @@ static void lrgviews_func(BuiltinFunctionContextPtr f)
 
 static const BuiltinMemberDescriptor lrgGlobals[] = {
   FUNC_DEF_W_ARG(makeview, executable|objectvalue),
-  FUNC_DEF_NOARG(lrgfonts, executable|objectvalue),
   FUNC_DEF_NOARG(lrgviews, executable|objectvalue),
+  FUNC_DEF_W_ARG(loadfont, executable|objectvalue),
+  FUNC_DEF_NOARG(lrgfonts, executable|objectvalue),
   MEMBER_DEF(lrg, builtinvalue),
   { NULL } // terminator
 };

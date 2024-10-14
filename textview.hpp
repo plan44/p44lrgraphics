@@ -1,6 +1,6 @@
 //  SPDX-License-Identifier: GPL-3.0-or-later
 //
-//  Copyright (c) 2016-2023 plan44.ch / Lukas Zeller, Zurich, Switzerland
+//  Copyright (c) 2016-2024 plan44.ch / Lukas Zeller, Zurich, Switzerland
 //
 //  Author: Lukas Zeller <luz@plan44.ch>
 //
@@ -25,28 +25,9 @@
 
 #include "p44lrg_common.hpp"
 #include "coloreffectview.hpp"
+#include "fonts.hpp"
 
 namespace p44 {
-
-  typedef struct {
-    uint8_t width;
-    const char *coldata; // for multi-byte columns: MSByte first. Bit order: Bit0 = top pixel
-  } glyph_t;
-
-  typedef struct {
-    const char* prefix;
-    uint8_t first;
-    uint8_t last;
-    uint8_t glyphOffset;
-  } GlyphRange;
-
-  typedef struct {
-    const char* fontName; ///< name of the font
-    uint8_t glyphHeight; ///< height of the glyphs in pixels (max 32)
-    size_t numGlyphs; ///< total number of glyphs
-    const GlyphRange* glyphRanges; ///< mapping to codepoints
-    const glyph_t* glyphs; ///< actual glyphs
-  } font_t;
 
   class TextView : public ColorEffectView
   {
@@ -59,7 +40,7 @@ namespace p44 {
     int mStretch; ///< pixel row repetitions
     int mBolden; ///< how many shifted overlays
     string mTextPixelData; ///< string of text column data (might be multiple bytes per columnt for fonts with dy>8)
-    const font_t* mFont; ///< the font to use
+    LrgFontPtr mFont; ///< the font to use
     bool mTextChanges;
 
   public :
@@ -77,10 +58,12 @@ namespace p44 {
     void flagTextChange() { flagChange(mTextChanges); }
 
     /// get font
-    const char* getFont() const { return mFont ? mFont->fontName : nullptr; };
+    const char* getFont() const { return mFont ? mFont->name() : nullptr; };
 
     /// set font
-    void setFont(const char* aFontName);
+    /// @param aFontName name of the font to set
+    /// @return false if named font does not exist and font could not be changed
+    bool setFont(const char* aFontName);
 
     /// @name trivial property getters/setters
     /// @{
@@ -116,9 +99,6 @@ namespace p44 {
     #if ENABLE_P44SCRIPT
     /// @return ScriptObj representing this view
     virtual P44Script::ScriptObjPtr newViewObj() P44_OVERRIDE;
-
-    /// @return ArrayObj listing all available fonts
-    static P44Script::ScriptObjPtr fontsArray();
     #endif
 
     /// get content color at aPt
@@ -157,7 +137,5 @@ namespace p44 {
   #endif // ENABLE_P44SCRIPT
 
 } // namespace p44
-
-
 
 #endif /* _p44lrgraphics_textview_hpp__ */
