@@ -863,5 +863,8 @@ static const font_t font_3x4 = {
   .numGlyphs = 97,
   .glyphRanges = font_3x4_ranges,
   .glyphs = font_3x4_glyphs
+  #ifdef GENERATE_FONT_SOURCE
+  , .glyphstrings = font_3x4_glyphstrings
+  #endif
 };
 

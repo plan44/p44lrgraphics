@@ -960,6 +960,9 @@ static const font_t font_m6x11 = {
   .numGlyphs = 96,
   .glyphRanges = font_m6x11_ranges,
   .glyphs = font_m6x11_glyphs
+  #ifdef GENERATE_FONT_SOURCE
+  , .glyphstrings = font_m6x11_glyphstrings
+  #endif
 };
 
 // MARK: - end of generated font data

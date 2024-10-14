@@ -1312,6 +1312,9 @@ static const font_t font_bios = {
   .numGlyphs = 123,
   .glyphRanges = font_bios_ranges,
   .glyphs = font_bios_glyphs
+  #ifdef GENERATE_FONT_SOURCE
+  , .glyphstrings = font_bios_glyphstrings
+  #endif
 };
 
 // MARK: - end of generated font data

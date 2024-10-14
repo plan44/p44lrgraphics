@@ -1088,6 +1088,9 @@ static const font_t font_m5x7 = {
   .numGlyphs = 123,
   .glyphRanges = font_m5x7_ranges,
   .glyphs = font_m5x7_glyphs
+  #ifdef GENERATE_FONT_SOURCE
+  , .glyphstrings = font_m5x7_glyphstrings
+  #endif
 };
 
 // MARK: - end of generated font data

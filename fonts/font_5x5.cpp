@@ -1092,6 +1092,9 @@ static const font_t font_5x5 = {
   .numGlyphs = 123,
   .glyphRanges = font_5x5_ranges,
   .glyphs = font_5x5_glyphs
+  #ifdef GENERATE_FONT_SOURCE
+  , .glyphstrings = font_5x5_glyphstrings
+  #endif
 };
 
 // MARK: - end of generated font data

@@ -1263,6 +1263,9 @@ static const font_t font_sixtyfour = {
   .numGlyphs = 123,
   .glyphRanges = font_sixtyfour_ranges,
   .glyphs = font_sixtyfour_glyphs
+  #ifdef GENERATE_FONT_SOURCE
+  , .glyphstrings = font_sixtyfour_glyphstrings
+  #endif
 };
 
 // MARK: - end of generated font data
