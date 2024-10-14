@@ -2,6 +2,11 @@
 //
 // This is a font file to be included from textview.cpp to define a font
 
+#include "fonts.hpp"
+
+using namespace p44;
+
+
 // Original Font Author's notice
 //   Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.
 //   github: https://github.com/Michaelangel007/nanofont3x4

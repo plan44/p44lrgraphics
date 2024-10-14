@@ -4,6 +4,10 @@
 
 // This is a font file to be included from textview.cpp to define a font
 
+#include "fonts.hpp"
+
+using namespace p44;
+
 // Original font outline (vector) version (c) 2015 VileR - Creative Commons Attribution-ShareAlike 4.0 International
 
 #ifdef GENERATE_FONT_SOURCE

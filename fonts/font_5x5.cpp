@@ -8,6 +8,10 @@
 
 // This is a font file to be included from textview.cpp to define a font
 
+#include "fonts.hpp"
+
+using namespace p44;
+
 // Unknown (c) - font may be embedded in documents and temporarily loaded on the remote system. Documents containing this font may be editable.
 
 #ifdef GENERATE_FONT_SOURCE

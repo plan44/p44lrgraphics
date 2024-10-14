@@ -9,6 +9,10 @@
 //   You can use them freely in your products & projects - print or digital, commercial or otherwise.
 //   For more information about this font, go to https://www.ggbot.net/fonts
 
+#include "fonts.hpp"
+
+using namespace p44;
+
 #ifdef GENERATE_FONT_SOURCE
 
 // MARK: - '3x3' generated font verification data

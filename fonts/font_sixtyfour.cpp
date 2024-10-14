@@ -4,6 +4,10 @@
 
 // This is a font file to be included from textview.cpp to define a font
 
+#include "fonts.hpp"
+
+using namespace p44;
+
 // Copyright 2019 The Homecomputer Fonts Project Authors
 // (https://github.com/jenskutilek/homecomputer-fonts).
 // Based on the Commodore 64 character set.

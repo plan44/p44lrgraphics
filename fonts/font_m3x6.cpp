@@ -8,6 +8,10 @@
 
 // This is a font file to be included from textview.cpp to define a font
 
+#include "fonts.hpp"
+
+using namespace p44;
+
 // Original font is (c) by Daniel Linssen - No embedding restrictions
 
 #ifdef GENERATE_FONT_SOURCE

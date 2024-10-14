@@ -8,6 +8,10 @@
 
 // This is a file to be included from textview.cpp to define a font
 
+#include "fonts.hpp"
+
+using namespace p44;
+
 #ifdef GENERATE_FONT_SOURCE
 
 // MARK: - 'font_5x7' generated font verification data
