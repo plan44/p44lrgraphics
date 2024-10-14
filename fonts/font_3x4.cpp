@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: CC0-1.0
 //
-// This is a font file to be included from textview.cpp to define a font
+// Original Font Author's notice
+//   Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.
+//   github: https://github.com/Michaelangel007/nanofont3x4
+
+// Include this file into a p44lrgraphics build to define a built-in font
 
 #include "fonts.hpp"
 
 using namespace p44;
-
-
-// Original Font Author's notice
-//   Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.
-//   github: https://github.com/Michaelangel007/nanofont3x4
 
 #if 0
 
@@ -858,7 +857,7 @@ static const glyph_t font_3x4_glyphs[] = {
 };
 
 static const GlyphRange font_3x4_ranges[] = {
-  { "", 0x20, 0x7F, 1 }, //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+  { "", 0x20, 0x7F, 1 }, //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
   { NULL, 0, 0, 0 }
 };
 
@@ -868,8 +867,12 @@ static const font_t font_3x4 = {
   .numGlyphs = 97,
   .glyphRanges = font_3x4_ranges,
   .glyphs = font_3x4_glyphs
-  #ifdef GENERATE_FONT_SOURCE
-  , .glyphstrings = font_3x4_glyphstrings
-  #endif
+   #ifdef GENERATE_FONT_SOURCE
+   , .glyphstrings = font_3x4_glyphstrings
+   #endif
 };
+
+static BuiltinFontRegistrar r(font_3x4);
+
+// MARK: - end of generated font data
 

@@ -6,7 +6,7 @@
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This is a file to be included from textview.cpp to define a font
+// Include this file into a p44lrgraphics build to define a built-in font
 
 #include "fonts.hpp"
 
@@ -14,7 +14,7 @@ using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
 
-// MARK: - 'font_5x7' generated font verification data
+// MARK: - '5x7' generated font verification data
 
 static const char * font_5x7_glyphstrings[] = {
   "placeholder" /* 0x00 - Glyph 0 */
@@ -965,7 +965,7 @@ static const char * font_5x7_glyphstrings[] = {
 #endif // GENERATE_FONT_SOURCE
 
 
-// MARK: - 'font_5x7' generated font data
+// MARK: - '5x7' generated font data
 
 static const glyph_t font_5x7_glyphs[] = {
   {  5, "\x7f\x41\x41\x41\x7f"                     },  // placeholder          (input # 0 -> glyph # 0)
@@ -1096,7 +1096,7 @@ static const glyph_t font_5x7_glyphs[] = {
 
 static const GlyphRange font_5x7_ranges[] = {
   { "", 0x20, 0x7E, 1 }, //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-  { "\xc2", 0xA0, 0xA0, 96 }, //
+  { "\xc2", 0xA0, 0xA0, 96 }, //  
   { "\xc3", 0x80, 0x82, 97 }, // ÀÁÂ
   { "\xc3", 0x84, 0x84, 100 }, // Ä
   { "\xc3", 0x88, 0x8A, 101 }, // ÈÉÊ
@@ -1119,9 +1119,12 @@ static const font_t font_5x7 = {
   .numGlyphs = 124,
   .glyphRanges = font_5x7_ranges,
   .glyphs = font_5x7_glyphs
-  #ifdef GENERATE_FONT_SOURCE
-  , .glyphstrings = font_5x7_glyphstrings
-  #endif
+   #ifdef GENERATE_FONT_SOURCE
+   , .glyphstrings = font_5x7_glyphstrings
+   #endif
 };
 
+static BuiltinFontRegistrar r(font_5x7);
+
 // MARK: - end of generated font data
+

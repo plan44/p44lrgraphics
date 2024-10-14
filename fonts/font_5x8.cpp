@@ -6,7 +6,7 @@
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This is a file to be included from textview.cpp to define a font
+// Include this file into a p44lrgraphics build to define a built-in font
 
 #include "fonts.hpp"
 
@@ -14,7 +14,7 @@ using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
 
-// MARK: - 'font_5x8' generated font verification data
+// MARK: - '5x8' generated font verification data
 
 static const char * font_5x8_glyphstrings[] = {
   "placeholder" /* 0x00 - Glyph 0 */
@@ -964,7 +964,7 @@ static const char * font_5x8_glyphstrings[] = {
 #endif // GENERATE_FONT_SOURCE
 
 
-// MARK: - 'font_5x8' generated font data
+// MARK: - '5x8' generated font data
 
 static const glyph_t font_5x8_glyphs[] = {
   {  5, "\x7f\x41\x41\x41\x7f"                     },  // placeholder          (input # 0 -> glyph # 0)
@@ -1063,39 +1063,39 @@ static const glyph_t font_5x8_glyphs[] = {
   {  1, "\x7f"                                     },  // '|' UTF-8 7C         (input # 93 -> glyph # 93)
   {  3, "\x41\x36\x08"                             },  // '}' UTF-8 7D         (input # 94 -> glyph # 94)
   {  5, "\x04\x02\x04\x08\x04"                     },  // '~' UTF-8 7E         (input # 95 -> glyph # 95)
-  {  5, "\x00\x00\x00\x00\x00"                     },  // ' ' UTF-8 C2 A0     (input # 122 -> glyph # 96)
-  {  5, "\x78\x15\x12\x14\x78"                     },  // 'À' UTF-8 C3 80     (input # 117 -> glyph # 97)
-  {  5, "\x78\x14\x12\x15\x78"                     },  // 'Á' UTF-8 C3 81     (input # 118 -> glyph # 98)
-  {  5, "\x78\x16\x13\x16\x78"                     },  // 'Â' UTF-8 C3 82     (input # 119 -> glyph # 99)
-  {  5, "\x7d\x0a\x09\x0a\x7d"                     },  // 'Ä' UTF-8 C3 84     (input # 96 -> glyph # 100)
-  {  5, "\x7e\x4b\x4a\x42\x42"                     },  // 'È' UTF-8 C3 88     (input # 114 -> glyph # 101)
-  {  5, "\x7e\x4a\x4a\x43\x42"                     },  // 'É' UTF-8 C3 89     (input # 115 -> glyph # 102)
-  {  5, "\x7e\x4b\x4b\x43\x42"                     },  // 'Ê' UTF-8 C3 8A     (input # 116 -> glyph # 103)
-  {  5, "\x3d\x42\x42\x42\x3d"                     },  // 'Ö' UTF-8 C3 96     (input # 97 -> glyph # 104)
-  {  5, "\x3d\x40\x40\x40\x3d"                     },  // 'Ü' UTF-8 C3 9C     (input # 98 -> glyph # 105)
-  {  5, "\x20\x55\x56\x54\x78"                     },  // 'à' UTF-8 C3 A0     (input # 99 -> glyph # 106)
-  {  5, "\x20\x54\x56\x55\x78"                     },  // 'á' UTF-8 C3 A1     (input # 100 -> glyph # 107)
-  {  5, "\x20\x56\x55\x56\x78"                     },  // 'â' UTF-8 C3 A2     (input # 101 -> glyph # 108)
-  {  5, "\x20\x55\x54\x55\x78"                     },  // 'ä' UTF-8 C3 A4     (input # 102 -> glyph # 109)
-  {  5, "\x38\x44\xc4\x44\x08"                     },  // 'ç' UTF-8 C3 A7     (input # 103 -> glyph # 110)
-  {  5, "\x38\x55\x56\x54\x18"                     },  // 'è' UTF-8 C3 A8     (input # 104 -> glyph # 111)
-  {  5, "\x38\x54\x56\x55\x18"                     },  // 'é' UTF-8 C3 A9     (input # 105 -> glyph # 112)
-  {  5, "\x38\x56\x55\x56\x18"                     },  // 'ê' UTF-8 C3 AA     (input # 106 -> glyph # 113)
-  {  5, "\x38\x55\x54\x55\x18"                     },  // 'ë' UTF-8 C3 AB     (input # 107 -> glyph # 114)
-  {  3, "\x4a\x78\x42"                             },  // 'ì' UTF-8 C3 AC     (input # 108 -> glyph # 115)
-  {  3, "\x4a\x78\x42"                             },  // 'í' UTF-8 C3 AD     (input # 109 -> glyph # 116)
-  {  3, "\x4a\x79\x42"                             },  // 'î' UTF-8 C3 AE     (input # 110 -> glyph # 117)
-  {  3, "\x4a\x78\x42"                             },  // 'ï' UTF-8 C3 AF     (input # 111 -> glyph # 118)
-  {  5, "\x38\x45\x44\x45\x38"                     },  // 'ö' UTF-8 C3 B6     (input # 112 -> glyph # 119)
-  {  5, "\x3c\x41\x40\x41\x7c"                     },  // 'ü' UTF-8 C3 BC     (input # 113 -> glyph # 120)
-  {  8, "\x00\x08\x08\x08\x08\x08\x08\x00"         },  // '–' UTF-8 E2 80 93 (input # 123 -> glyph # 121)
-  {  2, "\x04\x03"                                 },  // '’' UTF-8 E2 80 99 (input # 121 -> glyph # 122)
-  {  2, "\x18\x18"                                 },  // '•' UTF-8 E2 80 A2 (input # 120 -> glyph # 123)
+  {  5, "\x00\x00\x00\x00\x00"                     },  // ' ' UTF-8 C2 A0     (input # 96 -> glyph # 96)
+  {  5, "\x78\x15\x12\x14\x78"                     },  // 'À' UTF-8 C3 80     (input # 97 -> glyph # 97)
+  {  5, "\x78\x14\x12\x15\x78"                     },  // 'Á' UTF-8 C3 81     (input # 98 -> glyph # 98)
+  {  5, "\x78\x16\x13\x16\x78"                     },  // 'Â' UTF-8 C3 82     (input # 99 -> glyph # 99)
+  {  5, "\x7d\x0a\x09\x0a\x7d"                     },  // 'Ä' UTF-8 C3 84     (input # 100 -> glyph # 100)
+  {  5, "\x7e\x4b\x4a\x42\x42"                     },  // 'È' UTF-8 C3 88     (input # 101 -> glyph # 101)
+  {  5, "\x7e\x4a\x4a\x43\x42"                     },  // 'É' UTF-8 C3 89     (input # 102 -> glyph # 102)
+  {  5, "\x7e\x4b\x4b\x43\x42"                     },  // 'Ê' UTF-8 C3 8A     (input # 103 -> glyph # 103)
+  {  5, "\x3d\x42\x42\x42\x3d"                     },  // 'Ö' UTF-8 C3 96     (input # 104 -> glyph # 104)
+  {  5, "\x3d\x40\x40\x40\x3d"                     },  // 'Ü' UTF-8 C3 9C     (input # 105 -> glyph # 105)
+  {  5, "\x20\x55\x56\x54\x78"                     },  // 'à' UTF-8 C3 A0     (input # 106 -> glyph # 106)
+  {  5, "\x20\x54\x56\x55\x78"                     },  // 'á' UTF-8 C3 A1     (input # 107 -> glyph # 107)
+  {  5, "\x20\x56\x55\x56\x78"                     },  // 'â' UTF-8 C3 A2     (input # 108 -> glyph # 108)
+  {  5, "\x20\x55\x54\x55\x78"                     },  // 'ä' UTF-8 C3 A4     (input # 109 -> glyph # 109)
+  {  5, "\x38\x44\xc4\x44\x08"                     },  // 'ç' UTF-8 C3 A7     (input # 110 -> glyph # 110)
+  {  5, "\x38\x55\x56\x54\x18"                     },  // 'è' UTF-8 C3 A8     (input # 111 -> glyph # 111)
+  {  5, "\x38\x54\x56\x55\x18"                     },  // 'é' UTF-8 C3 A9     (input # 112 -> glyph # 112)
+  {  5, "\x38\x56\x55\x56\x18"                     },  // 'ê' UTF-8 C3 AA     (input # 113 -> glyph # 113)
+  {  5, "\x38\x55\x54\x55\x18"                     },  // 'ë' UTF-8 C3 AB     (input # 114 -> glyph # 114)
+  {  3, "\x4a\x78\x42"                             },  // 'ì' UTF-8 C3 AC     (input # 115 -> glyph # 115)
+  {  3, "\x4a\x78\x42"                             },  // 'í' UTF-8 C3 AD     (input # 116 -> glyph # 116)
+  {  3, "\x4a\x79\x42"                             },  // 'î' UTF-8 C3 AE     (input # 117 -> glyph # 117)
+  {  3, "\x4a\x78\x42"                             },  // 'ï' UTF-8 C3 AF     (input # 118 -> glyph # 118)
+  {  5, "\x38\x45\x44\x45\x38"                     },  // 'ö' UTF-8 C3 B6     (input # 119 -> glyph # 119)
+  {  5, "\x3c\x41\x40\x41\x7c"                     },  // 'ü' UTF-8 C3 BC     (input # 120 -> glyph # 120)
+  {  8, "\x00\x08\x08\x08\x08\x08\x08\x00"         },  // '–' UTF-8 E2 80 93 (input # 121 -> glyph # 121)
+  {  2, "\x04\x03"                                 },  // '’' UTF-8 E2 80 99 (input # 122 -> glyph # 122)
+  {  2, "\x18\x18"                                 },  // '•' UTF-8 E2 80 A2 (input # 123 -> glyph # 123)
 };
 
 static const GlyphRange font_5x8_ranges[] = {
   { "", 0x20, 0x7E, 1 }, //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-  { "\xc2", 0xA0, 0xA0, 96 }, //
+  { "\xc2", 0xA0, 0xA0, 96 }, //  
   { "\xc3", 0x80, 0x82, 97 }, // ÀÁÂ
   { "\xc3", 0x84, 0x84, 100 }, // Ä
   { "\xc3", 0x88, 0x8A, 101 }, // ÈÉÊ
@@ -1118,9 +1118,12 @@ static const font_t font_5x8 = {
   .numGlyphs = 124,
   .glyphRanges = font_5x8_ranges,
   .glyphs = font_5x8_glyphs
-  #ifdef GENERATE_FONT_SOURCE
-  , .glyphstrings = font_5x8_glyphstrings
-  #endif
+   #ifdef GENERATE_FONT_SOURCE
+   , .glyphstrings = font_5x8_glyphstrings
+   #endif
 };
 
+static BuiltinFontRegistrar r(font_5x8);
+
 // MARK: - end of generated font data
+
