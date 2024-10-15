@@ -56,6 +56,7 @@ typedef struct {
   size_t numGlyphs; ///< total number of glyphs
   const GlyphRange* glyphRanges; ///< mapping to codepoints
   const glyph_t* glyphs; ///< actual glyphs
+  const char *copyright; ///< optional copyright string
   #ifdef GENERATE_FONT_SOURCE
   const char** glyphstrings; ///< ASCII-text glyph strings
   #endif

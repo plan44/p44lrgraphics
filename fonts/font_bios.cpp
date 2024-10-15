@@ -4,8 +4,6 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
-//
-//  Original font outline (vector) version (c) 2015 VileR - Creative Commons Attribution-ShareAlike 4.0 International
 
 //  Include this file into a p44lrgraphics build to define a built-in font
 
@@ -14,6 +12,11 @@
 using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
+
+// Font author's copyright
+static const char * font_bios_copyright =
+  "License CC-BY-SA-4.0\n"
+  "Original font outline (vector) version (c) 2015 VileR - Creative Commons Attribution-ShareAlike 4.0 International";
 
 // MARK: - 'bios' generated font verification data
 
@@ -1318,10 +1321,13 @@ static const font_t font_bios = {
   .glyphHeight = 8,
   .numGlyphs = 123,
   .glyphRanges = font_bios_ranges,
-  .glyphs = font_bios_glyphs
-   #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_bios_glyphstrings
-   #endif
+  .glyphs = font_bios_glyphs,
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_bios_copyright,
+  .glyphstrings = font_bios_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_bios);

@@ -13,6 +13,11 @@ using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
 
+// Font author's copyright
+static const char * font_5x5_copyright =
+  "Unknown (c) - font may be embedded in documents and temporarily loaded on"
+  " the remote system. Documents containing this font may be editable.";
+
 // MARK: - '5x5' generated font verification data
 
 static const char * font_5x5_glyphstrings[] = {
@@ -1092,9 +1097,12 @@ static const font_t font_5x5 = {
   .glyphHeight = 8,
   .numGlyphs = 123,
   .glyphRanges = font_5x5_ranges,
-  .glyphs = font_5x5_glyphs
+  .glyphs = font_5x5_glyphs,
    #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_5x5_glyphstrings
+   .copyright = font_5x5_copyright,
+   .glyphstrings = font_5x5_glyphstrings
+   #else
+   .copyright = nullptr
    #endif
 };
 

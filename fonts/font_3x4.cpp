@@ -1,9 +1,5 @@
 //  SPDX-License-Identifier: CC0-1.0
 //
-//  Original Font Author's notice
-//    Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.
-//    github: https://github.com/Michaelangel007/nanofont3x4
-
 //  Include this file into a p44lrgraphics build to define a built-in font
 
 #include "fonts.hpp"
@@ -159,6 +155,13 @@ void p44lrgraphics_out()
 
 
 #ifdef GENERATE_FONT_SOURCE
+
+// Font author's copyright
+static const char * font_3x4_copyright =
+  "License: CC0-1.0\n"
+  "Font Glyph Data is Copyleft. That is, it is 100% free, as in speech and in beer.\n"
+  "github: https://github.com/Michaelangel007/nanofont3x4";
+
 
 // MARK: - '3x4' generated font verification data
 
@@ -866,10 +869,13 @@ static const font_t font_3x4 = {
   .glyphHeight = 4,
   .numGlyphs = 97,
   .glyphRanges = font_3x4_ranges,
-  .glyphs = font_3x4_glyphs
-   #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_3x4_glyphstrings
-   #endif
+  .glyphs = font_3x4_glyphs,
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_3x4_copyright,
+  .glyphstrings = font_3x4_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_3x4);

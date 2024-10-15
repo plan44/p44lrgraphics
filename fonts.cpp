@@ -128,6 +128,9 @@ ErrorPtr UserLrgFont::loadFromFile(const string& aFontFileName)
     if (!r.nextIs(tlv_string, "name")) goto err;
     if (!r.read_string(mName)) goto err;
     mLoadedFontData.fontName = mName.c_str();
+    if (r.nextIs(tlv_string, "copyright")) {
+      r.skip(); // do not load copyright into memory
+    }
     if (!r.nextIs(tlv_unsigned, "height")) goto err;
     if (!r.read_unsigned(mLoadedFontData.glyphHeight)) goto err;
     // Ranges
@@ -291,8 +294,6 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
     if (gh!=glyphHeight) {
       fprintf(aOutputFile, "#error incorrect pixel column height in character '%s', input glyph #%d", codedesc.c_str(), g);
     }
-
-
     gm.push_back(make_pair(code,chardef));
   }
   // now sort by Code
@@ -342,10 +343,13 @@ static bool glyphStringsToFont(const char** aGlyphStrings, const char* aFontName
   fprintf(aOutputFile, "  .glyphHeight = %d,\n", glyphHeight);
   fprintf(aOutputFile, "  .numGlyphs = %d,\n", gno);
   fprintf(aOutputFile, "  .glyphRanges = font_%s_ranges,\n", aFontName);
-  fprintf(aOutputFile, "  .glyphs = font_%s_glyphs\n", aFontName);
-  fprintf(aOutputFile, "   #ifdef GENERATE_FONT_SOURCE\n");
-  fprintf(aOutputFile, "   , .glyphstrings = font_%s_glyphstrings\n", aFontName);
-  fprintf(aOutputFile, "   #endif\n");
+  fprintf(aOutputFile, "  .glyphs = font_%s_glyphs,\n", aFontName);
+  fprintf(aOutputFile, "  #ifdef GENERATE_FONT_SOURCE\n");
+  fprintf(aOutputFile, "  .copyright = font_%s_copyright,\n", aFontName);
+  fprintf(aOutputFile, "  .glyphstrings = font_%s_glyphstrings\n", aFontName);
+  fprintf(aOutputFile, "  #else\n");
+  fprintf(aOutputFile, "  .copyright = nullptr\n");
+  fprintf(aOutputFile, "  #endif\n");
   fprintf(aOutputFile, "};\n");
   fprintf(aOutputFile, "\nstatic BuiltinFontRegistrar r(font_%s);\n", aFontName);
 
@@ -368,6 +372,20 @@ static void generateFontSource(const font_t& aFont, const char** aGlyphStrings, 
   fprintf(aOutputFile, "\n#include \"fonts.hpp\"\n");
   fprintf(aOutputFile, "\nusing namespace p44;\n");
   fprintf(aOutputFile, "\n#ifdef GENERATE_FONT_SOURCE\n");
+  if (aFont.copyright) {
+    fprintf(aOutputFile, "\n// Font author's copyright:\n");
+    fprintf(aOutputFile, "static const char * font_%s_copyright =", aFont.fontName);
+    const char* c = aFont.copyright;
+    string line;
+    while (nextPart(c, line, '\n')) {
+      line += '\n';
+      fprintf(aOutputFile, "\n  %s", cstringQuote(line).c_str());
+    }
+    fprintf(aOutputFile, ";\n\n");
+  }
+  else {
+    fprintf(aOutputFile, "\nstatic const char * font_%s_copyright = nullptr;\n", aFont.fontName);
+  }
   fontAsGlyphStrings(aFont, aOutputFile);
   fprintf(aOutputFile, "\n#endif // GENERATE_FONT_SOURCE\n");
   glyphStringsToFont(aGlyphStrings, aFont.fontName, aOutputFile);
@@ -383,6 +401,10 @@ public:
     put_unsigned(1); // format version
     put_id_string("name");
     put_string(aFont.fontName);
+    if (aFont.copyright) {
+      put_id_string("copyright");
+      put_string(aFont.copyright);
+    }
     put_id_string("height");
     put_unsigned(aFont.glyphHeight);
     put_id_string("ranges");
@@ -494,7 +516,7 @@ void LrgFonts::generate_all_builtin_fonts_to_tmp()
   }
 }
 
-#endif GENERATE_FONT_SOURCE
+#endif // GENERATE_FONT_SOURCE
 
 
 #if ENABLE_P44SCRIPT

@@ -14,6 +14,8 @@ using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
 
+static const char * font_5x8_copyright = nullptr;
+
 // MARK: - '5x8' generated font verification data
 
 static const char * font_5x8_glyphstrings[] = {

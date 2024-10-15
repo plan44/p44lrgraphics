@@ -4,7 +4,6 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
-//
 
 //  Include this file into a p44lrgraphics build to define a built-in font
 
@@ -13,6 +12,8 @@
 using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
+
+static const char * font_vcr_osd_mono_copyright = nullptr;
 
 // MARK: - 'vcr_osd_mono' generated font verification data
 
@@ -1693,10 +1694,13 @@ static const font_t font_vcr_osd_mono = {
   .glyphHeight = 16,
   .numGlyphs = 123,
   .glyphRanges = font_vcr_osd_mono_ranges,
-  .glyphs = font_vcr_osd_mono_glyphs
-   #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_vcr_osd_mono_glyphstrings
-   #endif
+  .glyphs = font_vcr_osd_mono_glyphs,
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_vcr_osd_mono_copyright,
+  .glyphstrings = font_vcr_osd_mono_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_vcr_osd_mono);

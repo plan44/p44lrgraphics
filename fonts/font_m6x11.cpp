@@ -4,8 +4,6 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
-//
-//  Original font is (c) by Daniel Linssen - No embedding restrictions
 
 //  Include this file into a p44lrgraphics build to define a built-in font
 
@@ -14,6 +12,9 @@
 using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
+
+static const char * font_m6x11_copyright =
+  "Original font is (c) by Daniel Linssen - No embedding restrictions";
 
 // MARK: - 'm6x11' generated font verification data
 
@@ -962,10 +963,13 @@ static const font_t font_m6x11 = {
   .glyphHeight = 14,
   .numGlyphs = 96,
   .glyphRanges = font_m6x11_ranges,
-  .glyphs = font_m6x11_glyphs
-   #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_m6x11_glyphstrings
-   #endif
+  .glyphs = font_m6x11_glyphs,
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_m6x11_copyright,
+  .glyphstrings = font_m6x11_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_m6x11);

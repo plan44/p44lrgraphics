@@ -4,11 +4,6 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with p44lrgraphics. If not, see <http://www.gnu.org/licenses/>.
-//
-//  Copyright 2019 The Homecomputer Fonts Project Authors
-//  (https://github.com/jenskutilek/homecomputer-fonts).
-//  Based on the Commodore 64 character set.
-//  No embedding restrictions, OFL.1.1 licensed
 
 //  Include this file into a p44lrgraphics build to define a built-in font
 
@@ -17,6 +12,13 @@
 using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
+
+static const char * font_sixtyfour_copyright =
+  "License: OFL.1-1\n"
+  "Copyright 2019 The Homecomputer Fonts Project Authors\n"
+  "(https://github.com/jenskutilek/homecomputer-fonts).\n"
+  "Based on the Commodore 64 character set.\n"
+  "No embedding restrictions, OFL.1.1 licensed";
 
 // MARK: - 'sixtyfour' generated font verification data
 
@@ -1269,10 +1271,13 @@ static const font_t font_sixtyfour = {
   .glyphHeight = 8,
   .numGlyphs = 123,
   .glyphRanges = font_sixtyfour_ranges,
-  .glyphs = font_sixtyfour_glyphs
-   #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_sixtyfour_glyphstrings
-   #endif
+  .glyphs = font_sixtyfour_glyphs,
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_sixtyfour_copyright,
+  .glyphstrings = font_sixtyfour_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_sixtyfour);
