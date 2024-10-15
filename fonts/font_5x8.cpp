@@ -1119,10 +1119,13 @@ static const font_t font_5x8 = {
   .glyphHeight = 8,
   .numGlyphs = 124,
   .glyphRanges = font_5x8_ranges,
-  .glyphs = font_5x8_glyphs
-   #ifdef GENERATE_FONT_SOURCE
-   , .glyphstrings = font_5x8_glyphstrings
-   #endif
+  .glyphs = font_5x8_glyphs,
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_5x8_copyright,
+  .glyphstrings = font_5x8_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_5x8);

@@ -14,9 +14,9 @@ using namespace p44;
 
 #ifdef GENERATE_FONT_SOURCE
 
-// MARK: - '5x7' generated font verification data
-
 static const char * font_5x7_copyright = nullptr;
+
+// MARK: - '5x7' generated font verification data
 
 static const char * font_5x7_glyphstrings[] = {
   "placeholder" /* 0x00 - Glyph 0 */
@@ -1121,12 +1121,12 @@ static const font_t font_5x7 = {
   .numGlyphs = 124,
   .glyphRanges = font_5x7_ranges,
   .glyphs = font_5x7_glyphs,
-   #ifdef GENERATE_FONT_SOURCE
-   .copyright = font_5x7_copyright,
-   .glyphstrings = font_5x7_glyphstrings
-   #else
-   .copyright = nullptr
-   #endif
+  #ifdef GENERATE_FONT_SOURCE
+  .copyright = font_5x7_copyright,
+  .glyphstrings = font_5x7_glyphstrings
+  #else
+  .copyright = nullptr
+  #endif
 };
 
 static BuiltinFontRegistrar r(font_5x7);
