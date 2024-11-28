@@ -28,7 +28,6 @@
 #define FOCUSLOGLEVEL 7
 
 #include "p44view.hpp"
-#include "ledchaincomm.hpp" // for brightnessToPwm and pwmToBrightness
 #include "viewfactory.hpp" // for registering views
 
 #include <math.h>
