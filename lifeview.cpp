@@ -491,7 +491,7 @@ static const BuiltinMemberDescriptor lifeMembers[] = {
   ACC_DECL("maxstatic", numeric|lvalue, MaxStatic),
   ACC_DECL("minstatic", numeric|lvalue, MinStatic),
   ACC_DECL("minpopulation", numeric|lvalue, MinPopulation),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedLifeMemberLookupP = NULL;

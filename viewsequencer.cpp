@@ -413,7 +413,7 @@ static const BuiltinMemberDescriptor viewSequencerMembers[] = {
   #endif
   // property accessors
   ACC_DECL("steps", objectvalue, Steps),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedViewSequencerMemberLookupP = NULL;

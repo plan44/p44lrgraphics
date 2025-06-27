@@ -429,7 +429,7 @@ static const BuiltinMemberDescriptor colorEffectMembers[] = {
   ACC_DECL("effect_wrap", numeric|lvalue, EffectWrap),
   ACC_DECL("radial", numeric|lvalue, Radial),
   ACC_DECL("transparent_fade", numeric|lvalue, TransparentFade),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedColorEffectMemberLookupP = NULL;

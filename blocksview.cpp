@@ -657,7 +657,7 @@ static const BuiltinMemberDescriptor blocksViewMembers[] = {
   FUNC_DEF_NOARG(event, executable|objectvalue),
   // property accessors
   ACC_DECL("pause", numeric, Pause),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedBlocksMemberLookupP = NULL;

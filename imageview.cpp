@@ -215,7 +215,7 @@ static const BuiltinMemberDescriptor imageViewMembers[] = {
   ACC_DECL("image_dx", numeric, ImageDx),
   ACC_DECL("image_dy", numeric, ImageDy),
   ACC_DECL("bytes", numeric, ImageBytes),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedImageMemberLookupP = NULL;

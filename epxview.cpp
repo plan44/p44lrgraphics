@@ -388,7 +388,7 @@ static const BuiltinMemberDescriptor epxMembers[] = {
   #endif
   // property accessors
   ACC_DECL("run", numeric|lvalue, Run),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedEpxMemberLookupP = NULL;

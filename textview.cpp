@@ -265,7 +265,7 @@ static const BuiltinMemberDescriptor textViewMembers[] = {
   ACC_DECL("spacing", numeric|lvalue, TextSpacing),
   ACC_DECL("stretch", numeric|lvalue, Stretch),
   ACC_DECL("bolden", numeric|lvalue, Bolden),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedTextMemberLookupP = NULL;

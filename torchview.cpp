@@ -346,7 +346,7 @@ static const BuiltinMemberDescriptor torchMembers[] = {
   ACC_DECL("hotsparkcolor", numeric|lvalue, HotsparkColor),
   ACC_DECL("hotsparkinc", numeric|lvalue, HotsparkColorInc),
   ACC_DECL("cycletime", numeric|lvalue, CycleTimeS),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedTorchMemberLookupP = NULL;

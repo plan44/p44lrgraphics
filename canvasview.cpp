@@ -325,7 +325,7 @@ static const BuiltinMemberDescriptor canvasViewMembers[] = {
   // property accessors
   ACC_DECL("bytes", numeric, CanvasBytes),
   ACC_DECL("pixels", numeric, NumPixels),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedCanvasMemberLookupP = NULL;

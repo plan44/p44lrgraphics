@@ -608,7 +608,7 @@ static const BuiltinMemberDescriptor viewStackMembers[] = {
   // property accessors
   ACC_DECL("positioningmode", numeric|lvalue, PositioningMode),
   ACC_DECL("layers", arrayvalue, Layers),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedViewStackMemberLookupP = NULL;

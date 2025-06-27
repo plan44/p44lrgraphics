@@ -159,7 +159,7 @@ static const BuiltinMemberDescriptor lrgGlobals[] = {
   FUNC_DEF_W_ARG(loadfont, executable|objectvalue),
   FUNC_DEF_NOARG(lrgfonts, executable|objectvalue),
   MEMBER_DEF(lrg, builtinvalue),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 

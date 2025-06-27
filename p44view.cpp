@@ -1993,7 +1993,7 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("contentismask", numeric|lvalue, ContentIsMask),
   ACC_DECL("invertalpha", numeric|lvalue, InvertAlpha),
   ACC_DECL("subsampling", numeric|lvalue, Subsampling),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedViewMemberLookupP = NULL;

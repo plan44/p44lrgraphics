@@ -615,7 +615,7 @@ static const BuiltinMemberDescriptor scrollerFunctions[] = {
   ACC_DECL("step_y", numeric|lvalue, StepY),
   ACC_DECL("interval", numeric|lvalue, ScrollStepIntervalS),
   ACC_DECL("steps", numeric, RemainingSteps),
-  { NULL } // terminator
+  BUILTINS_TERMINATOR
 };
 
 static BuiltInMemberLookup* sharedScrollerMemberLookupP = NULL;
