@@ -2,7 +2,7 @@
 p44lrgraphics
 =============
 
-*[[if you want to support p44lrgraphics development, consider to sponsor plan44]](https://github.com/sponsors/plan44)* 
+*[[if you want to support p44lrgraphics development, consider to sponsor plan44]](https://github.com/sponsors/plan44)*
 
 *p44lrgraphics* is a set of free (opensource, GPLv3) C++ classes and functions building a graphics library specially targeted at **low resolution displays**.
 
@@ -18,7 +18,7 @@ Instead, *p44lrgraphics* mostly does exactly the opposite: each of the (relative
 
 *p44lrgraphics* needs some classes and functions from the [*p44utils*](https://github.com/plan44/p44utils) library.
 
-Projects using p44lrgraphics (or cointaining roots that led to it) include 
+Projects using p44lrgraphics (or cointaining roots that led to it) include
 the [pixelboard](https://github.com/plan44/pixelboard-hardware), the [ETH digital platform](https://plan44.ch/custom/custom.php#leth), and the "chatty wifi" installation I brought to the 35c3 (which is in the [*hermel* branch of *lethd*](https://github.com/plan44/lethd/tree/hermeld))
 
 To create pixel fonts for p44lrgraphics, the Q&D macOS app [FontHexer2](https://github.com/plan44/fonthexer2) can be used to sample existing pixel-ready fonts. A few of these are included in the `font/` subfolder of this repo already.
@@ -36,7 +36,6 @@ License
 
 p44lrgraphics is licensed under the GPLv3 License (see COPYING).
 
-If that's a problem for your particular application, I am open to provide a commercial license, please contact me at [luz@plan44.ch](mailto:luz@plan44.ch).
 
 Features
 --------
