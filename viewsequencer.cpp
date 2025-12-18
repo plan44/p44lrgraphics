@@ -189,7 +189,8 @@ void ViewSequencer::stopSequence()
 
 bool ViewSequencer::isDirty()
 {
-  if (inherited::isDirty()) return true; // dirty anyway
+  if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
+  if (mAlpha==0) return false; // as long as the sequencer itself is invisible, dirty childs are irrelevant
   return mCurrentView && reportDirtyChilds() ? mCurrentView->isDirty() : false;
 }
 

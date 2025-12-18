@@ -304,7 +304,8 @@ MLMicroSeconds ViewStack::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNo
 
 bool ViewStack::isDirty()
 {
-  if (inherited::isDirty()) return true; // dirty anyway
+  if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
+  if (mAlpha==0) return false; // as long as the stack is invisible, dirty childs are irrelevant
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if ((*pos)->isDirty())
       return true; // subview is dirty -> stack is dirty

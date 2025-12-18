@@ -533,7 +533,7 @@ void P44View::requestUpdate()
   P44View *p = this;
   while (p->mParentView) {
     if (p->mUpdateRequested) return;  // already requested, no need to descend to root
-    p->mUpdateRequested = true; // mark having requested update all the way down to root, update() will be called on all views to clear it
+    p->mUpdateRequested = true; // mark having requested update all the way down to root, updated() will be called on all views to clear it
     p = p->mParentView;
   }
   // now p = root view
