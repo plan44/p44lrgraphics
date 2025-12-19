@@ -51,6 +51,8 @@ P44View::P44View() :
   mDirty(false),
   mUpdateRequested(false),
   mMinUpdateInterval(0),
+  mStepShowTime(Never),
+  mStepRealTime(Never),
   mChangeTrackingLevel(0),
   mChangedGeometry(false),
   mChangedColoring(false),
@@ -611,7 +613,7 @@ void P44View::makeColorDirty()
 bool P44View::reportDirtyChilds()
 {
   if (mMaskChildDirtyUntil) {
-    if (MainLoop::now()<mMaskChildDirtyUntil) {
+    if (stepShowTime()<mMaskChildDirtyUntil) {
       return false;
     }
     mMaskChildDirtyUntil = 0;
@@ -620,12 +622,11 @@ bool P44View::reportDirtyChilds()
 }
 
 
-void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil, MLMicroSeconds aNow)
+void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil)
 {
   if (mLocalTimingPriority && aCandidatePriorityUntil>0 && aCallCandidate>=0 && aCallCandidate<aCandidatePriorityUntil) {
     // children must not cause "dirty" before candidate time is over
-    if (aNow==Never) aNow = MainLoop::now();
-    mMaskChildDirtyUntil = (aCallCandidate-aNow)*2+aNow; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
+    mMaskChildDirtyUntil = (aCallCandidate-mStepShowTime)*2+mStepShowTime; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
   }
   if (aNextCall<=0 || (aCallCandidate>0 && aCallCandidate<aNextCall)) {
     // candidate wins
@@ -634,7 +635,19 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 }
 
 
-MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
+
+MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
+{
+  // this is the entry point, remember those for further use
+  mStepShowTime = aStepShowTime;
+  mStepRealTime = aStepRealTime;
+  // now call the actual virtual calculation method
+  return stepInternal(aPriorityUntil);
+}
+
+
+
+MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
 {
   mUpdateRequested = false; // no step request pending any more
   // check animations
@@ -643,7 +656,7 @@ MLMicroSeconds P44View::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
   AnimationsList::iterator pos = mAnimations.begin();
   while (pos != mAnimations.end()) {
     ValueAnimatorPtr animator = (*pos);
-    MLMicroSeconds nextStep = animator->step(aNow);
+    MLMicroSeconds nextStep = animator->step(mStepShowTime);
     if (!animator->inProgress()) {
       // this animation is done, remove it from the list
       pos = mAnimations.erase(pos);

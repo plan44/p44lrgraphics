@@ -246,7 +246,7 @@ bool BlocksView::launchBlock(Block::BlockType aBlockType, PixelColor aColor, int
     return false;
   }
   else {
-    b->lastStep = MainLoop::now();
+    b->lastStep = stepShowTime();
     return true;
   }
 }
@@ -311,18 +311,18 @@ int BlocksView::findCompletedRow(bool aBlockFromBottom)
 
 
 
-MLMicroSeconds BlocksView::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
+MLMicroSeconds BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
+  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
   if (!mPause) {
     for (int i=0; i<2; i++) {
       BlockRunner *b = &mActiveBlocks[i];
       if (b->block && b->stepInterval) {
         MLMicroSeconds nxt = b->lastStep+b->stepInterval;
-        if (aNow>=nxt) {
+        if (stepShowTime()>=nxt) {
           if (b->block->move({ 0, b->movingUp ? 1 : -1 }, 0, b->movingUp)) {
             // block could move
-            b->lastStep = aNow;
+            b->lastStep = stepShowTime();
             if (b->dropping) b->droppedsteps++; // count dropped steps
             makeDirty();
             updateNextCall(nextCall, nxt);

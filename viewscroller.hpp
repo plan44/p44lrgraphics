@@ -201,11 +201,13 @@ namespace p44 {
     /// clear contents of this view
     virtual void clear() P44_OVERRIDE;
 
-    /// calculate changes on the display, return time of next change
+    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
-    /// @note this must be called as demanded by return value, and after making changes to the view
-    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow) P44_OVERRIDE;
+    /// @return Infinite if there is no immediate need to call step again, otherwise time of when we need to SHOW
+    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
+    ///   we can calculate results in advance
+    virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
     /// return if anything changed on the display since last call
     virtual bool isDirty() P44_OVERRIDE;
@@ -229,7 +231,7 @@ namespace p44 {
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
     virtual P44ViewPtr findView(const string aLabel) P44_OVERRIDE;
 
-    #endif
+    #endif // ENABLE_VIEWCONFIG
 
     #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()

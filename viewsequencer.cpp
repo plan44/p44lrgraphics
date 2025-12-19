@@ -72,12 +72,12 @@ void ViewSequencer::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicro
 }
 
 
-MLMicroSeconds ViewSequencer::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
+MLMicroSeconds ViewSequencer::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
-  updateNextCall(nextCall, stepAnimation(aNow), aPriorityUntil, aNow); // animation has priority
+  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  updateNextCall(nextCall, stepAnimation(stepShowTime()), aPriorityUntil); // animation has priority
   if (mCurrentStep<mSequence.size()) {
-    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(aPriorityUntil, aNow));
+    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(stepShowTime(), aPriorityUntil, stepRealTime()));
   }
   return nextCall;
 }
@@ -175,7 +175,7 @@ void ViewSequencer::startSequence(bool aRepeat, SimpleCB aCompletedCB)
   mCompletedCB = aCompletedCB;
   mCurrentStep = 0;
   animationState = as_begin; // begins from start
-  stepAnimation(MainLoop::now());
+  stepAnimation(stepShowTime());
 }
 
 

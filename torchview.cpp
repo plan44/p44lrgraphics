@@ -92,14 +92,14 @@ void TorchView::recalculateColoring()
 
 
 
-MLMicroSeconds TorchView::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
+MLMicroSeconds TorchView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
-  if (mCycleTime!=Never && aNow>=mNextCalculation) {
-    mNextCalculation = aNow+mCycleTime;
+  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  if (mCycleTime!=Never && stepShowTime()>=mNextCalculation) {
+    mNextCalculation = stepShowTime()+mCycleTime;
     calculateCycle();
   }
-  updateNextCall(nextCall, aNow+mCycleTime);
+  updateNextCall(nextCall, stepShowTime()+mCycleTime);
   return nextCall;
 }
 

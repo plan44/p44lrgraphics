@@ -164,11 +164,11 @@ ErrorPtr EpxView::loadEpxAnimationJSON(JsonObjectPtr aEpxAnimation)
 }
 
 
-MLMicroSeconds EpxView::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
+MLMicroSeconds EpxView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
-  if (mNextRender>=0 && aNow>=mNextRender) {
-    mNextRender = renderFrame(aNow);
+  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  if (mNextRender>=0 && stepShowTime()>=mNextRender) {
+    mNextRender = renderFrame(stepShowTime());
   }
   updateNextCall(nextCall, mNextRender); // Note: make sure nextCall is updated even when render is NOT (YET) called!
   return nextCall;

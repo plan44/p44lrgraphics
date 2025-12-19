@@ -79,19 +79,19 @@ void ViewScroller::clear()
 }
 
 
-MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow)
+MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::step(aPriorityUntil, aNow);
+  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
   if (mScrolledView) {
-    updateNextCall(nextCall, mScrolledView->step(aPriorityUntil, aNow));
+    updateNextCall(nextCall, mScrolledView->step(stepShowTime(), aPriorityUntil, stepRealTime()));
   }
   // scroll
   if (mScrollSteps!=0 && mScrollStepInterval>0) {
     // scrolling
-    MLMicroSeconds next = mNextScrollStepAt-aNow; // time to next step
+    MLMicroSeconds next = mNextScrollStepAt-stepShowTime(); // time to next step
     if (next>0) {
       // next step is in the future, schedule it with priority
-      updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil, aNow); // scrolling has priority
+      updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
     }
     else {
       // execute all step(s) pending
@@ -158,7 +158,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
         else {
           // time next from now, even if we are (possibly much) late
           next = mScrollStepInterval;
-          mNextScrollStepAt = aNow+mScrollStepInterval;
+          mNextScrollStepAt = stepShowTime()+mScrollStepInterval;
         }
         #if SCROLLER_STATS
         if (mLocalTimingPriority && (aPriorityUntil<=0 || mNextScrollStepAt>aPriorityUntil)) {
@@ -166,7 +166,7 @@ MLMicroSeconds ViewScroller::step(MLMicroSeconds aPriorityUntil, MLMicroSeconds 
         }
         mWantedNextCalls.push_back(mNextScrollStepAt);
         #endif // SCROLLER_STATS
-        updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil, aNow); // scrolling has priority
+        updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
         #if SCROLLER_STATS
         if (nextCall<mNextScrollStepAt) mNumOverriddenPrios++;
         mGrantedNextCalls.push_back(nextCall);
@@ -316,9 +316,8 @@ void ViewScroller::startScroll(double aStepX, double aStepY, MLMicroSeconds aInt
   }
   mScrollStepInterval = aInterval;
   mScrollSteps = aNumSteps;
-  MLMicroSeconds now = MainLoop::now();
   // do not allow setting scroll step into the past, as this would cause massive catch-up
-  mNextScrollStepAt = aStartTime==Never || aStartTime<now ? now : aStartTime;
+  mNextScrollStepAt = aStartTime==Never || aStartTime<stepShowTime() ? stepShowTime() : aStartTime;
   mScrollCompletedCB = aCompletedCB;
   #if SCROLLER_STATS
   resetStats();

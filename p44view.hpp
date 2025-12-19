@@ -84,6 +84,9 @@ namespace p44 {
     TimerCB mNeedUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
     MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
+    MLMicroSeconds mStepShowTime; ///< the (usually future) time where the current step calculation is meant to be shown
+    MLMicroSeconds mStepRealTime; ///< the (usually slightly past) time when this step calculation has started
+
     int mChangeTrackingLevel;
     bool mChangedGeometry;
     bool mChangedColoring;
@@ -260,15 +263,14 @@ namespace p44 {
     bool reportDirtyChilds();
 
     /// helper for determining time of next step call
-    /// @param aNextCall time of next call needed known so far, will be updated by candidate if conditions match
+    /// @param aNextShow time of when next display update should happen (i.e. when the next call should be already done and results collected)
     /// @param aCallCandidate time of next call to update aNextCall
     /// @param aCandidatePriorityUntil if set, this means the aCallCandidate must be prioritized when it is before the
     ///   specified time (and the view is enabled for prioritized timing).
     ///   Prioritizing means that reportDirtyChilds() returns false until aCallCandidate has passed, to
     ///   prevent triggering display updates before the prioritized time.
-    /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
-    ///   Only relevant when aCandidatePriorityUntil!=0, if set to Never, current mainloop time will be used
-    void updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil = 0, MLMicroSeconds aNow = Never);
+    /// @note aNextShow calculations must be based on mStepShowTime, never on now() or mStepRealTime
+    void updateNextCall(MLMicroSeconds &aNextShow, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil = 0);
 
   public :
 
@@ -554,12 +556,17 @@ namespace p44 {
     ///   and thus choose NOT to call inherited.
     virtual void clear();
 
-    /// calculate changes on the display, return time of next change
+    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @param aNow referece time for "now" of this step cycle (slightly in the past because taken before calling)
-    /// @return Infinite if there is no immediate need to call step again, otherwise mainloop time of when to call again latest
-    /// @note this must be called as demanded by return value, and after making changes to the view
-    virtual MLMicroSeconds step(MLMicroSeconds aPriorityUntil, MLMicroSeconds aNow);
+    /// @param aStepShowTime the (usually future) time this step's result should be shown
+    /// @param aPriorityUntil the time until the current view might have timingpriority
+    /// @param aStepRealTime the current real time of this calculations step taking place
+    /// @return Infinite (NOT Never!!) if there is no immediate need to call step again, otherwise time of when we need to SHOW
+    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
+    ///   we can calculate results in advance
+    /// @note this must be called as demanded by return value, and after making changes to the view's parameters
+    MLMicroSeconds step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
 
     /// return if anything changed on the display since last call
     virtual bool isDirty()  { return mDirty; };
@@ -631,8 +638,6 @@ namespace p44 {
     JsonObjectPtr viewStatus();
     #endif // ENABLE_VIEWSTATUS
 
-  public:
-
     /// set dirty, additionally request a step ASAP
     void makeDirtyAndUpdate();
 
@@ -673,6 +678,23 @@ namespace p44 {
     virtual ValueSetterCB getPropertySetter(const string aProperty, double& aCurrentValue);
 
   protected:
+
+    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
+    /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
+    /// @return Infinite if there is no immediate need to call step again, otherwise time of when we need to SHOW
+    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
+    ///   we can calculate results in advance
+    virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil);
+
+    /// @return intended time for when to show results of current calculation step next time
+    /// @note intended for use in stepInternal() implementations to refer to the time the current calculation will/should be shown
+    inline MLMicroSeconds stepShowTime() const { return mStepShowTime; }
+
+    /// @return real time of when last calculation step was started
+    /// @note intended for use in stepInternal() implementations to allow detecting how realistic mStepShowTime might be
+    inline MLMicroSeconds stepRealTime() const { return mStepRealTime; }
+
 
     ValueSetterCB getGeometryPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);
     ValueSetterCB getTransformPropertySetter(FracValue& aTransformValue, double& aCurrentValue);
