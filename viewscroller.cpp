@@ -164,12 +164,10 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
         if (mLocalTimingPriority && (aPriorityUntil<=0 || mNextScrollStepAt>aPriorityUntil)) {
           mNumNonPrioritizedNexts++;
         }
-        mWantedNextCalls.push_back(mNextScrollStepAt);
         #endif // SCROLLER_STATS
         updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
         #if SCROLLER_STATS
         if (nextCall<mNextScrollStepAt) mNumOverriddenPrios++;
-        mGrantedNextCalls.push_back(nextCall);
         #endif // SCROLLER_STATS
       } // while catchup
       if ((
@@ -195,7 +193,7 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
             mAlertEmpty = false; // must re-arm before alerting again
             sendEvent(new P44Script::ContentNeededObj(this)); // one-shot
           }
-          #endif
+          #endif // P44SCRIPT_FULL_SUPPORT
           if (mAutoPurge) {
             // remove views no longer in sight
             purgeScrolledOut();
@@ -207,9 +205,6 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
       }
     }
   }
-  #if SCROLLER_STATS
-
-  #endif
   return nextCall;
 }
 

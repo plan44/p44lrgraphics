@@ -29,7 +29,7 @@
   #include "p44script.hpp"
 #endif
 
-#define SCROLLER_STATS 1
+#define SCROLLER_STATS 0
 
 namespace p44 {
 
@@ -71,9 +71,6 @@ namespace p44 {
     long mNumCatchups;
     long mNumNonPrioritizedNexts;
     long mNumOverriddenPrios;
-    typedef std::vector<MLMicroSeconds> TimestampList;
-    TimestampList mWantedNextCalls;
-    TimestampList mGrantedNextCalls;
     void resetStats() {
       mMaxLateNext = 0;
       mMinLateNext = 999999;
@@ -82,8 +79,6 @@ namespace p44 {
       mNumCatchups = 0;
       mNumNonPrioritizedNexts = 0;
       mNumOverriddenPrios = 0;
-      mWantedNextCalls.clear();
-      mGrantedNextCalls.clear();
     }
     void showStats() {
       LOG(LOG_NOTICE, "Scroller Stats:"
@@ -102,14 +97,6 @@ namespace p44 {
         mNumNonPrioritizedNexts,
         mNumOverriddenPrios
       );
-      MLMicroSeconds lw = 0, lg = 0;
-      for (int i = 0; i<mWantedNextCalls.size(); i++) {
-        MLMicroSeconds w = mWantedNextCalls[i];
-        MLMicroSeconds g = mGrantedNextCalls[i];
-        LOG(LOG_NOTICE, "%c %4d : wanted %12lld (%+12lld)  granted %12lld (%+12lld)", w!=g ? '*' : '-' , i, w, w-lw, g, g-lg);
-        lw = w;
-        lg = g;
-      }
       resetStats();
     }
     #endif // SCROLLER_STATS
