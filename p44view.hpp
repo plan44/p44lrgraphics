@@ -254,7 +254,12 @@ namespace p44 {
     virtual void recalculateColoring() { /* NOP in the base class */ };
 
     /// set dirty - to be called by step() and property setters (config, animation) when the view needs to be redisplayed
+    /// @note. will be ignored when view is invisible (alpha==0)
     void makeDirty();
+
+    /// set dirty because alpha changes
+    /// @note must be applied unconditionally to allow updates DUE to alpha changes
+    void makeAlphaDirtry();
 
     /// set color dirty - make dirty and cause coloring update
     void makeColorDirty();

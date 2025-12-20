@@ -261,7 +261,6 @@ MLMicroSeconds ViewScroller::remainingScrollTime()
 bool ViewScroller::isDirty()
 {
   if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
-  if (mAlpha==0) return false; // as long as the scroller itself is invisible, dirty scrolled view is irrelevant
   if (mScrolledView && reportDirtyChilds()) return mScrolledView->isDirty();
   return false;
 }

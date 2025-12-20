@@ -599,7 +599,13 @@ bool P44View::removeFromParent()
 
 void P44View::makeDirty()
 {
-  mDirty = true;
+  if (getVisible()) mDirty = true; // invisible views
+}
+
+
+void P44View::makeAlphaDirtry()
+{
+  mDirty = true; // unconditionally
 }
 
 
@@ -612,6 +618,7 @@ void P44View::makeColorDirty()
 
 bool P44View::reportDirtyChilds()
 {
+  if (mAlpha==0) return false; // as long as this is invisible, dirty children are irrelevant
   if (mMaskChildDirtyUntil) {
     if (stepShowTime()<mMaskChildDirtyUntil) {
       return false;
@@ -662,7 +669,7 @@ MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
       pos = mAnimations.erase(pos);
       continue;
     }
-    updateNextCall(nextCall, nextStep);
+    updateNextCall(nextCall, nextStep, aPriorityUntil); // prioritize local animation steps
     pos++;
   }
   #endif // ENABLE_ANIMATION
@@ -674,7 +681,7 @@ void P44View::setAlpha(PixelColorComponent aAlpha)
 {
   if (mAlpha!=aAlpha) {
     mAlpha = aAlpha;
-    makeDirty();
+    makeAlphaDirtry();
   }
 }
 
