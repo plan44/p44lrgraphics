@@ -317,7 +317,7 @@ MLMicroSeconds BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
   if (!mPause) {
     for (int i=0; i<2; i++) {
       BlockRunner *b = &mActiveBlocks[i];
-      if (b->block && b->stepInterval) {
+      if (b->block && DEFINED_TIME(b->stepInterval)) {
         MLMicroSeconds nxt = b->lastStep+b->stepInterval;
         if (stepShowTime()>=nxt) {
           if (b->block->move({ 0, b->movingUp ? 1 : -1 }, 0, b->movingUp)) {
@@ -325,7 +325,7 @@ MLMicroSeconds BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
             b->lastStep = stepShowTime();
             if (b->dropping) b->droppedsteps++; // count dropped steps
             makeDirty();
-            updateNextCall(nextCall, nxt);
+            nxt = b->lastStep+b->stepInterval;
           }
           else {
             // could not move, means that we've collided with floor or existing pixels
@@ -344,6 +344,7 @@ MLMicroSeconds BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
             // - if start not possible -> game over
           }
         }
+        updateNextCall(nextCall, nxt);
       }
     }
   }

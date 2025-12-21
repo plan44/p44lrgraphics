@@ -87,10 +87,19 @@ void LifeView::setGenerationInterval(MLMicroSeconds aInterval)
 MLMicroSeconds LifeView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
-  if (mAlpha>0 && DEFINED_INTERVAL(mGenerationInterval) && stepShowTime()>=mLastGeneration+mGenerationInterval) {
-    mLastGeneration = stepShowTime();
-    nextGeneration();
-    updateNextCall(nextCall, stepShowTime()+mGenerationInterval);
+  if (DEFINED_INTERVAL(mGenerationInterval)) {
+    // game running
+    if (stepShowTime()>=mLastGeneration+mGenerationInterval) {
+      // step due
+      mLastGeneration = stepShowTime();
+      nextGeneration();
+      // set next step due in mGenerationInterval relative from this showtime (which should be still a bit future now)
+      updateNextCall(nextCall, stepShowTime()+mGenerationInterval);
+    }
+    else {
+      // not yet due, return time we want to do the next step
+      updateNextCall(nextCall, mLastGeneration+mGenerationInterval);
+    }
   }
   return nextCall;
 }
