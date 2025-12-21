@@ -86,7 +86,7 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
     updateNextCall(nextCall, mScrolledView->step(stepShowTime(), aPriorityUntil, stepRealTime()));
   }
   // scroll
-  if (mScrollSteps!=0 && mScrollStepInterval>0) {
+  if (mScrollSteps!=0 && NONZERO_INTERVAL(mScrollStepInterval)) {
     // scrolling
     MLMicroSeconds next = mNextScrollStepAt-stepShowTime(); // time to next step
     if (next>0) {
@@ -311,7 +311,7 @@ void ViewScroller::startScroll(double aStepX, double aStepY, MLMicroSeconds aInt
   mScrollStepInterval = aInterval;
   mScrollSteps = aNumSteps;
   // do not allow setting scroll step into the past, as this would cause massive catch-up
-  mNextScrollStepAt = aStartTime==Never || aStartTime<stepShowTime() ? stepShowTime() : aStartTime;
+  mNextScrollStepAt = !DEFINED_TIME(aStartTime) || aStartTime<stepShowTime() ? stepShowTime() : aStartTime;
   mScrollCompletedCB = aCompletedCB;
   #if SCROLLER_STATS
   resetStats();
@@ -373,7 +373,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
     // pseudo "properties" for starting scroll
     double stepX = mScrollStepX;
     double stepY = mScrollStepY;
-    MLMicroSeconds interval = mScrollStepInterval>0 ? mScrollStepInterval : 50*MilliSecond;
+    MLMicroSeconds interval = NONZERO_INTERVAL(mScrollStepInterval) ? mScrollStepInterval : 50*MilliSecond;
     long numSteps = -1;
     bool doStart = false;
     if (aViewConfig->get("step_x", o)) {

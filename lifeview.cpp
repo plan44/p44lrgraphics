@@ -32,7 +32,7 @@ static ViewRegistrar r(LifeView::staticTypeName(), &LifeView::newInstance);
 
 LifeView::LifeView() :
   mGenerationInterval(777*MilliSecond),
-  mLastGeneration(Never),
+  mLastGeneration(Infinite),
   mStaticcount(0),
   mMaxStatic(23),
   mMinStatic(10),
@@ -87,7 +87,7 @@ void LifeView::setGenerationInterval(MLMicroSeconds aInterval)
 MLMicroSeconds LifeView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
   MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
-  if (mAlpha>0 && mGenerationInterval!=Never && stepShowTime()>=mLastGeneration+mGenerationInterval) {
+  if (mAlpha>0 && DEFINED_INTERVAL(mGenerationInterval) && stepShowTime()>=mLastGeneration+mGenerationInterval) {
     mLastGeneration = stepShowTime();
     nextGeneration();
     updateNextCall(nextCall, stepShowTime()+mGenerationInterval);

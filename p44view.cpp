@@ -619,7 +619,7 @@ void P44View::makeColorDirty()
 bool P44View::reportDirtyChilds()
 {
   if (mAlpha==0) return false; // as long as this is invisible, dirty children are irrelevant
-  if (mMaskChildDirtyUntil) {
+  if (DEFINED_TIME(mMaskChildDirtyUntil)) {
     if (stepShowTime()<mMaskChildDirtyUntil) {
       return false;
     }
@@ -631,11 +631,11 @@ bool P44View::reportDirtyChilds()
 
 void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil)
 {
-  if (mLocalTimingPriority && aCandidatePriorityUntil>0 && aCallCandidate>=0 && aCallCandidate<aCandidatePriorityUntil) {
+  if (mLocalTimingPriority && DEFINED_TIME(aCandidatePriorityUntil) && DEFINED_TIME(aCallCandidate) && aCallCandidate<aCandidatePriorityUntil) {
     // children must not cause "dirty" before candidate time is over
     mMaskChildDirtyUntil = (aCallCandidate-mStepShowTime)*2+mStepShowTime; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
   }
-  if (aNextCall<=0 || (aCallCandidate>0 && aCallCandidate<aNextCall)) {
+  if (!DEFINED_TIME(aNextCall) || (DEFINED_TIME(aCallCandidate) && aCallCandidate<aNextCall)) {
     // candidate wins
     aNextCall = aCallCandidate;
   }

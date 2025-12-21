@@ -165,7 +165,7 @@ static ViewRegistrar r(BlocksView::staticTypeName(), &BlocksView::newInstance);
 
 BlocksView::BlocksView() :
   mPause(false),
-  mNextCalculation(Never)
+  mNextCalculation(Infinite)
 {
   setContentSize({ 10, 20 }); // assume default size
 }
@@ -330,7 +330,7 @@ MLMicroSeconds BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
           else {
             // could not move, means that we've collided with floor or existing pixels
             b->block->show(true); // paint it for the last time
-            b->stepInterval = Never; // prevent from moving any further
+            b->stepInterval = Infinite; // prevent from moving any further
             // Note: do not disable, so event processing can still access it until the next one starts
             // send collision
             sendEvent(newBlocksEventObj(i));

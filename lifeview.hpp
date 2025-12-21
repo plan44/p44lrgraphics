@@ -59,7 +59,7 @@ namespace p44 {
     virtual const char* getTypeName() const P44_OVERRIDE { return staticTypeName(); }
 
     /// set generation interval
-    /// @param aInterval time between generations, Never = stopped
+    /// @param aInterval time between generations, Infinite = stopped
     virtual void setGenerationInterval(MLMicroSeconds aInterval);
 
     /// clear and resize to new
