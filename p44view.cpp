@@ -582,6 +582,7 @@ void P44View::makeDirty()
 
 void P44View::makeAlphaDirty()
 {
+  FOCUSLOG("makeAlphaDirty() called for view@%p, mStepShowTime=%lld", this, mStepShowTime);
   makeDirtyAndUpdate(); // TODO: do we really need this?
   // mDirty = true; // unconditionally
 }
@@ -671,6 +672,8 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
     if (!animator->inProgress()) {
       // this animation is done, remove it from the list
       pos = mAnimations.erase(pos);
+      // make sure there is a step right now to show the end of the animation
+      updateNextCall(nextAnimationStep, mStepShowTime);
       continue;
     }
     updateNextCall(nextAnimationStep, animatorStep);
@@ -692,11 +695,13 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
     // alignment off, request our step anyway
     updateNextCall(nextStep, nextAnimationStep);
   }
-  // now, if we are the root view, maybe request an update when regular hierarchy did not
-  if (!mParentView && (!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
-    FOCUSLOG("- root: request closer step at %lld, nextStep was %lld, diff=%+lld, priorityuntil=%lld", mRequestStepBeforeOrAt, nextStep, nextStep-mRequestStepBeforeOrAt, aPriorityUntil);
-    nextStep = mRequestStepBeforeOrAt;
-    mRequestStepBeforeOrAt = Infinite;
+  if (!mParentView) {
+    // now, we are the root view, maybe request an update in case stepping did not
+    if ((!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
+      FOCUSLOG("- root: request closer step at %lld, nextStep was %lld, diff=%+lld, priorityuntil=%lld", mRequestStepBeforeOrAt, nextStep, nextStep-mRequestStepBeforeOrAt, aPriorityUntil);
+      nextStep = mRequestStepBeforeOrAt;
+    }
+    mRequestStepBeforeOrAt = Infinite; // always mark request done
   }
   mStepShowTime = Infinite; // no longer within step calculation
   return nextStep;
@@ -715,6 +720,7 @@ MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
 
 void P44View::setAlpha(PixelColorComponent aAlpha)
 {
+  FOCUSLOG("- request alpha=%d (current=%d) for view@%p", aAlpha, mAlpha, this);
   if (mAlpha!=aAlpha) {
     mAlpha = aAlpha;
     makeAlphaDirty();
