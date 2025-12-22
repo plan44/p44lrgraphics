@@ -49,6 +49,7 @@ ViewScroller::ViewScroller() :
   mScrollSteps(0),
   mScrollStepInterval(Never),
   mNextScrollStepAt(Never),
+  mHalted(false),
   #ifdef __APPLE__
   mSyncScroll(false),
   #else
@@ -59,6 +60,9 @@ ViewScroller::ViewScroller() :
   #endif
   mAutoPurge(false)
 {
+  // by default, do not halt scrolling calculations when hidden (only dirty state will be masked)
+//#error do we want this?
+  mHaltWhenHidden = true;
 }
 
 
@@ -86,7 +90,7 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
     updateNextCall(nextCall, mScrolledView->step(stepShowTime(), aPriorityUntil, stepRealTime()));
   }
   // scroll
-  if (mScrollSteps!=0 && NONZERO_INTERVAL(mScrollStepInterval)) {
+  if (!mHalted && mScrollSteps!=0 && NONZERO_INTERVAL(mScrollStepInterval)) {
     // scrolling
     MLMicroSeconds next = mNextScrollStepAt-stepShowTime(); // time to next step
     if (next>0) {
@@ -263,6 +267,23 @@ bool ViewScroller::isDirty()
   if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
   if (mScrolledView && reportDirtyChilds()) return mScrolledView->isDirty();
   return false;
+}
+
+
+void ViewScroller::makeAlphaDirtry()
+{
+  if (mHaltWhenHidden) {
+    if (mHalted && getVisible()) {
+      // became visible
+      mHalted = false;
+      mNextScrollStepAt = MainLoop::now();
+    }
+    else if (!mHalted && !getVisible()) {
+      // became invisible
+      mHalted = true;
+    }
+  }
+  inherited::makeAlphaDirtry();
 }
 
 

@@ -209,6 +209,8 @@ namespace p44 {
     bool mContentIsMask; ///< if set, only alpha of content is used on foreground color
     bool mInvertAlpha; ///< invert alpha provided by content
     bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
+    bool mAlignAnimationSteps; ///< if set, this view's animation steps are aligned with steps coming from subclasses (in particular, scrollers)
+    bool mHaltWhenHidden; ///< if set, any animation and stepping from this view and its subviews is stopped when it is hidden (alpha==0)
     MLMicroSeconds mMaskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
 
     // content transformation (fractional results)
@@ -259,7 +261,8 @@ namespace p44 {
 
     /// set dirty because alpha changes
     /// @note must be applied unconditionally to allow updates DUE to alpha changes
-    void makeAlphaDirtry();
+    /// @note also can be overridden by views that need to do things to allow haltWhenHidden working properly (e.g. scroller)
+    virtual void makeAlphaDirtry();
 
     /// set color dirty - make dirty and cause coloring update
     void makeColorDirty();
@@ -344,6 +347,10 @@ namespace p44 {
     void setSizeToContent(bool aVal) { mSizeToContent = aVal; };
     bool getLocalTimingPriority() { return mLocalTimingPriority; };
     void setLocalTimingPriority(bool aVal) { mLocalTimingPriority = aVal; };
+    bool getAlignAnimationSteps() { return mAlignAnimationSteps; };
+    void setAlignAnimationSteps(bool aVal) { mAlignAnimationSteps = aVal; };
+    bool getHaltWhenHidden() { return mHaltWhenHidden; };
+    void setHaltWhenHidden(bool aVal) { mHaltWhenHidden = aVal; };
     bool getSubsampling() { return mSubsampling; };
     void setSubsampling(bool aVal) { mSubsampling = aVal; makeDirty(); };
     /// @}

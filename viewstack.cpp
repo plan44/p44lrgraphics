@@ -381,7 +381,7 @@ PixelColor ViewStack::contentColorAt(PixelPoint aPt)
       lc = dimmedPixel(mBackgroundColor, lc.a);
       addToPixel(pc, lc);
     }
-    if(seethrough>0) {
+    if (seethrough>0) {
       pc.a = 255-seethrough; // overall transparency is what is left of seethrough
       if (pc.a>0) dimPixel(pc, 65025/pc.a); // but intensity of stack result must be amplified accordingly
     }

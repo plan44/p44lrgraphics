@@ -56,6 +56,7 @@ namespace p44 {
     bool mSyncScroll; ///< if set, scroll timing has absolute priority (and multi-step jumps can occur to catch up delays)
     MLMicroSeconds mScrollStepInterval; ///< interval between scroll steps
     MLMicroSeconds mNextScrollStepAt; ///< exact time when next step should occur
+    bool mHalted; ///< set when halted (due to being hidden
     SimpleCB mScrollCompletedCB; ///< called when one scroll is done
     NeedContentCB mNeedContentCB; ///< called when we need new scroll content
     bool mAutoPurge; ///< when set, and needContentCB is set, will try to purge completely scrolled off views
@@ -195,6 +196,9 @@ namespace p44 {
     /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
     ///   we can calculate results in advance
     virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
+
+    /// called when alpha changes
+    virtual void makeAlphaDirtry() P44_OVERRIDE;
 
     /// return if anything changed on the display since last call
     virtual bool isDirty() P44_OVERRIDE;

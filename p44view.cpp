@@ -78,6 +78,8 @@ P44View::P44View() :
   mContentIsMask = false; // content color will be used
   mInvertAlpha = false; // inverted mask
   mLocalTimingPriority = true;
+  mAlignAnimationSteps = true;
+  mHaltWhenHidden = true;
   mMaskChildDirtyUntil = Never;
 }
 
@@ -645,21 +647,14 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
+  mUpdateRequested = false; // no step request pending any more
   // this is the entry point, remember those for further use
   mStepShowTime = aStepShowTime;
   mStepRealTime = aStepRealTime;
-  // now call the actual virtual calculation method
-  return stepInternal(aPriorityUntil);
-}
-
-
-
-MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
-{
-  mUpdateRequested = false; // no step request pending any more
-  // check animations
-  MLMicroSeconds nextCall = Infinite;
   #if ENABLE_ANIMATION
+  if (mHaltWhenHidden && !getVisible()) return Infinite;
+  // run local animations first to get the step time these would want
+  MLMicroSeconds nextAnimationStep = Infinite;
   AnimationsList::iterator pos = mAnimations.begin();
   while (pos != mAnimations.end()) {
     ValueAnimatorPtr animator = (*pos);
@@ -669,11 +664,31 @@ MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
       pos = mAnimations.erase(pos);
       continue;
     }
-    updateNextCall(nextCall, nextStep, aPriorityUntil); // prioritize local animation steps
+    updateNextCall(nextAnimationStep, nextStep);
     pos++;
   }
-  #endif // ENABLE_ANIMATION
-  return nextCall;
+  // now call the actual virtual calculation method
+  MLMicroSeconds nextStep = stepInternal(aPriorityUntil);
+  // animation alignment means we ignore the step time returned from animation steppers
+  // when we know there's a step from the view hierarchy within the priority window.
+  // This means animations are synced e.g. to the pace of scrollers and thus will not
+  // disturb them with extra updates (even when not childs of the scroller, which
+  // case is handled by the mMaskChildDirtyUntil mechanism)
+  if (!mAlignAnimationSteps || !DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) {
+    // alignment off, or there is no nextstep we could align to (within priority window)
+    updateNextCall(nextStep, nextAnimationStep);
+  }
+  return nextStep;
+  #else
+  return stepInternal(aPriorityUntil);
+  #endif  // ENABLE_ANIMATION
+}
+
+
+
+MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
+{
+  return Infinite; // No steps (other than property animators that are handled in step())
 }
 
 
@@ -1130,6 +1145,12 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (aViewConfig->get("timingpriority", o)) {
     setLocalTimingPriority(o->boolValue());
   }
+  if (aViewConfig->get("alignanimationsteps", o)) {
+    setAlignAnimationSteps(o->boolValue());
+  }
+  if (aViewConfig->get("haltwhenhidden", o)) {
+    setHaltWhenHidden(o->boolValue());
+  }
   if (aViewConfig->get("sizetocontent", o)) {
     setSizeToContent(o->boolValue());
   }
@@ -1279,6 +1300,8 @@ JsonObjectPtr P44View::viewStatus()
   status->add("mask", JsonObject::newBool(getContentIsMask()));
   status->add("invertalpha", JsonObject::newBool(getInvertAlpha()));
   status->add("timingpriority", JsonObject::newBool(getLocalTimingPriority()));
+  status->add("alignanimationsteps", JsonObject::newBool(getAlignAnimationSteps()));
+  status->add("haltwhenhidden", JsonObject::newBool(getHaltWhenHidden()));
   #if ENABLE_ANIMATION
   status->add("animations", JsonObject::newInt64(mAnimations.size()));
   #endif
@@ -1924,6 +1947,8 @@ ACC_IMPL_BOOL(Visible)
 ACC_IMPL_INT(ZOrder)
 ACC_IMPL_BOOL(SizeToContent)
 ACC_IMPL_BOOL(LocalTimingPriority)
+ACC_IMPL_BOOL(AlignAnimationSteps)
+ACC_IMPL_BOOL(HaltWhenHidden)
 ACC_IMPL_BOOL(ContentIsMask)
 ACC_IMPL_BOOL(InvertAlpha)
 ACC_IMPL_BOOL(Subsampling)
@@ -2010,6 +2035,8 @@ static const BuiltinMemberDescriptor viewMembers[] = {
   ACC_DECL("orientation", text|numeric|lvalue, Orientation),
   ACC_DECL("sizetocontent", numeric|lvalue, SizeToContent),
   ACC_DECL("timingpriority", numeric|lvalue, LocalTimingPriority),
+  ACC_DECL("alignanimations", numeric|lvalue, AlignAnimationSteps),
+  ACC_DECL("haltwhenhidden", numeric|lvalue, HaltWhenHidden),
   ACC_DECL("contentismask", numeric|lvalue, ContentIsMask),
   ACC_DECL("invertalpha", numeric|lvalue, InvertAlpha),
   ACC_DECL("subsampling", numeric|lvalue, Subsampling),
