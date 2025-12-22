@@ -80,7 +80,7 @@ namespace p44 {
     friend class ViewStack;
 
     bool mDirty;
-    bool mUpdateRequested; ///< set when needUpdateCB has been called, reset at step() or update()
+    MLMicroSeconds mRequestStepBeforeOrAt; ///< set when needUpdateCB has been or needs to be called, reset at step() or update()
     TimerCB mNeedUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
     MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
@@ -211,7 +211,7 @@ namespace p44 {
     bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
     bool mAlignAnimationSteps; ///< if set, this view's animation steps are aligned with steps coming from subclasses (in particular, scrollers)
     bool mHaltWhenHidden; ///< if set, any animation and stepping from this view and its subviews is stopped when it is hidden (alpha==0)
-    MLMicroSeconds mMaskChildDirtyUntil; ///< if>0, child's dirty must not be reported until this time is reached
+    MLMicroSeconds mMaskChildDirtyUntil; ///< if defined, child's dirty must not be reported until this time is reached
 
     // content transformation (fractional results)
     FracValue mContentRotation; ///< rotation of content pixels in degree CCW
@@ -581,7 +581,8 @@ namespace p44 {
     MLMicroSeconds step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
 
     /// return if anything changed on the display since last call
-    virtual bool isDirty()  { return mDirty; };
+    /// container view subclasses must override this to include dirty status of child views
+    virtual bool isDirty() { return mDirty; }
 
     /// call when display is updated
     virtual void updated();
@@ -654,10 +655,9 @@ namespace p44 {
     void makeDirtyAndUpdate();
 
     /// call to request an update (in case the display does not update itself with a fixed frame rate)
-    virtual void requestUpdate();
-
-    /// call to request an update if needed (i.e. the view is dirty)
-    void requestUpdateIfNeeded();
+    /// @param aBeforeOrAt if set to a defined time, an extra step will only be inserted when there is no other
+    ///   step within priority interval.
+    virtual void requestUpdate(MLMicroSeconds aBeforeOrAt = 0);
 
     #if ENABLE_P44SCRIPT
 

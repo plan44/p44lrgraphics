@@ -105,7 +105,7 @@ namespace p44 {
     ///   we can calculate results in advance
     virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
-    /// return if anything changed on the display since last call
+    /// return if anything changed on this view or on subviews in the hierarchy
     virtual bool isDirty() P44_OVERRIDE;
 
     /// call when display is updated

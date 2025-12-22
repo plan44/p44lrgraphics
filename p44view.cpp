@@ -49,7 +49,7 @@ static ViewRegistrar r(P44View::staticTypeName(), &P44View::newInstance);
 P44View::P44View() :
   mParentView(NULL),
   mDirty(false),
-  mUpdateRequested(false),
+  mRequestStepBeforeOrAt(Infinite),
   mMinUpdateInterval(0),
   mStepShowTime(Never),
   mStepRealTime(Never),
@@ -531,31 +531,29 @@ void P44View::makeDirtyAndUpdate()
 }
 
 
-void P44View::requestUpdate()
+void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
 {
   FOCUSLOG("requestUpdate() called for view@%p", this);
   P44View *p = this;
   while (p->mParentView) {
-    if (p->mUpdateRequested) return;  // already requested, no need to descend to root
-    p->mUpdateRequested = true; // mark having requested update all the way down to root, updated() will be called on all views to clear it
+    if (DEFINED_TIME(p->mRequestStepBeforeOrAt)) return;  // already requested, no need to descend to root
+    p->mRequestStepBeforeOrAt = aBeforeOrAt; // mark having requested update all the way down to root, updated() will be called on all views to clear it
     p = p->mParentView;
   }
   // now p = root view
-  if (!p->mUpdateRequested && p->mNeedUpdateCB) {
-    p->mUpdateRequested = true; // only request once
-    FOCUSLOG("actually requesting update from root view@%p (from view@%p)", p, this);
-    // there is a needUpdate callback here
-    // DO NOT call it directly, but from mainloop, so receiver can safely call
-    // back into any view object method without causing recursions
-    MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
+  if (DEFINED_TIME(aBeforeOrAt)) {
+    // keep already set earlier time, if any
+    if (DEFINED_TIME(p->mRequestStepBeforeOrAt) && aBeforeOrAt>p->mRequestStepBeforeOrAt) aBeforeOrAt = p->mRequestStepBeforeOrAt;
   }
-}
-
-
-void P44View::requestUpdateIfNeeded()
-{
-  if (!mUpdateRequested && isDirty()) {
-    requestUpdate();
+  if (p->mRequestStepBeforeOrAt==Never && p->mNeedUpdateCB) {
+    p->mRequestStepBeforeOrAt = aBeforeOrAt; // only request once
+    if (!DEFINED_TIME(aBeforeOrAt)) {
+      FOCUSLOG("requesting immediate update from root view@%p (from view@%p)", p, this);
+      // there is a needUpdate callback here
+      // DO NOT call it directly, but from mainloop, so receiver can safely call
+      // back into any view object method without causing recursions
+      MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
+    }
   }
 }
 
@@ -563,7 +561,7 @@ void P44View::requestUpdateIfNeeded()
 void P44View::updated()
 {
   mDirty = false;
-  mUpdateRequested = false;
+  mRequestStepBeforeOrAt = Infinite;
 }
 
 
@@ -647,7 +645,7 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
-  mUpdateRequested = false; // no step request pending any more
+  mRequestStepBeforeOrAt = Infinite; // no step request pending any more
   // this is the entry point, remember those for further use
   mStepShowTime = aStepShowTime;
   mStepRealTime = aStepRealTime;
@@ -674,9 +672,18 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
   // This means animations are synced e.g. to the pace of scrollers and thus will not
   // disturb them with extra updates (even when not childs of the scroller, which
   // case is handled by the mMaskChildDirtyUntil mechanism)
-  if (!mAlignAnimationSteps || !DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) {
-    // alignment off, or there is no nextstep we could align to (within priority window)
+  if (mAlignAnimationSteps) {
+    // we only not request a step when nobody else does
+    if (DEFINED_TIME(nextAnimationStep)) requestUpdate(nextAnimationStep);
+  }
+  else {
+    // alignment off, request our step anyway
     updateNextCall(nextStep, nextAnimationStep);
+  }
+  // now, if we are the root view, maybe request an update when regular hierarchy did not
+  if (!mParentView && (!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
+    nextStep = mRequestStepBeforeOrAt;
+    mRequestStepBeforeOrAt = Infinite;
   }
   return nextStep;
   #else

@@ -98,7 +98,7 @@ namespace p44 {
     ///   we can calculate results in advance
     virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
-    /// return if anything changed on the display since last call
+    /// return if anything changed on this view or on subviews in the hierarchy
     virtual bool isDirty() P44_OVERRIDE;
 
     /// call when display is updated
@@ -120,7 +120,7 @@ namespace p44 {
     /// @return NULL if not found, labelled view otherwise (first one with that label found in case >1 have the same label)
     virtual P44ViewPtr findView(const string aLabel) P44_OVERRIDE;
 
-    #endif
+    #endif // ENABLE_VIEWCONFIG
 
     #if ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
     /// @return the current status of the view, in the same format as accepted by configure()
@@ -135,7 +135,7 @@ namespace p44 {
     /// @return ScriptObj representing all sequence steps
     P44Script::ScriptObjPtr stepsList();
 
-    #endif
+    #endif // ENABLE_P44SCRIPT
 
     /// get content pixel color
     /// @param aPt content coordinate
