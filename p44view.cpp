@@ -580,7 +580,7 @@ void P44View::makeDirty()
 }
 
 
-void P44View::makeAlphaDirtry()
+void P44View::makeAlphaDirty()
 {
   makeDirtyAndUpdate(); // TODO: do we really need this?
   // mDirty = true; // unconditionally
@@ -717,7 +717,7 @@ void P44View::setAlpha(PixelColorComponent aAlpha)
 {
   if (mAlpha!=aAlpha) {
     mAlpha = aAlpha;
-    makeAlphaDirtry();
+    makeAlphaDirty();
   }
 }
 

@@ -262,7 +262,7 @@ namespace p44 {
     /// set dirty because alpha changes
     /// @note must be applied unconditionally to allow updates DUE to alpha changes
     /// @note also can be overridden by views that need to do things to allow haltWhenHidden working properly (e.g. scroller)
-    virtual void makeAlphaDirtry();
+    virtual void makeAlphaDirty();
 
     /// set color dirty - make dirty and cause coloring update
     void makeColorDirty();

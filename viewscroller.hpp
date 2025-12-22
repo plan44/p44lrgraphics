@@ -156,7 +156,7 @@ namespace p44 {
     virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
     /// called when alpha changes
-    virtual void makeAlphaDirtry() P44_OVERRIDE;
+    virtual void makeAlphaDirty() P44_OVERRIDE;
 
     /// return if anything changed on this view or on subviews in the hierarchy
     virtual bool isDirty() P44_OVERRIDE;

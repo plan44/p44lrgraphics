@@ -250,7 +250,7 @@ bool ViewScroller::isDirty()
 }
 
 
-void ViewScroller::makeAlphaDirtry()
+void ViewScroller::makeAlphaDirty()
 {
   if (mHaltWhenHidden) {
     if (mHalted && getVisible()) {
@@ -263,7 +263,7 @@ void ViewScroller::makeAlphaDirtry()
       mHalted = true;
     }
   }
-  inherited::makeAlphaDirtry();
+  inherited::makeAlphaDirty();
 }
 
 
