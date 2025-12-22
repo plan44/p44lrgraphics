@@ -29,8 +29,6 @@
   #include "p44script.hpp"
 #endif
 
-#define SCROLLER_STATS 0
-
 namespace p44 {
 
   /// Content reload handler
@@ -63,46 +61,6 @@ namespace p44 {
     #if P44SCRIPT_FULL_SUPPORT
     bool mAlertEmpty; ///< alert scroller getting empty as event
     #endif
-
-    #if SCROLLER_STATS
-    MLMicroSeconds mMaxLateNext;
-    MLMicroSeconds mMinLateNext;
-    long mNum5MsLate;
-    long mNum10MsLate;
-    long mNumCatchups;
-    long mNumNonPrioritizedNexts;
-    long mNumOverriddenPrios;
-    void resetStats() {
-      mMaxLateNext = 0;
-      mMinLateNext = 999999;
-      mNum5MsLate = 0;
-      mNum10MsLate = 0;
-      mNumCatchups = 0;
-      mNumNonPrioritizedNexts = 0;
-      mNumOverriddenPrios = 0;
-    }
-    void showStats() {
-      LOG(LOG_NOTICE, "Scroller Stats:"
-        "\nmMaxLateNext = %lld µS"
-        "\nmMinLateNext = %lld µS"
-        "\nmNum5MsLate = %ld"
-        "\nmNum10MsLate = %ld"
-        "\nmNumCatchups = %ld"
-        "\nmNumNonPrioritizedNexts = %ld"
-        "\nmNumOverriddenPrios = %ld",
-        mMaxLateNext,
-        mMinLateNext,
-        mNum5MsLate,
-        mNum10MsLate,
-        mNumCatchups,
-        mNumNonPrioritizedNexts,
-        mNumOverriddenPrios
-      );
-      resetStats();
-    }
-    #endif // SCROLLER_STATS
-
-
 
   public:
 

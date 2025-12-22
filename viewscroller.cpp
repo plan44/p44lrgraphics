@@ -100,19 +100,7 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
     else {
       // execute all step(s) pending
       // Note: will catch up in case step() was not called often enough
-      #if SCROLLER_STATS
-      mNumCatchups--; // first attempt does not count as catchup
-      #endif
       while (next<=0) {
-        #if SCROLLER_STATS
-        mNumCatchups++;
-        #endif
-        #if SCROLLER_STATS
-        if (mMaxLateNext < -next) mMaxLateNext = -next;
-        if (mMinLateNext > -next) mMinLateNext = -next;
-        if (next<-10*MilliSecond) mNum10MsLate++;
-        else if (next<-5*MilliSecond) mNum5MsLate++;
-        #endif // SCROLLER_STATS
         if (next<-10*MilliSecond) {
           LOG(LOG_DEBUG, "ViewScroller: Warning: precision below 10mS: %lld µS after precise time", -next);
         }
@@ -164,15 +152,7 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
           next = mScrollStepInterval;
           mNextScrollStepAt = stepShowTime()+mScrollStepInterval;
         }
-        #if SCROLLER_STATS
-        if (mLocalTimingPriority && (aPriorityUntil<=0 || mNextScrollStepAt>aPriorityUntil)) {
-          mNumNonPrioritizedNexts++;
-        }
-        #endif // SCROLLER_STATS
         updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
-        #if SCROLLER_STATS
-        if (nextCall<mNextScrollStepAt) mNumOverriddenPrios++;
-        #endif // SCROLLER_STATS
       } // while catchup
       if ((
         mNeedContentCB
@@ -334,9 +314,6 @@ void ViewScroller::startScroll(double aStepX, double aStepY, MLMicroSeconds aInt
   // do not allow setting scroll step into the past, as this would cause massive catch-up
   mNextScrollStepAt = !DEFINED_TIME(aStartTime) || aStartTime<stepShowTime() ? stepShowTime() : aStartTime;
   mScrollCompletedCB = aCompletedCB;
-  #if SCROLLER_STATS
-  resetStats();
-  #endif
 }
 
 
@@ -344,10 +321,8 @@ void ViewScroller::stopScroll()
 {
   // no more steps
   mScrollSteps = 0;
-  #if SCROLLER_STATS
-  showStats();
-  #endif
 }
+
 
 void ViewScroller::purgeScrolledOut()
 {
