@@ -25,7 +25,7 @@
 #define ALWAYS_DEBUG 0
 // - set FOCUSLOGLEVEL to non-zero log level (usually, 5,6, or 7==LOG_DEBUG) to get focus (extensive logging) for this file
 //   Note: must be before including "logger.hpp" (or anything that includes "logger.hpp")
-#define FOCUSLOGLEVEL 7
+#define FOCUSLOGLEVEL 0
 
 #include "p44view.hpp"
 #include "viewfactory.hpp" // for registering views
@@ -522,42 +522,6 @@ void P44View::resetTransforms()
 
 // MARK: ===== updating
 
-void P44View::makeDirtyAndUpdate()
-{
-  // make dirty locally
-  makeDirty();
-  // request a step at the root view level
-  requestUpdate();
-}
-
-
-void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
-{
-  FOCUSLOG("requestUpdate() called for view@%p", this);
-  P44View *p = this;
-  while (p->mParentView) {
-    if (DEFINED_TIME(p->mRequestStepBeforeOrAt)) return;  // already requested, no need to descend to root
-    p->mRequestStepBeforeOrAt = aBeforeOrAt; // mark having requested update all the way down to root, updated() will be called on all views to clear it
-    p = p->mParentView;
-  }
-  // now p = root view
-  if (DEFINED_TIME(aBeforeOrAt)) {
-    // keep already set earlier time, if any
-    if (DEFINED_TIME(p->mRequestStepBeforeOrAt) && aBeforeOrAt>p->mRequestStepBeforeOrAt) aBeforeOrAt = p->mRequestStepBeforeOrAt;
-  }
-  if (p->mRequestStepBeforeOrAt==Never && p->mNeedUpdateCB) {
-    p->mRequestStepBeforeOrAt = aBeforeOrAt; // only request once
-    if (!DEFINED_TIME(aBeforeOrAt)) {
-      FOCUSLOG("requesting immediate update from root view@%p (from view@%p)", p, this);
-      // there is a needUpdate callback here
-      // DO NOT call it directly, but from mainloop, so receiver can safely call
-      // back into any view object method without causing recursions
-      MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
-    }
-  }
-}
-
-
 void P44View::updated()
 {
   mDirty = false;
@@ -597,15 +561,29 @@ bool P44View::removeFromParent()
 }
 
 
+void P44View::makeDirtyAndUpdate()
+{
+  // make dirty locally
+  mDirty = true;
+  // request a step at the root view level.
+  // When called from within stepping, ASAP after stepping (request==mStepShowTime), otherwise immediately
+  requestUpdate(DEFINED_TIME(mStepShowTime) ? mStepShowTime : 0);
+}
+
+
 void P44View::makeDirty()
 {
-  if (getVisible()) mDirty = true; // invisible views
+  if (getVisible()) {
+    makeDirtyAndUpdate(); // TODO: do we really need this?
+    //mDirty = true; // invisible views
+  }
 }
 
 
 void P44View::makeAlphaDirtry()
 {
-  mDirty = true; // unconditionally
+  makeDirtyAndUpdate(); // TODO: do we really need this?
+  // mDirty = true; // unconditionally
 }
 
 
@@ -643,28 +621,62 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 
 
 
+void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
+{
+  FOCUSLOG("requestUpdate(%lld) called for view@%p, mStepShowTime=%lld", aBeforeOrAt, this, mStepShowTime);
+  P44View *p = this;
+  while (p->mParentView) {
+    if (DEFINED_TIME(aBeforeOrAt) && p->mRequestStepBeforeOrAt==aBeforeOrAt) return;  // do not request the same time multiple times (except for 0==immediate)
+    p->mRequestStepBeforeOrAt = aBeforeOrAt; // mark having requested update all the way down to root, updated() will be called on all views to clear it
+    p = p->mParentView;
+  }
+  // now p = root view
+  FOCUSLOG("- root view@%p (from view@%p)", p, this);
+  if (DEFINED_TIME(aBeforeOrAt)) {
+    // keep already set earlier time (or immediate request == 0), if any
+    if (p->mRequestStepBeforeOrAt!=Infinite && aBeforeOrAt>p->mRequestStepBeforeOrAt) {
+      FOCUSLOG("- root already has earlier request, keep it: %lld", p->mRequestStepBeforeOrAt);
+      aBeforeOrAt = p->mRequestStepBeforeOrAt;
+    }
+  }
+  p->mRequestStepBeforeOrAt = aBeforeOrAt; // only request once
+  if (!DEFINED_TIME(aBeforeOrAt) && p->mNeedUpdateCB) {
+    FOCUSLOG("- requesting immediate update");
+    // there is a needUpdate callback here
+    // DO NOT call it directly, but from mainloop, so receiver can safely call
+    // back into any view object method without causing recursions
+    MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
+  }
+  else {
+    FOCUSLOG("- requesting auxiliary step at %lld", p->mRequestStepBeforeOrAt);
+  }
+}
+
+
 MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
   mRequestStepBeforeOrAt = Infinite; // no step request pending any more
   // this is the entry point, remember those for further use
-  mStepShowTime = aStepShowTime;
+  mStepShowTime = aStepShowTime; // also serves as marker we are within step calculation
   mStepRealTime = aStepRealTime;
   #if ENABLE_ANIMATION
   if (mHaltWhenHidden && !getVisible()) return Infinite;
   // run local animations first to get the step time these would want
+  FOCUSLOG("### starting animations");
   MLMicroSeconds nextAnimationStep = Infinite;
   AnimationsList::iterator pos = mAnimations.begin();
   while (pos != mAnimations.end()) {
     ValueAnimatorPtr animator = (*pos);
-    MLMicroSeconds nextStep = animator->step(mStepShowTime);
+    MLMicroSeconds animatorStep = animator->step(mStepShowTime);
     if (!animator->inProgress()) {
       // this animation is done, remove it from the list
       pos = mAnimations.erase(pos);
       continue;
     }
-    updateNextCall(nextAnimationStep, nextStep);
+    updateNextCall(nextAnimationStep, animatorStep);
     pos++;
   }
+  FOCUSLOG("### done with animations, nextAnimationStep=%lld, mStepShowTime=%lld", nextAnimationStep, mStepShowTime);
   // now call the actual virtual calculation method
   MLMicroSeconds nextStep = stepInternal(aPriorityUntil);
   // animation alignment means we ignore the step time returned from animation steppers
@@ -673,7 +685,7 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
   // disturb them with extra updates (even when not childs of the scroller, which
   // case is handled by the mMaskChildDirtyUntil mechanism)
   if (mAlignAnimationSteps) {
-    // we only not request a step when nobody else does
+    // request a global step time in case nobody else sets none
     if (DEFINED_TIME(nextAnimationStep)) requestUpdate(nextAnimationStep);
   }
   else {
@@ -682,9 +694,11 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
   }
   // now, if we are the root view, maybe request an update when regular hierarchy did not
   if (!mParentView && (!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
+    FOCUSLOG("- root: request closer step at %lld, nextStep was %lld, diff=%+lld, priorityuntil=%lld", mRequestStepBeforeOrAt, nextStep, nextStep-mRequestStepBeforeOrAt, aPriorityUntil);
     nextStep = mRequestStepBeforeOrAt;
     mRequestStepBeforeOrAt = Infinite;
   }
+  mStepShowTime = Infinite; // no longer within step calculation
   return nextStep;
   #else
   return stepInternal(aPriorityUntil);
