@@ -1531,6 +1531,7 @@ ValueSetterCB P44View::getPropertySetter(const string aProperty, double& aCurren
 {
   if (uequals(aProperty, "alpha")) {
     aCurrentValue = getAlpha();
+    mHaltWhenHidden = false; // trying to animate alpha always clears haltwhenhidden to avoid animations out of alpha==0 not starting
     return boost::bind(&P44View::setAlpha, this, _1);
   }
   else if (uequals(aProperty, "x")) {
