@@ -119,7 +119,7 @@ static void loadfont_func(BuiltinFunctionContextPtr f)
 {
   string fn = f->arg(0)->stringValue();
   // user level 1 is allowed to read everywhere
-  Application::PathType ty = Application::sharedApplication()->getPathType(fn, 1, true);
+  Application::PathType ty = Application::sharedApplication()->getPathType(fn, f->scriptmain()->userLevel()>=1, true);
   if (ty==Application::empty) {
     f->finish(new ErrorValue(ScriptError::Invalid, "no filename"));
     return;
