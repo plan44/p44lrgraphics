@@ -1691,12 +1691,12 @@ JsonObjectPtr P44View::viewConfigFromScriptObj(ScriptObjPtr aArg, ErrorPtr &aErr
     return aArg->jsonValue();
   }
   else
-  #endif
+  #endif // SCRIPTING_JSON_SUPPORT
   {
     // JSON from string (or file if we have a JSON app)
     string viewConfig = aArg->stringValue();
     #if ENABLE_JSON_APPLICATION
-    return Application::jsonObjOrResource(viewConfig, &aErr);
+    return Application::jsonObjOrResource(viewConfig, &aErr, P44SCRIPT_DATA_SUBDIR, true); // prefix for data and temp only
     #else
     return JsonObject::objFromText(viewConfig.c_str(), -1, &aErr);
     #endif

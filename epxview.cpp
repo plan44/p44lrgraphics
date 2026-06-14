@@ -353,7 +353,7 @@ static void loadepx_func(BuiltinFunctionContextPtr f)
   }
   else {
     // assum filepath
-    json = Application::jsonResource(f->arg(0)->stringValue(), &err);
+    json = Application::jsonResource(f->arg(0)->stringValue(), &err, P44SCRIPT_DATA_SUBDIR, true); // prefix for data and temp
   }
   if (Error::isOK(err)) {
     err = v->epx()->loadEpxAnimationJSON(json);
