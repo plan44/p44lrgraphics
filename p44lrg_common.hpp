@@ -31,6 +31,8 @@
   #include "sdkconfig.h"
 #endif
 
+#include <limits.h>
+
 #include "p44lrg_config.hpp"
 #include "p44utils_main.hpp"
 

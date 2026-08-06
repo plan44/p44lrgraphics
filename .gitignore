@@ -6,3 +6,5 @@ Makefile.in
 .deps/
 stamp-h1
 **/build-aux/
+cmake_install.cmake
+libp44lrgraphics.a
