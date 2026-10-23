@@ -644,8 +644,8 @@ void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
   if (!DEFINED_TIME(aBeforeOrAt) && p->mNeedUpdateCB) {
     FOCUSLOG("- requesting immediate update");
     // there is a needUpdate callback here
-    // DO NOT call it directly, but from mainloop, so receiver can safely call
-    // back into any view object method without causing recursions
+    // Note: DO NOT call it directly, but from mainloop, so receiver can safely call
+    //   back into any view object method without causing recursions
     MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
   }
   else {
@@ -688,7 +688,7 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
   // disturb them with extra updates (even when not childs of the scroller, which
   // case is handled by the mMaskChildDirtyUntil mechanism)
   if (mAlignAnimationSteps) {
-    // request a global step time in case nobody else sets none
+    // request a global step time in case nobody else sets one
     if (DEFINED_TIME(nextAnimationStep)) requestUpdate(nextAnimationStep);
   }
   else {
@@ -1812,7 +1812,7 @@ static void status_func(BuiltinFunctionContextPtr f)
   f->finish(ScriptObj::valueFromJSON(v->view()->viewStatus()));
 }
 
-#endif
+#endif // ENABLE_VIEWSTATUS
 
 // set(propertyname, newvalue)   convenience function to set a single property
 FUNC_ARG_DEFS(set, { text }, { anyvalid } );
