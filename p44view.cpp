@@ -529,9 +529,9 @@ void P44View::updated()
 }
 
 
-void P44View::setNeedUpdateCB(TimerCB aNeedUpdateCB)
+void P44View::setNeedStepCB(StepRequestCB aNeedStepCB)
 {
-  mNeedUpdateCB = aNeedUpdateCB;
+  mExtraStepCB = aNeedStepCB;
 }
 
 
@@ -565,9 +565,8 @@ void P44View::makeDirtyAndUpdate()
 {
   // make dirty locally
   mDirty = true;
-  // request a step at the root view level.
-  // When called from within stepping, ASAP after stepping (request==mStepShowTime), otherwise immediately
-  requestUpdate(DEFINED_TIME(mStepShowTime) ? mStepShowTime : 0);
+  // Ensure we get a display update
+  requestUpdate();
 }
 
 
@@ -621,6 +620,11 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 }
 
 
+static void updateRequester(StepRequestCB aExtraStepCB, MLMicroSeconds aWhen)
+{
+  aExtraStepCB(aWhen);
+}
+
 
 void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
 {
@@ -640,16 +644,17 @@ void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
       aBeforeOrAt = p->mRequestStepBeforeOrAt;
     }
   }
-  p->mRequestStepBeforeOrAt = aBeforeOrAt; // only request once
-  if (!DEFINED_TIME(aBeforeOrAt) && p->mNeedUpdateCB) {
-    FOCUSLOG("- requesting immediate update");
-    // there is a needUpdate callback here
+  // now act on aBeforeOrAt
+  if (DEFINED_TIME(p->mStepShowTime)) {
+    // within step processing -> make sure we return the request as next step time (unless we have an earlier request already)
+    if (!DEFINED_TIME(aBeforeOrAt)) aBeforeOrAt = p->mStepShowTime;
+    p->mRequestStepBeforeOrAt = aBeforeOrAt;
+  }
+  else if (p->mExtraStepCB) {
+    // outside step processing, e.g. independent property change -> make sure we request an update
     // Note: DO NOT call it directly, but from mainloop, so receiver can safely call
     //   back into any view object method without causing recursions
-    MainLoop::currentMainLoop().executeNow(p->mNeedUpdateCB);
-  }
-  else {
-    FOCUSLOG("- requesting auxiliary step at %lld", p->mRequestStepBeforeOrAt);
+    MainLoop::currentMainLoop().executeNow(boost::bind(&updateRequester, p->mExtraStepCB, aBeforeOrAt));
   }
 }
 

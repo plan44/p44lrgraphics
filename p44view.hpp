@@ -70,6 +70,9 @@ namespace p44 {
   /// Normalizes a rectangle to have positive sizes
   void normalizeRect(PixelRect &aRect);
 
+  /// Used to report when we need an extra step not returned by last step()
+  typedef boost::function<void (MLMicroSeconds aStepBeforeOrAt)> StepRequestCB;
+
   /// @}
 
   class P44View;
@@ -81,7 +84,7 @@ namespace p44 {
 
     bool mDirty;
     MLMicroSeconds mRequestStepBeforeOrAt; ///< set when needUpdateCB has been or needs to be called, reset at step() or update()
-    TimerCB mNeedUpdateCB; ///< called when dirty check and calling step must occur earlier than what last step() call said
+    StepRequestCB mExtraStepCB; ///< called when async influences decide step/dirty check must occur earlier than what last step() call said
     MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
     MLMicroSeconds mStepShowTime; ///< the (usually future) time where the current step calculation is meant to be shown
@@ -587,9 +590,10 @@ namespace p44 {
     /// call when display is updated
     virtual void updated();
 
-    /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needs a step() ASAP
+    /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needsa step()
+    /// at a given time, possibly outside what last step() returned last time.
     /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
-    void setNeedUpdateCB(TimerCB aNeedUpdateCB);
+    void setNeedStepCB(StepRequestCB aNeedStepCB);
 
     /// set the minimum update interval (aka max framerate)
     /// @note this is a hint for animations to calculate a sensible step size, and for
