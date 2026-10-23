@@ -175,7 +175,8 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
           #if P44SCRIPT_FULL_SUPPORT
           if (mAlertEmpty) {
             mAlertEmpty = false; // must re-arm before alerting again
-            sendEvent(new P44Script::ContentNeededObj(this)); // one-shot
+            // prevent running what this event might trigger as part of step() -> just post to mainloop
+            postSendingEvent(new P44Script::ContentNeededObj(this)); // one-shot
           }
           #endif // P44SCRIPT_FULL_SUPPORT
           if (mAutoPurge) {
