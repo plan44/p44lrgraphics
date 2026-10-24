@@ -85,7 +85,6 @@ void P44ViewRoot::leave()
 MLMicroSeconds P44ViewRoot::stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
   if (!mRootViewP) return Never;
-  enter();
   mStepShowTime = aStepShowTime; // marker for running a step right now
   mStepRealTime = aStepRealTime;
 
@@ -96,7 +95,6 @@ MLMicroSeconds P44ViewRoot::stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroS
   }
   mRequestStepBeforeOrAt = Infinite; // always mark request done
   mStepShowTime = Infinite; // no longer within step calculation
-  leave();
   return nextStep;
 }
 
