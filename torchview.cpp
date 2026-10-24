@@ -307,9 +307,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   TorchViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<TorchViewObj*>(aParentObj.get())->torch().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

@@ -243,6 +243,7 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     JsonObjectPtr o;
+    enter();
     if (aViewConfig->get("steps", o)) {
       for (int i=0; i<o->arrayLength(); ++i) {
         JsonObjectPtr s = o->arrayGet(i);
@@ -277,6 +278,7 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
       doRepeat = o->boolValue();
     }
     if (doStart) startSequence(doRepeat);
+    leave();
   }
   return err;
 }
@@ -373,7 +375,9 @@ static void start_func(BuiltinFunctionContextPtr f)
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
   assert(v);
   bool repeat = f->arg(0)->boolValue();
+  v->sequencer()->enter();
   v->sequencer()->startSequence(repeat);
+  v->sequencer()->leave();
   // TODO: maybe make awaitable
   f->finish();
 }
@@ -384,7 +388,9 @@ static void stop_func(BuiltinFunctionContextPtr f)
 {
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
   assert(v);
+  v->sequencer()->enter();
   v->sequencer()->stopSequence();
+  v->sequencer()->leave();
   f->finish();
 }
 
@@ -398,9 +404,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   ViewSequencerPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ViewSequencerObj*>(aParentObj.get())->sequencer().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

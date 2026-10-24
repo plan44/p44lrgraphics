@@ -385,11 +385,15 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
     #endif // !ENABLE_P44SCRIPT
     if (aViewConfig->get("addrandom", o)) {
       int c = o->int32Value();
+      enter();
       createRandomCells(c/3, c);
+      leave();
     }
     if (aViewConfig->get("addpattern", o)) {
       int p = o->int32Value();
+      enter();
       placePattern(p);
+      leave();
     }
   }
   return err;
@@ -439,7 +443,9 @@ static void addrandom_func(BuiltinFunctionContextPtr f)
       min = max;
       max = f->arg(1)->intValue();
     }
+    v->life()->enter();
     v->life()->createRandomCells(min, max);
+    v->life()->leave();
   }
   f->finish();
 }
@@ -467,7 +473,9 @@ static void placepattern_func(BuiltinFunctionContextPtr f)
     if (f->arg(2)->defined()) y = f->arg(2)->intValue();
     int o = -1; // random orientation
     if (f->arg(3)->defined()) o = f->arg(3)->intValue();
+    v->life()->enter();
     v->life()->placePattern(pat, true, x, y, o);
+    v->life()->leave();
   }
   f->finish();
 }
@@ -481,9 +489,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   LifeViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<LifeViewObj*>(aParentObj.get())->life().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

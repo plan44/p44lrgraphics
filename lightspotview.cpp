@@ -79,7 +79,7 @@ PixelColor LightSpotView::contentColorAt(PixelPoint aPt)
     // render the gradient at the bottom
     return gradientPixel(mContent.x+aPt.x, false);
   }
-  #endif
+  #endif // DEBUG_GRADIENT
 
   // - factor relative to the size (0..1) = where within the content size
   if (mContent.dx>0) {

@@ -153,7 +153,9 @@ ErrorPtr ImageView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("file", o)) {
       // if no dx or dy is set when loading a new image, auto-enable sizeToContent
       if (mFrame.dx==0 && mFrame.dy==0) mSizeToContent = true;
+      enter();
       err = loadPNG(Application::sharedApplication()->resourcePath(o->stringValue()));
+      leave();
     }
   }
   return err;
@@ -178,9 +180,11 @@ static void loadimage_func(BuiltinFunctionContextPtr f)
 {
   ImageViewObj* v = dynamic_cast<ImageViewObj*>(f->thisObj().get());
   assert(v);
+  v->image()->enter();
   // if no dx or dy is set when loading a new image, auto-enable sizeToContent
   if (v->image()->getDx()==0 && v->image()->getDy()==0) v->image()->setSizeToContent(true);
   ErrorPtr err = v->image()->loadPNG(Application::sharedApplication()->resourcePath(f->arg(0)->stringValue()));
+  v->image()->leave();
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));
     return;
@@ -197,9 +201,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   ImageViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ImageViewObj*>(aParentObj.get())->image().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

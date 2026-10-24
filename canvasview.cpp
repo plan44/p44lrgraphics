@@ -242,7 +242,9 @@ static void dot_func(BuiltinFunctionContextPtr f)
   PixelPoint pt;
   pt.x = f->arg(0)->intValue();
   pt.y = f->arg(1)->intValue();
+  v->view()->enter();
   v->canvas()->setPixel(v->canvas()->getForegroundColor(), pt);
+  v->view()->leave();
   f->finish(v); // allow chaining
 }
 
@@ -258,7 +260,9 @@ static void line_func(BuiltinFunctionContextPtr f)
   start.y = f->arg(1)->intValue();
   end.x = f->arg(2)->intValue();
   end.y = f->arg(3)->intValue();
+  v->view()->enter();
   v->canvas()->drawLine(start, end);
+  v->view()->leave();
   f->finish(v); // allow chaining
 }
 
@@ -271,16 +275,15 @@ static void copy_func(BuiltinFunctionContextPtr f)
   assert(v);
   PixelRect src;
   PixelPoint dest;
-  P44ViewPtr foreignview;
+  P44lrgViewObj* foreignview = nullptr;
   int ai = 0;
   if (!f->arg(ai)->hasType(numeric)) {
     // must be a view
-    P44lrgViewObj* vo = dynamic_cast<P44lrgViewObj*>(f->arg(ai).get());
-    if (!vo) {
+    foreignview = dynamic_cast<P44lrgViewObj*>(f->arg(ai).get());
+    if (!foreignview) {
       f->finish(new ErrorValue(ScriptError::Invalid, "first argument must be number or view"));
       return;
     }
-    foreignview = vo->view();
     ai++;
   }
   src.x = f->arg(ai++)->intValue();
@@ -291,7 +294,9 @@ static void copy_func(BuiltinFunctionContextPtr f)
   dest.y = f->arg(ai++)->intValue();
   bool transparentOnly = f->arg(ai++)->boolValue();
   bool fromContent = f->arg(ai++)->boolValue();
-  v->canvas()->copyPixels(foreignview, fromContent, src, dest, transparentOnly);
+  v->view()->enter();
+  v->canvas()->copyPixels(foreignview ? foreignview->view() : nullptr, fromContent, src, dest, transparentOnly);
+  v->view()->leave();
   f->finish(v); // allow chaining
 }
 
@@ -305,9 +310,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   CanvasViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<CanvasViewObj*>(aParentObj.get())->canvas().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 
@@ -321,7 +326,7 @@ static const BuiltinMemberDescriptor canvasViewMembers[] = {
   FUNC_DEF_W_ARG(copy, executable|null),
 //  FUNC_DEF_W_ARG(rect, executable|null),
 //  FUNC_DEF_W_ARG(oval, executable|null),
-  #endif
+  #endif // P44SCRIPT_FULL_SUPPORT
   // property accessors
   ACC_DECL("bytes", numeric, CanvasBytes),
   ACC_DECL("pixels", numeric, NumPixels),

@@ -193,7 +193,7 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
 {
   JsonObjectPtr o;
   ErrorPtr err = inherited::configureView(aViewConfig);
-  announceChanges(true);
+  propAccessAnnounce(true);
   if (Error::isOK(err)) {
     bool colsChanged = false;
     if (aViewConfig->get("brightness_gradient", o)) {
@@ -242,11 +242,11 @@ ErrorPtr ColorEffectView::configureView(JsonObjectPtr aViewConfig)
       setRelativeExtent(o->doubleValue());
     }
   }
-  announceChanges(false);
+  propAccessAnnounce(false);
   return err;
 }
 
-#endif
+#endif // !ENABLE_P44SCRIPT
 
 typedef struct {
   GradientMode mode;
@@ -388,9 +388,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   ColorEffectViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ColorEffectViewObj*>(aParentObj.get())->colorEffect().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

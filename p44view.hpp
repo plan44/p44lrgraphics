@@ -41,6 +41,9 @@
   #include <pthread.h>
 #endif
 
+#if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT && ENABLE_THREADED_STEPPING
+  #error "ENABLE_THREADED_STEPPING not supported without P44Script"
+#endif
 
 #define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
@@ -106,6 +109,7 @@ namespace p44 {
     #endif // ENABLE_THREADED_STEPPING
 
     P44ViewRoot(P44View& aRootView);
+    virtual ~P44ViewRoot();
 
     void requestUpdate(MLMicroSeconds aBeforeOrAt);
 
@@ -161,6 +165,8 @@ namespace p44 {
     /// leave view
     void leave();
 
+    /// convenience combination of enter()/leave() with announceChanges()
+    void propAccessAnnounce(bool aStart);
 
     // Orientation
     enum {
@@ -832,38 +838,47 @@ namespace p44 {
   #define ACCFN_DEF typedef P44Script::ScriptObjPtr (*ACCFN)(ACCESSOR_CLASS& aView, P44Script::ScriptObjPtr aToWrite);
   // member declaration
   #define ACC_DECL(field, types, prop) \
-    { field, builtinvalue|builtin|types, 0, .memberAccessInfo=(void*)&access_##prop, .accessor=&property_accessor }
+    { .name=field, .returnTypeInfo=builtinvalue|builtin|types, .numArgs=0, .memberAccessInfo=(void*)&access_##prop, .accessor=&property_accessor }
   // member access implementation
   // - read/write
   #define ACC_IMPL(prop, getter, constructor) \
     static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
     { \
-      if (!aToWrite) return new constructor(aView.get##prop()); \
-      aView.set##prop(aToWrite->getter()); \
-      return aToWrite; /* reflect back to indicate writable */ \
+      aView.enter(); \
+      if (aToWrite) { aView.set##prop(aToWrite->getter()); } \
+      else { aToWrite = new constructor(aView.get##prop()); } \
+      aView.leave(); \
+      return aToWrite; \
     }
   // - readonly
   #define ACC_IMPL_RO(prop, constructor) \
     static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
     { \
-      if (!aToWrite) return new constructor(aView.get##prop()); \
-      return nullptr; /* null to indicate readonly */ \
+      if (aToWrite) return nullptr; /* null to indicate readonly */ \
+      aView.enter(); \
+      aToWrite = new constructor(aView.get##prop()); \
+      aView.leave(); \
+      return aToWrite; \
     }
+  // - read/write C string that can be null
   #define ACC_IMPL_CSTR(prop) \
   static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
   { \
-    if (!aToWrite) { \
-      if (aView.get##prop()) return new StringValue(aView.get##prop()); \
-      return new AnnotatedNullValue("none"); \
-    } \
-    aView.set##prop(aToWrite->defined() ? aToWrite->stringValue().c_str() : nullptr); \
-    return aToWrite; /* reflect back to indicate writable */ \
+    aView.enter(); \
+    if (aToWrite) { aView.set##prop(aToWrite->defined() ? aToWrite->stringValue().c_str() : nullptr); } \
+    else { aToWrite = new StringValue(aView.get##prop()); } \
+    aView.leave(); \
+    return aToWrite; \
   }
+  // - readonly C string that can be null
   #define ACC_IMPL_RO_CSTR(prop) \
   static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
   { \
-    if (!aToWrite) return aView.get##prop() ? new StringValue(aView.get##prop()) : new AnnotatedNull("none"); \
-    return nullptr; /* null to indicate readonly */ \
+    if (aToWrite) return nullptr; /* null to indicate readonly */ \
+    aView.enter(); \
+    aToWrite = aView.get##prop() ? new StringValue(aView.get##prop()) : new AnnotatedNull("none"); \
+    aView.leave(); \
+    return aToWrite; \
   }
 
   // - type variants

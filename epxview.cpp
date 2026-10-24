@@ -302,7 +302,9 @@ ErrorPtr EpxView::configureView(JsonObjectPtr aViewConfig)
   if (Error::isOK(err)) {
     JsonObjectPtr o;
     if (aViewConfig->get("epx", o)) {
+      enter();
       err = loadEpxAnimationJSON(o);
+      leave();
     }
     #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("run", o)) {
@@ -356,7 +358,9 @@ static void loadepx_func(BuiltinFunctionContextPtr f)
     json = Application::jsonResource(f->arg(0)->stringValue(), &err, P44SCRIPT_DATA_SUBDIR, true); // prefix for data and temp
   }
   if (Error::isOK(err)) {
+    v->epx()->enter();
     err = v->epx()->loadEpxAnimationJSON(json);
+    v->epx()->leave();
   }
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));
@@ -374,9 +378,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   EpxViewPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<EpxViewObj*>(aParentObj.get())->epx().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

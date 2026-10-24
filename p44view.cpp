@@ -50,11 +50,21 @@ P44ViewRoot::P44ViewRoot(P44View& aRootView) :
   mMinUpdateInterval(0),
   mStepShowTime(Never),
   mStepRealTime(Never)
-  #if ENABLE_THREADED_STEPPING
-  ,mViewHierarchyLock(PTHREAD_MUTEX_INITIALIZER)
-  #endif
 {
+  #if ENABLE_THREADED_STEPPING
+  pthread_mutexattr_t attr;
+  pthread_mutexattr_init(&attr);
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init(&mViewHierarchyLock, &attr);
+  pthread_mutexattr_destroy(&attr);
+  #endif // ENABLE_THREADED_STEPPING
 }
+
+P44ViewRoot::~P44ViewRoot()
+{
+  pthread_mutex_destroy(&mViewHierarchyLock);
+}
+
 
 #if ENABLE_THREADED_STEPPING
 
@@ -236,6 +246,7 @@ PixelColor P44View::contentColorAt(PixelPoint aPt)
 
 void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 {
+  enter();
   normalizeRect(aArea);
   aLedRGB.reserve(aArea.dx*aArea.dy*6+1); // one extra for a message terminator
   // pixel data row by row
@@ -249,6 +260,19 @@ void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
       string_format_append(aLedRGB, "%02X%02X%02X", pix.r, pix.g, pix.b);
     }
   }
+  leave();
+}
+
+
+void P44View::propAccessAnnounce(bool aStart)
+{
+  #if ENABLE_THREADED_STEPPING
+  if (aStart) enter();
+  #endif
+  announceChanges(aStart);
+  #if ENABLE_THREADED_STEPPING
+  if (!aStart) leave();
+  #endif
 }
 
 
@@ -415,14 +439,15 @@ void P44View::changeGeometryRect(PixelRect &aRect, PixelRect aNewRect)
 
 void P44View::setFrame(PixelRect aFrame)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   changeGeometryRect(mFrame, aFrame);
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
 void P44View::setParent(P44ViewPtr aParentView)
 {
+  enter();
   mParentView = aParentView.get();
   if (mParentView) {
     mViewRoot = mParentView->mViewRoot;
@@ -430,6 +455,7 @@ void P44View::setParent(P44ViewPtr aParentView)
   else {
     mViewRoot.reset();
   }
+  leave();
 }
 
 
@@ -449,60 +475,61 @@ bool P44View::isParentOrThis(P44ViewPtr aRefView)
 
 void P44View::setContent(PixelRect aContent)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   changeGeometryRect(mContent, aContent);
   if (mSizeToContent) {
     moveFrameToContent(true);
   }
-  announceChanges(false);
+  propAccessAnnounce(false);
 };
 
 
 void P44View::setContentSize(PixelPoint aSize)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   changeGeometryRect(mContent, { mContent.x, mContent.y, aSize.x, aSize.y });
   if (mChangedGeometry && mSizeToContent) moveFrameToContent(true);
-  announceChanges(false);
+  propAccessAnnounce(false);
 };
 
 
 void P44View::setContentOrigin(PixelPoint aOrigin)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   changeGeometryRect(mContent, { aOrigin.x, aOrigin.y, mContent.dx, mContent.dy });
-  announceChanges(false);
+  propAccessAnnounce(false);
 };
 
 
 void P44View::setRelativeContentOrigin(double aRelX, double aRelY, bool aCentered)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   setRelativeContentOriginX(aRelX, aCentered);
   setRelativeContentOriginY(aRelY, aCentered);
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 void P44View::setRelativeContentOriginX(double aRelX, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
-  announceChanges(true);
+  propAccessAnnounce(true);
   changeGeometryRect(mContent, { (int)(aRelX*max(mContent.dx,mFrame.dx)+(aCentered ? mFrame.dx/2 : 0)), mContent.y, mContent.dx, mContent.dy });
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
 void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 {
   // standard version, content origin is a corner of the relevant area
-  announceChanges(true);
+  propAccessAnnounce(true);
   changeGeometryRect(mContent, { mContent.x, (int)(aRelY*max(mContent.dy,mFrame.dy)+(aCentered ? mFrame.dy/2 : 0)), mContent.dx, mContent.dy });
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
 void P44View::setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativeToLargerFrameDimension)
 {
+  enter();
   PixelPoint sz = getFrameSize();
   orientateCoord(sz); // maybe flipped
   if (aRelativeToLargerFrameDimension) {
@@ -516,6 +543,7 @@ void P44View::setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativ
   setContentDx(sz.x);
   setContentDy(sz.y);
   announceChanges(false);
+  leave();
 }
 
 
@@ -583,7 +611,7 @@ void P44View::contentRectAsViewCoord(PixelRect &aRect)
 /// @note content does not move relative to view frame origin, but frame does
 void P44View::moveFrameToContent(bool aResize)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   if (aResize) sizeFrameToContent();
   PixelRect f;
   contentRectAsViewCoord(f);
@@ -591,7 +619,7 @@ void P44View::moveFrameToContent(bool aResize)
   changeGeometryRect(mFrame, f);
   // ...which means that no content offset is needed any more (we've compensated it by moving the frame)
   mContent.x = 0; mContent.y = 0;
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
@@ -609,7 +637,7 @@ void P44View::sizeFrameToContent()
 void P44View::autoAdjustTo(PixelRect aReferenceRect)
 {
   normalizeRect(aReferenceRect);
-  announceChanges(true);
+  propAccessAnnounce(true);
   if (mAutoAdjust & adjustmentMask) {
     if ((mAutoAdjust & fillX)==fillX) {
       mFrame.dx = aReferenceRect.dx;
@@ -621,31 +649,33 @@ void P44View::autoAdjustTo(PixelRect aReferenceRect)
       setFullFrameContent();
     }
   }
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
 
 void P44View::clear()
 {
+  enter();
   stopAnimations();
   // as the only thing a P44View can display is the content rect in foreground color, reset it here
   // Note: subclasses will not always call inherited::clear() as they might want to retain the content rectangle,
   //       and just remove the actual content data
   setContentSize({0, 0});
+  leave();
 }
 
 
 void P44View::resetTransforms()
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   mContentRotation = FP_FROM_INT(0);
   mScrollX = FP_FROM_INT(0);
   mScrollY = FP_FROM_INT(0);
   mShrinkX = FP_FROM_INT(1);
   mShrinkY = FP_FROM_INT(1);
   mChangedTransform = true;
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
@@ -675,10 +705,12 @@ bool P44View::removeFromParent()
 
 void P44View::makeDirtyAndUpdate()
 {
+  enter();
   // make dirty locally
   mDirty = true;
   // Ensure we get a display update
   requestUpdate();
+  leave();
 }
 
 
@@ -806,12 +838,12 @@ void P44View::setAlpha(PixelColorComponent aAlpha)
 
 void P44View::setZOrder(int aZOrder)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   if (mZOrder!=aZOrder) {
     mZOrder = aZOrder;
     flagGeometryChange();
   }
-  announceChanges(false);
+  propAccessAnnounce(false);
 }
 
 
@@ -1089,7 +1121,7 @@ using namespace P44Script;
 
 ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 {
-  announceChanges(true);
+  propAccessAnnounce(true);
   string name;
   JsonObjectPtr val;
   ScriptObjPtr vo = newViewObj();
@@ -1137,7 +1169,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
   if (mChangedGeometry && mSizeToContent) {
     moveFrameToContent(true);
   }
-  announceChanges(false);
+  propAccessAnnounce(false);
   return ErrorPtr();
 }
 
@@ -1358,6 +1390,7 @@ JsonObjectPtr P44View::viewStatus()
   ScriptObjPtr vo = newViewObj();
   ValueIteratorPtr iter = vo->newIterator(nonebut|jsonrepresentable);
   ScriptObjPtr name;
+  enter();
   while((name = iter->obtainKey(false))) {
     ScriptObjPtr m = iter->obtainValue(nonebut|jsonrepresentable);
     if (m) status->add(name->stringValue().c_str(), m->jsonValue());
@@ -1367,6 +1400,7 @@ JsonObjectPtr P44View::viewStatus()
   // there is no p44script property for this
   status->add("animations", JsonObject::newInt64(mAnimations.size()));
   #endif
+  leave();
   return status;
 }
 
@@ -1467,11 +1501,11 @@ void P44View::geometryPropertySetter(PixelCoord *aPixelCoordP, double aNewValue)
 {
   PixelCoord newValue = aNewValue;
   if (newValue!=*aPixelCoordP) {
-    announceChanges(true);
+    propAccessAnnounce(true);
     *aPixelCoordP = newValue;
     flagGeometryChange();
     if (mSizeToContent) moveFrameToContent(true);
-    announceChanges(false);
+    propAccessAnnounce(false);
   }
 }
 
@@ -1486,10 +1520,10 @@ void P44View::transformPropertySetter(FracValue* aTransformValueP, double aNewVa
 {
   double newValue = aNewValue;
   if (FP_FROM_DBL(newValue)!=*aTransformValueP) {
-    announceChanges(true);
+    propAccessAnnounce(true);
     *aTransformValueP = FP_FROM_DBL(newValue);
     flagTransformChange();
-    announceChanges(false);
+    propAccessAnnounce(false);
   }
 }
 
@@ -1504,10 +1538,10 @@ void P44View::zoomPropertySetter(FracValue* aShrinkValueP, double aNewZoomValue)
 {
   double newValue = aNewZoomValue<=0 ? 0 : 1.0/aNewZoomValue;
   if (FP_FROM_DBL(newValue)!=*aShrinkValueP) {
-    announceChanges(true);
+    propAccessAnnounce(true);
     *aShrinkValueP = FP_FROM_DBL(newValue);
     flagTransformChange();
-    announceChanges(false);
+    propAccessAnnounce(false);
   }
 }
 
@@ -1703,11 +1737,13 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
 void P44View::stopAnimations()
 {
   #if ENABLE_ANIMATION
+  enter();
   for (AnimationsList::iterator pos = mAnimations.begin(); pos!=mAnimations.end(); ++pos) {
     (*pos)->stop(false); // stop with no callback
   }
   mAnimations.clear();
-  #endif
+  leave();
+  #endif // ENABLE_ANIMATION
 }
 
 
@@ -1885,7 +1921,10 @@ static void status_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  f->finish(ScriptObj::valueFromJSON(v->view()->viewStatus()));
+  v->view()->enter();
+  JsonObjectPtr status = v->view()->viewStatus();
+  v->view()->leave();
+  f->finish(ScriptObj::valueFromJSON(status));
 }
 
 #endif // ENABLE_VIEWSTATUS
@@ -1898,9 +1937,11 @@ static void set_func(BuiltinFunctionContextPtr f)
   assert(v);
   JsonObjectPtr viewCfgJSON = JsonObject::newObj();
   viewCfgJSON->add(f->arg(0)->stringValue().c_str(), f->arg(1)->jsonValue());
+  v->view()->enter();
   if (Error::ok(v->view()->configureView(viewCfgJSON))) {
     v->view()->requestUpdate(); // to make sure changes are applied
   }
+  v->view()->leave();
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1929,7 +1970,9 @@ static void remove_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   bool removed = v->view()->removeFromParent();
+  v->view()->leave();
   f->finish(new BoolValue(removed)); // true if actually removed
 }
 
@@ -1964,7 +2007,9 @@ static void clear_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   v->view()->clear();
+  v->view()->leave();
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1974,7 +2019,9 @@ static void reset_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   v->view()->resetTransforms();
+  v->view()->leave();
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1985,7 +2032,9 @@ static void fullframe_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   v->view()->setFullFrameContent(); // to make sure changes are applied
+  v->view()->leave();
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1999,7 +2048,9 @@ static void get_func(BuiltinFunctionContextPtr f)
   PixelPoint pt;
   pt.x = f->arg(0)->intValue();
   pt.y = f->arg(1)->intValue();
+  v->view()->enter();
   PixelColor pix = v->view()->colorInFrameAt(pt);
+  v->view()->leave();
   f->finish(new StringValue(pixelToWebColor(pix, true)));
 }
 
@@ -2012,7 +2063,10 @@ static void animator_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  f->finish(new ValueAnimatorObj(v->view()->animatorFor(f->arg(0)->stringValue())));
+  v->view()->enter();
+  ValueAnimatorPtr animator = v->view()->animatorFor(f->arg(0)->stringValue());
+  v->view()->leave();
+  f->finish(new ValueAnimatorObj(animator));
 }
 
 #endif // ENABLE_ANIMATION
@@ -2027,9 +2081,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   P44ViewPtr view = reinterpret_cast<P44lrgViewObj*>(aParentObj.get())->view();
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 

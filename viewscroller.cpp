@@ -397,6 +397,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       if (numSteps==0) stopScroll();
       else doStart = true;
     }
+    enter();
     if (doStart) {
       startScroll(stepX, stepY, interval, true, numSteps);
     }
@@ -405,6 +406,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
         purgeScrolledOut();
       }
     }
+    leave();
   }
   return err;
 }
@@ -508,7 +510,10 @@ static void empty_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  f->finish(new ContentNeededObj(v->scroller()));
+  v->scroller()->enter();
+  ContentNeededObj *c = new ContentNeededObj(v->scroller());
+  v->scroller()->leave();
+  f->finish(c);
 }
 
 
@@ -517,7 +522,9 @@ static void remainingpixels_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
+  v->scroller()->enter();
   PixelPoint rem = v->scroller()->remainingPixelsToScroll();
+  v->scroller()->leave();
   ObjectValue* r = new ObjectValue();
   r->setMemberByName("x", rem.x==INT_MAX ? new ScriptObj() : new IntegerValue(rem.x));
   r->setMemberByName("y", rem.y==INT_MAX ? new ScriptObj() : new IntegerValue(rem.y));
@@ -530,7 +537,9 @@ static void remainingtime_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
+  v->scroller()->enter();
   MLMicroSeconds r = v->scroller()->remainingScrollTime();
+  v->scroller()->leave();
   f->finish(r==Infinite ? new ScriptObj : new NumericValue((double)r/Second));
 }
 
@@ -540,7 +549,9 @@ static void purge_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
+  v->scroller()->enter();
   v->scroller()->purgeScrolledOut();
+  v->scroller()->leave();
   f->finish(v);
 }
 
@@ -551,7 +562,9 @@ static void alertempty_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
+  v->scroller()->enter();
   v->scroller()->setAlertEmpty(f->arg(0)->boolValue());
+  v->scroller()->leave();
   f->finish(v);
 }
 
@@ -572,7 +585,9 @@ static void startscroll_func(BuiltinFunctionContextPtr f)
     // roundup interval for synchronized start
     starttime = ((MainLoop::now()+starttime-1)/starttime) * starttime;
   }
+  v->scroller()->enter();
   v->scroller()->startScroll(stepX, stepY, interval, roundoffsets, numsteps, starttime);
+  v->scroller()->leave();
   f->finish(v); // allow chaining
 }
 
@@ -582,7 +597,9 @@ static void stopscroll_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
+  v->scroller()->enter();
   v->scroller()->stopScroll();
+  v->scroller()->leave();
   f->finish(v);
 }
 
@@ -596,9 +613,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   ViewScrollerPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ScrollerViewObj*>(aParentObj.get())->view().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 
@@ -611,7 +628,13 @@ ACC_IMPL_RO_INT(RemainingSteps)
 
 static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
-  if (!aToWrite) return aView.getScrolledView() ? aView.getScrolledView()->newViewObj() : new AnnotatedNullValue("no scrolled view set");
+  if (!aToWrite) {
+    aView.enter();
+    aToWrite = aView.getScrolledView() ? aView.getScrolledView()->newViewObj() : new AnnotatedNullValue("no scrolled view set");
+    aView.leave();
+    return aToWrite;
+  }
+  aView.enter();
   ErrorPtr err;
   P44ViewPtr scrolledview = P44View::viewFromScriptObj(aToWrite, err);
   if (Error::isOK(err) && aView.isParentOrThis(scrolledview)) {
@@ -623,6 +646,7 @@ static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToW
   else {
     aToWrite = new ErrorValue(err);
   }
+  aView.leave();
   return aToWrite; /* reflect back to indicate writable or error */ \
 }
 
@@ -636,7 +660,7 @@ static const BuiltinMemberDescriptor scrollerFunctions[] = {
   FUNC_DEF_NOARG(purge, executable|objectvalue),
   FUNC_DEF_W_ARG(startscroll, executable|objectvalue),
   FUNC_DEF_NOARG(stopscroll, executable|objectvalue),
-  #endif
+  #endif // P44SCRIPT_FULL_SUPPORT
   // property accessors
   ACC_DECL("scrolledview", objectvalue|lvalue, ScrolledView),
   ACC_DECL("syncscroll", numeric|lvalue, SyncScroll),

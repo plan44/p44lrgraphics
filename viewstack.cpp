@@ -412,6 +412,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     JsonObjectPtr o;
+    enter();
     #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("positioningmode", o)) {
       if (o->isType(json_type_string)) {
@@ -421,7 +422,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
         setPositioningMode((FramingMode)o->int32Value());
       }
     }
-    #endif
+    #endif // !ENABLE_P44SCRIPT
     if (aViewConfig->get("layers", o)) {
       for (int i=0; i<o->arrayLength(); ++i) {
         JsonObjectPtr l = o->arrayGet(i);
@@ -462,6 +463,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("pop", o)) {
       if(o->boolValue()) popView();
     }
+    leave();
   }
   return err;
 }
@@ -544,9 +546,12 @@ static void pushview_func(BuiltinFunctionContextPtr f)
   }
   int spacing = f->arg(1)->intValue();
   bool fullframe = f->arg(2)->boolValue();
+  v->stack()->enter();
   v->stack()->pushView(pushedview, spacing, fullframe);
+  ScriptObjPtr vo = pushedview->newViewObj();
+  v->stack()->leave();
   // return the pushed view for chaining
-  f->finish(pushedview->newViewObj());
+  f->finish(vo);
 }
 
 
@@ -559,7 +564,10 @@ static void purge_func(BuiltinFunctionContextPtr f)
   PixelCoord dx = f->arg(0)->intValue();
   PixelCoord dy = f->arg(1)->intValue();
   bool completely = f->arg(2)->boolValue();
+  v->stack()->enter();
   v->stack()->purgeViews(dx, dy, completely);
+  v->stack()->leave();
+  f->finish();
 }
 
 
@@ -568,7 +576,9 @@ static void popview_func(BuiltinFunctionContextPtr f)
 {
   ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
   assert(v);
+  v->stack()->enter();
   v->stack()->popView();
+  v->stack()->leave();
   f->finish();
 }
 
@@ -582,9 +592,9 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
   ACCFN_DEF
   ViewStackPtr view = reinterpret_cast<ACCESSOR_CLASS*>(reinterpret_cast<ViewStackObj*>(aParentObj.get())->stack().get());
   ACCFN acc = reinterpret_cast<ACCFN>(aMemberDescriptor->memberAccessInfo);
-  view->announceChanges(true);
+  view->propAccessAnnounce(true);
   ScriptObjPtr res = acc(*view, aObjToWrite);
-  view->announceChanges(false);
+  view->propAccessAnnounce(false);
   return res;
 }
 
@@ -592,9 +602,16 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
 
 static ScriptObjPtr access_PositioningMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
-  if (!aToWrite) return new StringValue(P44View::framingModeToText(aView.getPositioningMode(), true));
+  if (!aToWrite) {
+    aView.enter();
+    aToWrite = new StringValue(P44View::framingModeToText(aView.getPositioningMode(), true));
+    return aToWrite;
+    aView.leave();
+  }
+  aView.enter();
   if (aToWrite->hasType(numeric)) aView.setPositioningMode(aToWrite->intValue());
   else aView.setPositioningMode(P44View::textToFramingMode(aToWrite->stringValue().c_str()));
+  aView.leave();
   return aToWrite; /* reflect back to indicate writable */
 }
 
@@ -602,7 +619,9 @@ static ScriptObjPtr access_Layers(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
   ScriptObjPtr ret;
   if (!aToWrite) { // not writable
+    aView.enter();
     ret = aView.layersList();
+    aView.leave();
   }
   return ret;
 }
