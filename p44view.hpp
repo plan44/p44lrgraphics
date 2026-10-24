@@ -844,41 +844,32 @@ namespace p44 {
   #define ACC_IMPL(prop, getter, constructor) \
     static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
     { \
-      aView.enter(); \
-      if (aToWrite) { aView.set##prop(aToWrite->getter()); } \
-      else { aToWrite = new constructor(aView.get##prop()); } \
-      aView.leave(); \
-      return aToWrite; \
+      if (!aToWrite) return new constructor(aView.get##prop()); \
+      aView.set##prop(aToWrite->getter()); \
+      return aToWrite; /* reflect back to indicate writable */ \
     }
   // - readonly
   #define ACC_IMPL_RO(prop, constructor) \
     static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
     { \
-      if (aToWrite) return nullptr; /* null to indicate readonly */ \
-      aView.enter(); \
-      aToWrite = new constructor(aView.get##prop()); \
-      aView.leave(); \
-      return aToWrite; \
+      if (!aToWrite) return new constructor(aView.get##prop()); \
+      return nullptr; /* null to indicate readonly */ \
     }
-  // - read/write C string that can be null
   #define ACC_IMPL_CSTR(prop) \
   static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
   { \
-    aView.enter(); \
-    if (aToWrite) { aView.set##prop(aToWrite->defined() ? aToWrite->stringValue().c_str() : nullptr); } \
-    else { aToWrite = new StringValue(aView.get##prop()); } \
-    aView.leave(); \
-    return aToWrite; \
+    if (!aToWrite) { \
+      if (aView.get##prop()) return new StringValue(aView.get##prop()); \
+      return new AnnotatedNullValue("none"); \
+    } \
+    aView.set##prop(aToWrite->defined() ? aToWrite->stringValue().c_str() : nullptr); \
+    return aToWrite; /* reflect back to indicate writable */ \
   }
-  // - readonly C string that can be null
   #define ACC_IMPL_RO_CSTR(prop) \
   static ScriptObjPtr access_##prop(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite) \
   { \
-    if (aToWrite) return nullptr; /* null to indicate readonly */ \
-    aView.enter(); \
-    aToWrite = aView.get##prop() ? new StringValue(aView.get##prop()) : new AnnotatedNull("none"); \
-    aView.leave(); \
-    return aToWrite; \
+    if (!aToWrite) return aView.get##prop() ? new StringValue(aView.get##prop()) : new AnnotatedNull("none"); \
+    return nullptr; /* null to indicate readonly */ \
   }
 
   // - type variants
