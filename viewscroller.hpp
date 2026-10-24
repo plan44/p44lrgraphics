@@ -62,6 +62,11 @@ namespace p44 {
     bool mAlertEmpty; ///< alert scroller getting empty as event
     #endif
 
+  protected:
+
+    /// called to propagate a view root change through the hierarchy
+    virtual void setViewRoot(P44ViewRootPtr aViewRoot) P44_OVERRIDE;
+
   public:
 
     /// get content pixel color

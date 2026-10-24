@@ -337,6 +337,13 @@ void ViewScroller::purgeScrolledOut()
 }
 
 
+void ViewScroller::setViewRoot(P44ViewRootPtr aViewRoot)
+{
+  if (mScrolledView) mScrolledView->setViewRoot(aViewRoot);
+  inherited::setViewRoot(aViewRoot);
+}
+
+
 #if ENABLE_VIEWCONFIG
 
 // MARK: ===== view configuration

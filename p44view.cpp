@@ -42,6 +42,81 @@ ViewRegistrar::ViewRegistrar(const char* aName, ViewConstructor aConstructor)
 }
 
 
+// MARK: ===== ViewRoot
+
+P44ViewRoot::P44ViewRoot(P44View& aRootView) :
+  mRootViewP(&aRootView),
+  mRequestStepBeforeOrAt(Infinite),
+  mMinUpdateInterval(0),
+  mStepShowTime(Never),
+  mStepRealTime(Never)
+  #if ENABLE_THREADED_STEPPING
+  ,mViewHierarchyLock(PTHREAD_MUTEX_INITIALIZER)
+  #endif
+{
+}
+
+#if ENABLE_THREADED_STEPPING
+
+void P44ViewRoot::enter()
+{
+  pthread_mutex_lock(&mViewHierarchyLock);
+}
+
+
+void P44ViewRoot::leave()
+{
+  pthread_mutex_unlock(&mViewHierarchyLock);
+}
+
+#endif // ENABLE_THREADED_STEPPING
+
+
+MLMicroSeconds P44ViewRoot::stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
+{
+  if (!mRootViewP) return Never;
+  enter();
+  mStepShowTime = aStepShowTime; // marker for running a step right now
+  mStepRealTime = aStepRealTime;
+
+  MLMicroSeconds nextStep = mRootViewP->step(mStepShowTime, aPriorityUntil, mStepRealTime);
+  if ((!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
+    FOCUSLOG("- root: request closer step at %lld, nextStep was %lld, diff=%+lld, priorityuntil=%lld", mRequestStepBeforeOrAt, nextStep, nextStep-mRequestStepBeforeOrAt, aPriorityUntil);
+    nextStep = mRequestStepBeforeOrAt;
+  }
+  mRequestStepBeforeOrAt = Infinite; // always mark request done
+  mStepShowTime = Infinite; // no longer within step calculation
+  leave();
+  return nextStep;
+}
+
+
+static void updateRequester(StepRequestCB aExtraStepCB, MLMicroSeconds aWhen)
+{
+  aExtraStepCB(aWhen);
+}
+
+
+void P44ViewRoot::requestUpdate(MLMicroSeconds aBeforeOrAt)
+{
+  if (DEFINED_TIME(aBeforeOrAt)) {
+    if (DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<=aBeforeOrAt) return;
+  }
+  // now act on mRequestStepBeforeOrAt
+  if (DEFINED_TIME(mStepShowTime)) {
+    // within step processing -> make sure we return the request as next step time (unless we have an earlier request already)
+    if (!DEFINED_TIME(aBeforeOrAt)) aBeforeOrAt = mStepShowTime;
+    mRequestStepBeforeOrAt = aBeforeOrAt;
+  }
+  else if (mExtraStepCB) {
+    // outside step processing, e.g. independent property change -> make sure we request an update
+    // Note: DO NOT call it directly, but from mainloop, so receiver can safely call
+    //   back into any view object method without causing recursions
+    MainLoop::currentMainLoop().executeNow(boost::bind(&updateRequester, mExtraStepCB, aBeforeOrAt));
+  }
+}
+
+
 // MARK: ===== View
 
 static ViewRegistrar r(P44View::staticTypeName(), &P44View::newInstance);
@@ -49,10 +124,6 @@ static ViewRegistrar r(P44View::staticTypeName(), &P44View::newInstance);
 P44View::P44View() :
   mParentView(NULL),
   mDirty(false),
-  mRequestStepBeforeOrAt(Infinite),
-  mMinUpdateInterval(0),
-  mStepShowTime(Never),
-  mStepRealTime(Never),
   mChangeTrackingLevel(0),
   mChangedGeometry(false),
   mChangedColoring(false),
@@ -89,6 +160,58 @@ P44View::~P44View()
   announceChanges(true); // unbalanced, avoid any further dependency updates while finally deleting view
   clear();
   removeFromParent();
+}
+
+
+// MARK: ===== cross thread view hierarchy access management
+
+P44ViewRootPtr P44View::viewRoot()
+{
+  return mViewRoot;
+}
+
+
+void P44View::setViewRoot(P44ViewRootPtr aViewRoot)
+{
+  if (!aViewRoot) {
+    // removing a view root: if I happen to be registered as it's root, remove me
+    if (mViewRoot && mViewRoot->mRootViewP==this) mViewRoot->mRootViewP = nullptr;
+  }
+  mViewRoot = aViewRoot;
+}
+
+
+void P44View::makeRootView(bool aMakeRoot)
+{
+  if (aMakeRoot) {
+    // make this a root view
+    P44ViewRootPtr viewRoot = new P44ViewRoot(*this);
+    setViewRoot(viewRoot);
+  }
+  else {
+    // forget being root view, let all children forget
+    setViewRoot(nullptr);
+  }
+}
+
+
+
+P44View* P44View::enter()
+{
+  #if ENABLE_THREADED_STEPPING
+  // only connected views need enter/leave
+  if (mViewRoot) mViewRoot->enter();
+  #endif
+  return this;
+}
+
+
+void P44View::leave()
+{
+  #if ENABLE_THREADED_STEPPING
+  if (mViewRoot) mViewRoot->leave();
+  #endif
+  return;
 }
 
 
@@ -301,6 +424,12 @@ void P44View::setFrame(PixelRect aFrame)
 void P44View::setParent(P44ViewPtr aParentView)
 {
   mParentView = aParentView.get();
+  if (mParentView) {
+    mViewRoot = mParentView->mViewRoot;
+  }
+  else {
+    mViewRoot.reset();
+  }
 }
 
 
@@ -525,29 +654,12 @@ void P44View::resetTransforms()
 void P44View::updated()
 {
   mDirty = false;
-  mRequestStepBeforeOrAt = Infinite;
-}
-
-
-void P44View::setNeedStepCB(StepRequestCB aNeedStepCB)
-{
-  mExtraStepCB = aNeedStepCB;
-}
-
-
-void P44View::setMinUpdateInterval(MLMicroSeconds aMinUpdateInterval)
-{
-  mMinUpdateInterval = aMinUpdateInterval;
 }
 
 
 MLMicroSeconds P44View::getMinUpdateInterval()
 {
-  P44View *p = this;
-  do {
-    if (p->mMinUpdateInterval>0) return p->mMinUpdateInterval;
-    p = p->mParentView;
-  } while (p);
+  if (mViewRoot) return mViewRoot->mMinUpdateInterval;
   return DEFAULT_MIN_UPDATE_INTERVAL;
 }
 
@@ -611,7 +723,9 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 {
   if (mLocalTimingPriority && DEFINED_TIME(aCandidatePriorityUntil) && DEFINED_TIME(aCallCandidate) && aCallCandidate<aCandidatePriorityUntil) {
     // children must not cause "dirty" before candidate time is over
-    mMaskChildDirtyUntil = (aCallCandidate-mStepShowTime)*2+mStepShowTime; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
+    if (mViewRoot) {
+      mMaskChildDirtyUntil = (aCallCandidate-mViewRoot->mStepShowTime)*2+mViewRoot->mStepShowTime; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
+    }
   }
   if (!DEFINED_TIME(aNextCall) || (DEFINED_TIME(aCallCandidate) && aCallCandidate<aNextCall)) {
     // candidate wins
@@ -620,51 +734,17 @@ void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCand
 }
 
 
-static void updateRequester(StepRequestCB aExtraStepCB, MLMicroSeconds aWhen)
-{
-  aExtraStepCB(aWhen);
-}
-
-
 void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
 {
-  FOCUSLOG("requestUpdate(%lld) called for view@%p, mStepShowTime=%lld", aBeforeOrAt, this, mStepShowTime);
-  P44View *p = this;
-  while (p->mParentView) {
-    if (DEFINED_TIME(aBeforeOrAt) && p->mRequestStepBeforeOrAt==aBeforeOrAt) return;  // do not request the same time multiple times (except for 0==immediate)
-    p->mRequestStepBeforeOrAt = aBeforeOrAt; // mark having requested update all the way down to root, updated() will be called on all views to clear it
-    p = p->mParentView;
-  }
-  // now p = root view
-  FOCUSLOG("- root view@%p (from view@%p)", p, this);
-  if (DEFINED_TIME(aBeforeOrAt)) {
-    // keep already set earlier time (or immediate request == 0), if any
-    if (p->mRequestStepBeforeOrAt!=Infinite && aBeforeOrAt>p->mRequestStepBeforeOrAt) {
-      FOCUSLOG("- root already has earlier request, keep it: %lld", p->mRequestStepBeforeOrAt);
-      aBeforeOrAt = p->mRequestStepBeforeOrAt;
-    }
-  }
-  // now act on aBeforeOrAt
-  if (DEFINED_TIME(p->mStepShowTime)) {
-    // within step processing -> make sure we return the request as next step time (unless we have an earlier request already)
-    if (!DEFINED_TIME(aBeforeOrAt)) aBeforeOrAt = p->mStepShowTime;
-    p->mRequestStepBeforeOrAt = aBeforeOrAt;
-  }
-  else if (p->mExtraStepCB) {
-    // outside step processing, e.g. independent property change -> make sure we request an update
-    // Note: DO NOT call it directly, but from mainloop, so receiver can safely call
-    //   back into any view object method without causing recursions
-    MainLoop::currentMainLoop().executeNow(boost::bind(&updateRequester, p->mExtraStepCB, aBeforeOrAt));
+  if (mViewRoot) {
+    FOCUSLOG("requestUpdate(%lld) called for view@%p", aBeforeOrAt, this);
+    mViewRoot->requestUpdate(aBeforeOrAt);
   }
 }
 
 
 MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
-  mRequestStepBeforeOrAt = Infinite; // no step request pending any more
-  // this is the entry point, remember those for further use
-  mStepShowTime = aStepShowTime; // also serves as marker we are within step calculation
-  mStepRealTime = aStepRealTime;
   #if ENABLE_ANIMATION
   if (mHaltWhenHidden && !getVisible()) return Infinite;
   // run local animations first to get the step time these would want
@@ -673,12 +753,12 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
   AnimationsList::iterator pos = mAnimations.begin();
   while (pos != mAnimations.end()) {
     ValueAnimatorPtr animator = (*pos);
-    MLMicroSeconds animatorStep = animator->step(mStepShowTime);
+    MLMicroSeconds animatorStep = animator->step(aStepShowTime);
     if (!animator->inProgress()) {
       // this animation is done, remove it from the list
       pos = mAnimations.erase(pos);
       // make sure there is a step right now to show the end of the animation
-      updateNextCall(nextAnimationStep, mStepShowTime);
+      updateNextCall(nextAnimationStep, aStepShowTime);
       continue;
     }
     updateNextCall(nextAnimationStep, animatorStep);
@@ -700,15 +780,6 @@ MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPrior
     // alignment off, request our step anyway
     updateNextCall(nextStep, nextAnimationStep);
   }
-  if (!mParentView) {
-    // now, we are the root view, maybe request an update in case stepping did not
-    if ((!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
-      FOCUSLOG("- root: request closer step at %lld, nextStep was %lld, diff=%+lld, priorityuntil=%lld", mRequestStepBeforeOrAt, nextStep, nextStep-mRequestStepBeforeOrAt, aPriorityUntil);
-      nextStep = mRequestStepBeforeOrAt;
-    }
-    mRequestStepBeforeOrAt = Infinite; // always mark request done
-  }
-  mStepShowTime = Infinite; // no longer within step calculation
   return nextStep;
   #else
   return stepInternal(aPriorityUntil);

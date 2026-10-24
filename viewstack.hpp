@@ -36,6 +36,11 @@ namespace p44 {
     ViewsList mViewStack;
     FramingMode mPositioningMode; ///< mode for positioning views with pushView, purging with purgeView, and autoresizing on child changes
 
+  protected:
+
+    /// called to propagate a view root change through the hierarchy
+    virtual void setViewRoot(P44ViewRootPtr aViewRoot) P44_OVERRIDE;
+
   public :
 
     /// create view stack

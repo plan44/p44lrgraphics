@@ -37,6 +37,10 @@
 #if P44SCRIPT_FULL_SUPPORT
   #include "p44script.hpp"
 #endif
+#if ENABLE_THREADED_STEPPING
+  #include <pthread.h>
+#endif
+
 
 #define DEFAULT_MIN_UPDATE_INTERVAL (15*MilliSecond)
 
@@ -78,17 +82,52 @@ namespace p44 {
   class P44View;
   typedef boost::intrusive_ptr<P44View> P44ViewPtr;
 
-  class P44View : public P44Obj
-  {
-    friend class ViewStack;
 
-    bool mDirty;
+  class P44ViewRoot : public P44Obj
+  {
+    friend class P44View;
+
     MLMicroSeconds mRequestStepBeforeOrAt; ///< set when needUpdateCB has been or needs to be called, reset at step() or update()
     StepRequestCB mExtraStepCB; ///< called when async influences decide step/dirty check must occur earlier than what last step() call said
     MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
     MLMicroSeconds mStepShowTime; ///< the (usually future) time where the current step calculation is meant to be shown
     MLMicroSeconds mStepRealTime; ///< the (usually slightly past) time when this step calculation has started
+
+    P44View* mRootViewP; ///< the rootview
+
+    #if ENABLE_THREADED_STEPPING
+
+    pthread_mutex_t mViewHierarchyLock; ///< thread lock for the entire view hierarchy
+
+    void enter();
+    void leave();
+    
+    #endif // ENABLE_THREADED_STEPPING
+
+    P44ViewRoot(P44View& aRootView);
+
+    void requestUpdate(MLMicroSeconds aBeforeOrAt);
+
+  public:
+
+    MLMicroSeconds stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
+
+    void setMinUpdateInterval(MLMicroSeconds aMinUpdateInterval) { mMinUpdateInterval = aMinUpdateInterval;}
+    void setNeedStepCB(StepRequestCB aExtraStepCB) { mExtraStepCB = aExtraStepCB; }
+
+  };
+  typedef boost::intrusive_ptr<P44ViewRoot> P44ViewRootPtr;
+
+
+  class P44View : public P44Obj
+  {
+    friend class ViewStack;
+    friend class ViewSequencer;
+    friend class ViewScroller;
+    friend class P44ViewRoot;
+
+    bool mDirty;
 
     int mChangeTrackingLevel;
     bool mChangedGeometry;
@@ -103,8 +142,25 @@ namespace p44 {
     AnimationsList mAnimations; /// the list of currently running animations
     #endif
 
+    P44ViewRootPtr mViewRoot; /// the view hierarchy's root
 
   public:
+
+    /// @return the current viewRoot
+    P44ViewRootPtr viewRoot();
+
+    /// make this view a root view (or relieve it from being root view)
+    /// - instantiates a viewRoot step and access management object
+    /// - makes sure all reachable views get their view root pointer updated
+    void makeRootView(bool aMakeRoot);
+
+    /// enter accessing view
+    /// @return view pointer ready to access from this thread
+    P44View* enter();
+
+    /// leave view
+    void leave();
+
 
     // Orientation
     enum {
@@ -177,6 +233,9 @@ namespace p44 {
     virtual PixelColor contentColorAt(PixelPoint aPt);
 
   protected:
+
+    /// called to propagate a view root change through the hierarchy
+    virtual void setViewRoot(P44ViewRootPtr aViewRoot);
 
     /// called from announceChanges() before first change
     virtual void beginChanges();
@@ -282,6 +341,18 @@ namespace p44 {
     ///   prevent triggering display updates before the prioritized time.
     /// @note aNextShow calculations must be based on mStepShowTime, never on now() or mStepRealTime
     void updateNextCall(MLMicroSeconds &aNextShow, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil = 0);
+
+    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
+    /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
+    /// @param aStepShowTime the (usually future) time this step's result should be shown
+    /// @param aPriorityUntil the time until the current view might have timingpriority
+    /// @param aStepRealTime the current real time of this calculations step taking place
+    /// @return Infinite (NOT Never!!) if there is no immediate need to call step again, otherwise time of when we need to SHOW
+    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
+    ///   we can calculate results in advance
+    /// @note this must be called as demanded by return value, and after making changes to the view's parameters
+    MLMicroSeconds step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
 
   public :
 
@@ -571,35 +642,12 @@ namespace p44 {
     ///   and thus choose NOT to call inherited.
     virtual void clear();
 
-    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
-    /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @param aStepShowTime the (usually future) time this step's result should be shown
-    /// @param aPriorityUntil the time until the current view might have timingpriority
-    /// @param aStepRealTime the current real time of this calculations step taking place
-    /// @return Infinite (NOT Never!!) if there is no immediate need to call step again, otherwise time of when we need to SHOW
-    ///   the next result, i.e. should have called step() and display rendering already.
-    /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
-    ///   we can calculate results in advance
-    /// @note this must be called as demanded by return value, and after making changes to the view's parameters
-    MLMicroSeconds step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
-
     /// return if anything changed on the display since last call
     /// container view subclasses must override this to include dirty status of child views
     virtual bool isDirty() { return mDirty; }
 
     /// call when display is updated
     virtual void updated();
-
-    /// register a callback for when the view (supposedly a root view) and its hierarchy become dirty or needsa step()
-    /// at a given time, possibly outside what last step() returned last time.
-    /// @param aNeedUpdateCB this is called from mainloop, so it's safe to call view methods from it, including step().
-    void setNeedStepCB(StepRequestCB aNeedStepCB);
-
-    /// set the minimum update interval (aka max framerate)
-    /// @note this is a hint for animations to calculate a sensible step size, and for
-    ///   other mechanisms that want to call requestUpdate(), to avoid calling it too often and wasting cpu cycles.
-    /// @param aMinUpdateInterval minimum interval between updates
-    void setMinUpdateInterval(MLMicroSeconds aMinUpdateInterval);
 
     /// get minimal update interval
     /// @return update interval set in first view towards root, if none set, DEFAULT_MIN_UPDATE_INTERVAL
@@ -705,11 +753,11 @@ namespace p44 {
 
     /// @return intended time for when to show results of current calculation step next time
     /// @note intended for use in stepInternal() implementations to refer to the time the current calculation will/should be shown
-    inline MLMicroSeconds stepShowTime() const { return mStepShowTime; }
+    inline MLMicroSeconds stepShowTime() const { return mViewRoot ? mViewRoot->mStepShowTime : Never; }
 
     /// @return real time of when last calculation step was started
     /// @note intended for use in stepInternal() implementations to allow detecting how realistic mStepShowTime might be
-    inline MLMicroSeconds stepRealTime() const { return mStepRealTime; }
+    inline MLMicroSeconds stepRealTime() const { return mViewRoot ? mViewRoot->mStepRealTime : Never; }
 
 
     ValueSetterCB getGeometryPropertySetter(PixelCoord& aPixelCoord, double& aCurrentValue);

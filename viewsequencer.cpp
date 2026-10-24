@@ -224,6 +224,16 @@ PixelColor ViewSequencer::contentColorAt(PixelPoint aPt)
 }
 
 
+void ViewSequencer::setViewRoot(P44ViewRootPtr aViewRoot)
+{
+  for (SequenceVector::iterator pos = mSequence.begin(); pos!=mSequence.end(); ++pos) {
+    P44ViewPtr v = pos->mView;
+    if (v) v->setViewRoot(aViewRoot);
+  }
+  inherited::setViewRoot(aViewRoot);
+}
+
+
 #if ENABLE_VIEWCONFIG
 
 // MARK: ===== view configuration

@@ -277,6 +277,15 @@ bool ViewStack::removeView(P44ViewPtr aView)
 }
 
 
+void ViewStack::setViewRoot(P44ViewRootPtr aViewRoot)
+{
+  for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
+    (*pos)->setViewRoot(aViewRoot);
+  }
+  inherited::setViewRoot(aViewRoot);
+}
+
+
 void ViewStack::clear()
 {
   announceChanges(true);

@@ -58,6 +58,11 @@ namespace p44 {
     } animationState;
     MLMicroSeconds mLastStateChange;
 
+  protected:
+
+    /// called to propagate a view root change through the hierarchy
+    virtual void setViewRoot(P44ViewRootPtr aViewRoot) P44_OVERRIDE;
+
   public :
 
     /// create view stack
