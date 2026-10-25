@@ -244,7 +244,6 @@ PixelColor P44View::contentColorAt(PixelPoint aPt)
 
 void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 {
-  enter();
   normalizeRect(aArea);
   aLedRGB.reserve(aArea.dx*aArea.dy*6+1); // one extra for a message terminator
   // pixel data row by row
@@ -258,7 +257,6 @@ void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
       string_format_append(aLedRGB, "%02X%02X%02X", pix.r, pix.g, pix.b);
     }
   }
-  leave();
 }
 
 
@@ -445,7 +443,6 @@ void P44View::setFrame(PixelRect aFrame)
 
 void P44View::setParent(P44ViewPtr aParentView)
 {
-  enter();
   mParentView = aParentView.get();
   if (mParentView) {
     mViewRoot = mParentView->mViewRoot;
@@ -453,7 +450,6 @@ void P44View::setParent(P44ViewPtr aParentView)
   else {
     mViewRoot.reset();
   }
-  leave();
 }
 
 
@@ -1178,7 +1174,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
 {
   JsonObjectPtr o;
-  announceChanges(true);
+  propAccessAnnounce(true);
   if (aViewConfig->get("label", o)) {
     setLabel(o->stringValue());
   }
@@ -1298,7 +1294,7 @@ ErrorPtr P44View::configureView(JsonObjectPtr aViewConfig)
     configureAnimation(o);
   }
   #endif
-  announceChanges(false);
+  propAccessAnnounce(false);
   return ErrorPtr();
 }
 
@@ -1749,6 +1745,9 @@ void P44View::stopAnimations()
 
 #if ENABLE_P44SCRIPT
 
+// Note: all guarding for accessing views (threading if enabled) from
+//   p44script functions must be done explicitly.
+
 #include "viewfactory.hpp"
 
 using namespace P44Script;
@@ -1820,12 +1819,17 @@ static void findview_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   P44ViewPtr foundView = v->view()->findView(f->arg(0)->stringValue());
+  ScriptObjPtr res;
   if (foundView) {
-    f->finish(foundView->newViewObj());
-    return;
+    res = foundView->newViewObj();
   }
-  f->finish(new AnnotatedNullValue("no such view"));
+  else {
+    res = new AnnotatedNullValue("no such view");
+  }
+  v->view()->leave();
+  f->finish(res);
 }
 
 
@@ -1841,15 +1845,19 @@ static void addview_func(BuiltinFunctionContextPtr f)
     f->finish(new ErrorValue(err));
     return;
   }
+  ScriptObjPtr res;
+  v->view()->enter();
   if (v->view()->isParentOrThis(subview)) {
-    f->finish(new ErrorValue(ScriptError::Invalid, "View cannot be added to itself or to its own children"));
-    return;
+    res = new ErrorValue(ScriptError::Invalid, "View cannot be added to itself or to its own children");
   }
-  if (!v->view()->addSubView(subview)) {
-    f->finish(new ErrorValue(ScriptError::Invalid, "cannot add subview here"));
-    return;
+  else if (!v->view()->addSubView(subview)) {
+    res = new ErrorValue(ScriptError::Invalid, "cannot add subview here");
   }
-  f->finish(subview->newViewObj());
+  else {
+    res = subview->newViewObj();
+  }
+  v->view()->leave();
+  f->finish(res);
 }
 
 
@@ -1862,10 +1870,12 @@ static void configure_func(BuiltinFunctionContextPtr f)
   ErrorPtr err;
   JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(f->arg(0), err);
   if (Error::isOK(err)) {
+    v->view()->enter();
     err = v->view()->configureView(viewCfgJSON);
     if (Error::isOK(err)) {
       v->view()->requestUpdate(); // to make sure changes are applied
     }
+    v->view()->leave();
   }
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));
@@ -1882,14 +1892,14 @@ static void content_position_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   bool centered = f->arg(2)->boolValue();
-  v->view()->announceChanges(true);
+  v->view()->propAccessAnnounce(true);
   if (f->arg(0)->defined()) {
     v->view()->setRelativeContentOriginX(f->arg(0)->doubleValue(), centered);
   }
   if (f->arg(1)->defined()) {
     v->view()->setRelativeContentOriginY(f->arg(1)->doubleValue(), centered);
   }
-  v->view()->announceChanges(false);
+  v->view()->propAccessAnnounce(false);
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1900,14 +1910,14 @@ static void content_size_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->announceChanges(true);
+  v->view()->propAccessAnnounce(true);
   if (f->arg(0)->defined()) {
     v->view()->setRelativeContentSizeX(f->arg(0)->doubleValue());
   }
   if (f->arg(1)->defined()) {
     v->view()->setRelativeContentSizeY(f->arg(1)->doubleValue());
   }
-  v->view()->announceChanges(false);
+  v->view()->propAccessAnnounce(false);
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1949,7 +1959,9 @@ static void stopanimations_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   v->view()->stopAnimations();
+  v->view()->leave();
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1959,7 +1971,10 @@ static void animations_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  f->finish(v->view()->installedAnimators());
+  v->view()->enter();
+  ScriptObjPtr ia = v->view()->installedAnimators();
+  v->view()->leave();
+  f->finish(ia);
 }
 
 
@@ -1981,7 +1996,9 @@ static void render_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  v->view()->enter();
   v->view()->requestUpdate(); // to make sure changes are applied
+  v->view()->leave();
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1991,12 +2008,17 @@ static void parent_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
+  ScriptObjPtr vo;
+  v->view()->enter();
   P44ViewPtr parent = v->view()->getParent();
-  if (!parent) {
-    f->finish(new AnnotatedNullValue("no parent view"));
-    return;
+  if (parent) {
+    vo = parent->newViewObj();
   }
-  f->finish(parent->newViewObj());
+  else {
+    vo = new AnnotatedNullValue("no parent view");
+  }
+  v->view()->leave();
+  f->finish(vo);
 }
 
 
@@ -2071,6 +2093,11 @@ static void animator_func(BuiltinFunctionContextPtr f)
 
 #endif // P44SCRIPT_FULL_SUPPORT
 
+
+// Note: all guarding for property access (threading if enabled, internal change management)
+//   is done on the level of property_accessor of the to be accessed P44View (sub)class.
+//   The access_<propname> accessors already operate within the guard, as well
+//   as the individual property getters and setters do.
 
 #define ACCESSOR_CLASS P44View
 
