@@ -445,7 +445,7 @@ void P44View::setParent(P44ViewPtr aParentView)
 {
   mParentView = aParentView.get();
   if (mParentView) {
-    mViewRoot = mParentView->mViewRoot;
+    setViewRoot(mParentView->mViewRoot);
   }
   else {
     mViewRoot.reset();
