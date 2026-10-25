@@ -159,6 +159,7 @@ void ViewStack::purgeViews(int aKeepDx, int aKeepDy, bool aCompletely)
         mViewStack.size(),
         v->mFrame.x, v->mFrame.y, v->mFrame.dx, v->mFrame.dy
       );
+      (*pos)->setParent(nullptr);
       pos = mViewStack.erase(pos);
       flagGeometryChange();
     }
@@ -265,7 +266,7 @@ bool ViewStack::removeView(P44ViewPtr aView)
   announceChanges(true);
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     if ((*pos)==aView) {
-      (*pos)->setParent(NULL);
+      (*pos)->setParent(nullptr);
       mViewStack.erase(pos);
       flagGeometryChange();
       removed = true;
@@ -292,7 +293,7 @@ void ViewStack::clear()
   while (true) {
     ViewsList::iterator pos = mViewStack.begin();
     if (pos==mViewStack.end()) break;
-    (*pos)->setParent(NULL);
+    (*pos)->setParent(nullptr);
     mViewStack.erase(pos);
     flagGeometryChange();
   }
