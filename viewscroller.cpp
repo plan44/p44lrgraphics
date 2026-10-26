@@ -382,6 +382,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       makeDirty();
     }
     // pseudo "properties" for starting scroll
+    enter();
     double stepX = mScrollStepX;
     double stepY = mScrollStepY;
     MLMicroSeconds interval = NONZERO_INTERVAL(mScrollStepInterval) ? mScrollStepInterval : 50*MilliSecond;
@@ -404,7 +405,6 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       if (numSteps==0) stopScroll();
       else doStart = true;
     }
-    enter();
     if (doStart) {
       startScroll(stepX, stepY, interval, true, numSteps);
     }
@@ -507,7 +507,10 @@ void ContentNeededObj::registerForFilteredEvents(EventSink* aEventSink, intptr_t
 
 double ContentNeededObj::doubleValue() const
 {
-  return mScroller->needsContent() ? 1 : 0;
+  mScroller->enter();
+  bool needed = mScroller->needsContent();
+  mScroller->leave();
+  return needed ? 1 : 0;
 }
 
 
@@ -636,12 +639,9 @@ ACC_IMPL_RO_INT(RemainingSteps)
 static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
   if (!aToWrite) {
-    aView.enter();
     aToWrite = aView.getScrolledView() ? aView.getScrolledView()->newViewObj() : new AnnotatedNullValue("no scrolled view set");
-    aView.leave();
     return aToWrite;
   }
-  aView.enter();
   ErrorPtr err;
   P44ViewPtr scrolledview = P44View::viewFromScriptObj(aToWrite, err);
   if (Error::isOK(err) && aView.isParentOrThis(scrolledview)) {
@@ -653,7 +653,6 @@ static ScriptObjPtr access_ScrolledView(ACCESSOR_CLASS& aView, ScriptObjPtr aToW
   else {
     aToWrite = new ErrorValue(err);
   }
-  aView.leave();
   return aToWrite; /* reflect back to indicate writable or error */ \
 }
 

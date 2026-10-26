@@ -604,15 +604,11 @@ static ScriptObjPtr property_accessor(BuiltInMemberLookup& aMemberLookup, Script
 static ScriptObjPtr access_PositioningMode(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
   if (!aToWrite) {
-    aView.enter();
     aToWrite = new StringValue(P44View::framingModeToText(aView.getPositioningMode(), true));
     return aToWrite;
-    aView.leave();
   }
-  aView.enter();
   if (aToWrite->hasType(numeric)) aView.setPositioningMode(aToWrite->intValue());
   else aView.setPositioningMode(P44View::textToFramingMode(aToWrite->stringValue().c_str()));
-  aView.leave();
   return aToWrite; /* reflect back to indicate writable */
 }
 
@@ -620,9 +616,7 @@ static ScriptObjPtr access_Layers(ACCESSOR_CLASS& aView, ScriptObjPtr aToWrite)
 {
   ScriptObjPtr ret;
   if (!aToWrite) { // not writable
-    aView.enter();
     ret = aView.layersList();
-    aView.leave();
   }
   return ret;
 }

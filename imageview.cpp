@@ -153,9 +153,7 @@ ErrorPtr ImageView::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("file", o)) {
       // if no dx or dy is set when loading a new image, auto-enable sizeToContent
       if (mFrame.dx==0 && mFrame.dy==0) mSizeToContent = true;
-      enter();
       err = loadPNG(Application::sharedApplication()->resourcePath(o->stringValue()));
-      leave();
     }
   }
   return err;
