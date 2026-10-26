@@ -64,3 +64,9 @@ add_library(p44lrgraphics STATIC
 target_include_directories(p44lrgraphics PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(p44lrgraphics PUBLIC p44utils vdcd_config)
 target_compile_options(p44lrgraphics PRIVATE -Wno-reorder -Wno-missing-field-initializers)
+
+option(P44LRG_TIMING_TESTS "Build presentation timing regression tests" OFF)
+if(P44LRG_TIMING_TESTS)
+  add_executable(p44lrg_timing_test tests/presentation_timing.cpp)
+  target_link_libraries(p44lrg_timing_test PRIVATE p44lrgraphics)
+endif()

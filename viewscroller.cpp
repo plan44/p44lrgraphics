@@ -83,11 +83,15 @@ void ViewScroller::clear()
 }
 
 
-MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  StepResult nextCall = inherited::stepInternal(aPriorityUntil);
   if (mScrolledView) {
-    updateNextCall(nextCall, mScrolledView->step(stepShowTime(), aPriorityUntil, stepRealTime()));
+    MLMicroSeconds childPriorityUntil = aPriorityUntil;
+    if (mLocalTimingPriority && !mHalted && mScrollSteps!=0 && NONZERO_INTERVAL(mScrollStepInterval)) {
+      childPriorityUntil = min(aPriorityUntil,max(stepShowTime(),mNextScrollStepAt));
+    }
+    updateNextCall(nextCall, mScrolledView->step(stepShowTime(), childPriorityUntil, stepRealTime()));
   }
   // scroll
   if (!mHalted && mScrollSteps!=0 && NONZERO_INTERVAL(mScrollStepInterval)) {
@@ -154,6 +158,9 @@ MLMicroSeconds ViewScroller::stepInternal(MLMicroSeconds aPriorityUntil)
         }
         updateNextCall(nextCall, mNextScrollStepAt, aPriorityUntil); // scrolling has priority
       } // while catchup
+      // This step produced the prioritized state: allow its presentation now,
+      // rather than masking it until the *following* scroll step.
+      if (mLocalTimingPriority) mLocalPresentationDelay = 0;
       if ((
         mNeedContentCB
         #if P44SCRIPT_FULL_SUPPORT
@@ -243,10 +250,10 @@ MLMicroSeconds ViewScroller::remainingScrollTime()
 
 
 
-bool ViewScroller::isDirty()
+bool ViewScroller::hasDirty()
 {
-  if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
-  if (mScrolledView && reportDirtyChilds()) return mScrolledView->isDirty();
+  if (inherited::hasDirty()) return true; // dirty anyway (such as changing alpha)
+  if (mScrolledView && getVisible()) return mScrolledView->hasDirty();
   return false;
 }
 

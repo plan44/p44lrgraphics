@@ -122,13 +122,12 @@ namespace p44 {
     void setCycleTimeS(double aVal) { mCycleTime = aVal*Second; }
     /// @}
 
-    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
+    /// Calculate state for the current show time and return calculation/presentation timing.
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @return Infinite if there is no immediate need to call step again, otherwise time of when we need to SHOW
-    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @return next calculation deadline and acceptable presentation delay relative to stepShowTime().
     /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
     ///   we can calculate results in advance
-    virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
+    virtual StepResult stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
     #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT
     /// configure view from JSON

@@ -92,14 +92,17 @@ void TorchView::recalculateColoring()
 
 
 
-MLMicroSeconds TorchView::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult TorchView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
-  if (DEFINED_TIME(mCycleTime) && stepShowTime()>=mNextCalculation) {
-    mNextCalculation = stepShowTime()+mCycleTime;
-    calculateCycle();
+  StepResult nextCall = inherited::stepInternal(aPriorityUntil);
+  if (NONZERO_INTERVAL(mCycleTime)) {
+    if (stepShowTime()>=mNextCalculation) {
+      mNextCalculation = stepShowTime()+mCycleTime;
+      calculateCycle();
+    }
+    // Other views may cause intervening steps; these must not postpone our next calculation.
+    updateNextCall(nextCall, mNextCalculation);
   }
-  updateNextCall(nextCall, stepShowTime()+mCycleTime);
   return nextCall;
 }
 

@@ -311,9 +311,9 @@ int BlocksView::findCompletedRow(bool aBlockFromBottom)
 
 
 
-MLMicroSeconds BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult BlocksView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  StepResult nextCall = inherited::stepInternal(aPriorityUntil);
   if (!mPause) {
     for (int i=0; i<2; i++) {
       BlockRunner *b = &mActiveBlocks[i];

@@ -46,7 +46,6 @@ ViewRegistrar::ViewRegistrar(const char* aName, ViewConstructor aConstructor)
 
 P44ViewRoot::P44ViewRoot(P44View& aRootView) :
   mRootViewP(&aRootView),
-  mRequestStepBeforeOrAt(Infinite),
   mMinUpdateInterval(0),
   mStepShowTime(Never),
   mStepRealTime(Never)
@@ -62,7 +61,9 @@ P44ViewRoot::P44ViewRoot(P44View& aRootView) :
 
 P44ViewRoot::~P44ViewRoot()
 {
+  #if ENABLE_THREADED_STEPPING
   pthread_mutex_destroy(&mViewHierarchyLock);
+  #endif
 }
 
 
@@ -82,22 +83,20 @@ void P44ViewRoot::leave()
 #endif // ENABLE_THREADED_STEPPING
 
 
-MLMicroSeconds P44ViewRoot::stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
+StepResult P44ViewRoot::stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
-  if (!mRootViewP) return Never;
-  mStepShowTime = aStepShowTime; // marker for running a step right now
+  if (!mRootViewP) return StepResult();
+  mStepShowTime = aStepShowTime;
   mStepRealTime = aStepRealTime;
-
-  MLMicroSeconds nextStep = mRootViewP->step(mStepShowTime, aPriorityUntil, mStepRealTime);
-  if ((!DEFINED_TIME(nextStep) || nextStep>aPriorityUntil) && DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<aPriorityUntil) {
-    FOCUSLOG("- root: request closer step at %lld, nextStep was %lld, diff=%+lld, priorityuntil=%lld", mRequestStepBeforeOrAt, nextStep, nextStep-mRequestStepBeforeOrAt, aPriorityUntil);
-    nextStep = mRequestStepBeforeOrAt;
+  StepResult result = mRootViewP->step(aStepShowTime, aPriorityUntil, aStepRealTime);
+  // A pending presentation must wake us even if there is no earlier calculation.
+  if (mRootViewP->hasDirty() && DEFINED_INTERVAL(result.presentationDelay) && result.presentationDelay>0) {
+    MLMicroSeconds boundary = aStepShowTime+result.presentationDelay;
+    if (!DEFINED_TIME(result.nextCalculation) || boundary<result.nextCalculation) result.nextCalculation = boundary;
   }
-  mRequestStepBeforeOrAt = Infinite; // always mark request done
-  mStepShowTime = Infinite; // no longer within step calculation
-  return nextStep;
+  mStepShowTime = Infinite;
+  return result;
 }
-
 
 static void updateRequester(StepRequestCB aExtraStepCB, MLMicroSeconds aWhen)
 {
@@ -107,19 +106,10 @@ static void updateRequester(StepRequestCB aExtraStepCB, MLMicroSeconds aWhen)
 
 void P44ViewRoot::requestUpdate(MLMicroSeconds aBeforeOrAt)
 {
-  if (DEFINED_TIME(aBeforeOrAt)) {
-    if (DEFINED_TIME(mRequestStepBeforeOrAt) && mRequestStepBeforeOrAt<=aBeforeOrAt) return;
-  }
-  // now act on mRequestStepBeforeOrAt
-  if (DEFINED_TIME(mStepShowTime)) {
-    // within step processing -> make sure we return the request as next step time (unless we have an earlier request already)
-    if (!DEFINED_TIME(aBeforeOrAt)) aBeforeOrAt = mStepShowTime;
-    mRequestStepBeforeOrAt = aBeforeOrAt;
-  }
-  else if (mExtraStepCB) {
-    // outside step processing, e.g. independent property change -> make sure we request an update
-    // Note: DO NOT call it directly, but from mainloop, so receiver can safely call
-    //   back into any view object method without causing recursions
+  // Already evaluating: dirty changes will be considered by dirtyAt(). Internal
+  // calculation deadlines are returned by step(), never routed through here.
+  if (DEFINED_TIME(mStepShowTime)) return;
+  if (mExtraStepCB) {
     MainLoop::currentMainLoop().executeNow(boost::bind(&updateRequester, mExtraStepCB, aBeforeOrAt));
   }
 }
@@ -159,7 +149,8 @@ P44View::P44View() :
   mLocalTimingPriority = true;
   mAlignAnimationSteps = true;
   mHaltWhenHidden = true;
-  mMaskChildDirtyUntil = Never;
+  mDirtyMaskUntil = Never;
+  mLocalPresentationDelay = Infinite;
 }
 
 
@@ -678,6 +669,7 @@ void P44View::resetTransforms()
 void P44View::updated()
 {
   mDirty = false;
+  mDirtyMaskUntil = Never;
 }
 
 
@@ -732,33 +724,36 @@ void P44View::makeColorDirty()
 }
 
 
-bool P44View::reportDirtyChilds()
+bool P44View::dirtyAt(MLMicroSeconds aShowTime)
 {
-  if (mAlpha==0) return false; // as long as this is invisible, dirty children are irrelevant
-  if (DEFINED_TIME(mMaskChildDirtyUntil)) {
-    if (stepShowTime()<mMaskChildDirtyUntil) {
-      return false;
-    }
-    mMaskChildDirtyUntil = 0;
-  }
-  return true;
+  return (!DEFINED_TIME(mDirtyMaskUntil) || aShowTime>=mDirtyMaskUntil) && hasDirty();
 }
 
 
-void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil)
+void P44View::updateNextCall(MLMicroSeconds &aNextCall, MLMicroSeconds aCallCandidate)
 {
-  if (mLocalTimingPriority && DEFINED_TIME(aCandidatePriorityUntil) && DEFINED_TIME(aCallCandidate) && aCallCandidate<aCandidatePriorityUntil) {
-    // children must not cause "dirty" before candidate time is over
-    if (mViewRoot) {
-      mMaskChildDirtyUntil = (aCallCandidate-mViewRoot->mStepShowTime)*2+mViewRoot->mStepShowTime; // duplicate to make sure candidate execution has some time to happen BEFORE dirty is unblocked
-    }
-  }
-  if (!DEFINED_TIME(aNextCall) || (DEFINED_TIME(aCallCandidate) && aCallCandidate<aNextCall)) {
-    // candidate wins
-    aNextCall = aCallCandidate;
+  if (!DEFINED_TIME(aNextCall) || (DEFINED_TIME(aCallCandidate) && aCallCandidate<aNextCall)) aNextCall = aCallCandidate;
+}
+
+
+void P44View::updateNextCall(StepResult& aNext, MLMicroSeconds aCandidate, MLMicroSeconds aPriorityUntil)
+{
+  updateNextCall(aNext.nextCalculation, aCandidate);
+  if (mLocalTimingPriority && DEFINED_TIME(aPriorityUntil) && DEFINED_TIME(aCandidate)) {
+    MLMicroSeconds delay = max((MLMicroSeconds)0, min(aCandidate,aPriorityUntil)-stepShowTime());
+    if (!DEFINED_INTERVAL(mLocalPresentationDelay) || delay<mLocalPresentationDelay) mLocalPresentationDelay = delay;
   }
 }
 
+
+void P44View::updateNextCall(StepResult& aNext, const StepResult& aCandidate)
+{
+  updateNextCall(aNext.nextCalculation, aCandidate.nextCalculation);
+  if (DEFINED_INTERVAL(aCandidate.presentationDelay) &&
+      (!DEFINED_INTERVAL(aNext.presentationDelay) || aCandidate.presentationDelay<aNext.presentationDelay)) {
+    aNext.presentationDelay = aCandidate.presentationDelay;
+  }
+}
 
 void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
 {
@@ -769,54 +764,53 @@ void P44View::requestUpdate(MLMicroSeconds aBeforeOrAt)
 }
 
 
-MLMicroSeconds P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
+StepResult P44View::step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime)
 {
-  #if ENABLE_ANIMATION
-  if (mHaltWhenHidden && !getVisible()) return Infinite;
-  // run local animations first to get the step time these would want
-  FOCUSLOG("### starting animations");
+  if (mHaltWhenHidden && !getVisible()) {
+    mDirtyMaskUntil = Never; // hiding itself must remain reportable
+    return StepResult();
+  }
+  mLocalPresentationDelay = Infinite;
   MLMicroSeconds nextAnimationStep = Infinite;
+  #if ENABLE_ANIMATION
   AnimationsList::iterator pos = mAnimations.begin();
   while (pos != mAnimations.end()) {
-    ValueAnimatorPtr animator = (*pos);
+    ValueAnimatorPtr animator = *pos;
     MLMicroSeconds animatorStep = animator->step(aStepShowTime);
     if (!animator->inProgress()) {
-      // this animation is done, remove it from the list
       pos = mAnimations.erase(pos);
-      // make sure there is a step right now to show the end of the animation
       updateNextCall(nextAnimationStep, aStepShowTime);
-      continue;
     }
-    updateNextCall(nextAnimationStep, animatorStep);
-    pos++;
+    else {
+      updateNextCall(nextAnimationStep, animatorStep);
+      ++pos;
+    }
   }
-  FOCUSLOG("### done with animations, nextAnimationStep=%lld, mStepShowTime=%lld", nextAnimationStep, mStepShowTime);
-  // now call the actual virtual calculation method
-  MLMicroSeconds nextStep = stepInternal(aPriorityUntil);
-  // animation alignment means we ignore the step time returned from animation steppers
-  // when we know there's a step from the view hierarchy within the priority window.
-  // This means animations are synced e.g. to the pace of scrollers and thus will not
-  // disturb them with extra updates (even when not childs of the scroller, which
-  // case is handled by the mMaskChildDirtyUntil mechanism)
-  if (mAlignAnimationSteps) {
-    // request a global step time in case nobody else sets one
-    if (DEFINED_TIME(nextAnimationStep)) requestUpdate(nextAnimationStep);
+  #endif
+  StepResult result = stepInternal(aPriorityUntil);
+  // Only standard ValueAnimator calculations may piggyback on another nearby
+  // calculation. Procedural views always retain their own calculation deadlines.
+  bool piggyback = mAlignAnimationSteps && DEFINED_TIME(nextAnimationStep) &&
+    DEFINED_TIME(result.nextCalculation) && nextAnimationStep<aPriorityUntil && result.nextCalculation<aPriorityUntil;
+  if (!piggyback) updateNextCall(result.nextCalculation, nextAnimationStep);
+  if (DEFINED_INTERVAL(mLocalPresentationDelay)) result.presentationDelay = mLocalPresentationDelay;
+  else if (!mAlignAnimationSteps && (hasDirty() || DEFINED_TIME(nextAnimationStep))) result.presentationDelay = 0;
+
+  // Once dirty, do not slide an existing gate into the future at each calculation.
+  // A parent may have held our state past our own boundary; it must remain visible.
+  if (!hasDirty()) mDirtyMaskUntil = Never;
+  if (DEFINED_INTERVAL(result.presentationDelay)) {
+    MLMicroSeconds boundary = aStepShowTime+result.presentationDelay;
+    if (!DEFINED_TIME(mDirtyMaskUntil) || boundary<mDirtyMaskUntil) mDirtyMaskUntil = boundary;
   }
-  else {
-    // alignment off, request our step anyway
-    updateNextCall(nextStep, nextAnimationStep);
-  }
-  return nextStep;
-  #else
-  return stepInternal(aPriorityUntil);
-  #endif  // ENABLE_ANIMATION
+  if (DEFINED_TIME(mDirtyMaskUntil)) result.presentationDelay = max((MLMicroSeconds)0,mDirtyMaskUntil-aStepShowTime);
+  return result;
 }
 
 
-
-MLMicroSeconds P44View::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult P44View::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  return Infinite; // No steps (other than property animators that are handled in step())
+  return StepResult(); // No steps (other than property animators that are handled in step())
 }
 
 

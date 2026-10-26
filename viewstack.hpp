@@ -102,16 +102,15 @@ namespace p44 {
     /// clear stack, means remove all views
     virtual void clear() P44_OVERRIDE;
 
-    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
+    /// Calculate state for the current show time and return calculation/presentation timing.
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @return Infinite if there is no immediate need to call step again, otherwise time of when we need to SHOW
-    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @return next calculation deadline and acceptable presentation delay relative to stepShowTime().
     /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
     ///   we can calculate results in advance
-    virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
+    virtual StepResult stepInternal(MLMicroSeconds aPriorityUntil) P44_OVERRIDE;
 
     /// return if anything changed on this view or on subviews in the hierarchy
-    virtual bool isDirty() P44_OVERRIDE;
+    virtual bool hasDirty() P44_OVERRIDE;
 
     /// call when display is updated
     virtual void updated() P44_OVERRIDE;

@@ -302,9 +302,9 @@ void ViewStack::clear()
 }
 
 
-MLMicroSeconds ViewStack::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult ViewStack::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  StepResult nextCall = inherited::stepInternal(aPriorityUntil);
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
     updateNextCall(nextCall, (*pos)->step(stepShowTime(), aPriorityUntil, stepRealTime())); // no local view priorisation
   }
@@ -312,12 +312,12 @@ MLMicroSeconds ViewStack::stepInternal(MLMicroSeconds aPriorityUntil)
 }
 
 
-bool ViewStack::isDirty()
+bool ViewStack::hasDirty()
 {
-  if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
-  if (!reportDirtyChilds()) return false; // invisible or timing priority of the main view might prevent reporting
+  if (inherited::hasDirty()) return true; // dirty anyway (such as changing alpha)
+  if (!getVisible()) return false; // invisible children do not contribute pending changes
   for (ViewsList::iterator pos = mViewStack.begin(); pos!=mViewStack.end(); ++pos) {
-    if ((*pos)->isDirty())
+    if ((*pos)->hasDirty())
       return true; // subview is dirty -> stack is dirty
   }
   return false;

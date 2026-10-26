@@ -85,12 +85,22 @@ namespace p44 {
   class P44View;
   typedef boost::intrusive_ptr<P44View> P44ViewPtr;
 
+  /// Calculation and presentation timing are independent. Infinite delay means
+  /// no presentation boundary is claimed; other views may choose one. If nobody
+  /// claims a boundary, pending changes can be presented immediately. Zero delay
+  /// requests presentation at aStepShowTime. All sibling windows have that same base.
+  struct StepResult {
+    MLMicroSeconds nextCalculation;
+    MLMicroSeconds presentationDelay; ///< duration relative to this call's aStepShowTime
+    StepResult(MLMicroSeconds aNextCalculation = Infinite, MLMicroSeconds aPresentationDelay = Infinite) :
+      nextCalculation(aNextCalculation), presentationDelay(aPresentationDelay) {}
+  };
+
 
   class P44ViewRoot : public P44Obj
   {
     friend class P44View;
 
-    MLMicroSeconds mRequestStepBeforeOrAt; ///< set when needUpdateCB has been or needs to be called, reset at step() or update()
     StepRequestCB mExtraStepCB; ///< called when async influences decide step/dirty check must occur earlier than what last step() call said
     MLMicroSeconds mMinUpdateInterval; ///< minimum update interval (as a hint from actual display)
 
@@ -115,7 +125,7 @@ namespace p44 {
 
   public:
 
-    MLMicroSeconds stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
+    StepResult stepHierarchy(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
 
     void setMinUpdateInterval(MLMicroSeconds aMinUpdateInterval) { mMinUpdateInterval = aMinUpdateInterval;}
     void setNeedStepCB(StepRequestCB aExtraStepCB) { mExtraStepCB = aExtraStepCB; }
@@ -277,9 +287,10 @@ namespace p44 {
     bool mContentIsMask; ///< if set, only alpha of content is used on foreground color
     bool mInvertAlpha; ///< invert alpha provided by content
     bool mLocalTimingPriority; ///< if set, this view's timing requirements should be treated with priority over child view's
-    bool mAlignAnimationSteps; ///< if set, this view's animation steps are aligned with steps coming from subclasses (in particular, scrollers)
+    bool mAlignAnimationSteps; ///< allow animator calculations to piggyback on nearby intrinsic steps, and presentation to align with other views
     bool mHaltWhenHidden; ///< if set, any animation and stepping from this view and its subviews is stopped when it is hidden (alpha==0)
-    MLMicroSeconds mMaskChildDirtyUntil; ///< if defined, child's dirty must not be reported until this time is reached
+    MLMicroSeconds mDirtyMaskUntil; ///< absolute presentation boundary; retained while changes are pending
+    MLMicroSeconds mLocalPresentationDelay; ///< this step's local priority, overrides child hints
 
     // content transformation (fractional results)
     FracValue mContentRotation; ///< rotation of content pixels in degree CCW
@@ -335,30 +346,27 @@ namespace p44 {
     /// set color dirty - make dirty and cause coloring update
     void makeColorDirty();
 
-    /// @return if true, dirty childs should be reported
-    bool reportDirtyChilds();
+    /// Raw pending changes, without presentation masks. Containers include visible children.
+    virtual bool hasDirty() { return mDirty; }
 
-    /// helper for determining time of next step call
-    /// @param aNextShow time of when next display update should happen (i.e. when the next call should be already done and results collected)
-    /// @param aCallCandidate time of next call to update aNextCall
-    /// @param aCandidatePriorityUntil if set, this means the aCallCandidate must be prioritized when it is before the
-    ///   specified time (and the view is enabled for prioritized timing).
-    ///   Prioritizing means that reportDirtyChilds() returns false until aCallCandidate has passed, to
-    ///   prevent triggering display updates before the prioritized time.
-    /// @note aNextShow calculations must be based on mStepShowTime, never on now() or mStepRealTime
-    void updateNextCall(MLMicroSeconds &aNextShow, MLMicroSeconds aCallCandidate, MLMicroSeconds aCandidatePriorityUntil = 0);
+    /// Merge calculation deadlines without changing presentation timing.
+    void updateNextCall(MLMicroSeconds& aNextCalculation, MLMicroSeconds aCandidate);
+    /// Merge a local calculation deadline; local timing priority also claims a
+    /// presentation boundary, bounded by aPriorityUntil. Use stepShowTime(), not now().
+    void updateNextCall(StepResult& aNext, MLMicroSeconds aCandidate, MLMicroSeconds aPriorityUntil = Never);
+    /// Merge child results: earliest calculation and intersection of delay windows.
+    void updateNextCall(StepResult& aNext, const StepResult& aCandidate);
 
-    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
+    /// Calculate state for the current show time and return calculation/presentation timing.
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
     /// @param aStepShowTime the (usually future) time this step's result should be shown
-    /// @param aPriorityUntil the time until the current view might have timingpriority
     /// @param aStepRealTime the current real time of this calculations step taking place
-    /// @return Infinite (NOT Never!!) if there is no immediate need to call step again, otherwise time of when we need to SHOW
-    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @return nextCalculation is the next target show time (Infinite if no calculation is needed);
+    ///   presentationDelay bounds alignment of pending changes relative to aStepShowTime.
     /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
     ///   we can calculate results in advance
     /// @note this must be called as demanded by return value, and after making changes to the view's parameters
-    MLMicroSeconds step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
+    StepResult step(MLMicroSeconds aStepShowTime, MLMicroSeconds aPriorityUntil, MLMicroSeconds aStepRealTime);
 
   public :
 
@@ -648,9 +656,9 @@ namespace p44 {
     ///   and thus choose NOT to call inherited.
     virtual void clear();
 
-    /// return if anything changed on the display since last call
-    /// container view subclasses must override this to include dirty status of child views
-    virtual bool isDirty() { return mDirty; }
+    /// Query for the intended presentation time, not wall time or stepShowTime().
+    /// A false result retains pending changes; only updated() acknowledges output.
+    virtual bool dirtyAt(MLMicroSeconds aShowTime);
 
     /// call when display is updated
     virtual void updated();
@@ -749,13 +757,12 @@ namespace p44 {
 
   protected:
 
-    /// calculate changes on the display for a given time, return time of when the NEXT step should be shown
+    /// Calculate state for the current show time and return calculation/presentation timing.
     /// @param aPriorityUntil for views with local priority flag set, priority is valid until this time is reached
-    /// @return Infinite if there is no immediate need to call step again, otherwise time of when we need to SHOW
-    ///   the next result, i.e. should have called step() and display rendering already.
+    /// @return next calculation deadline and acceptable presentation delay relative to stepShowTime().
     /// @note all stepping calculations will be exclusively based on aStepShowTime, and never real time, so
     ///   we can calculate results in advance
-    virtual MLMicroSeconds stepInternal(MLMicroSeconds aPriorityUntil);
+    virtual StepResult stepInternal(MLMicroSeconds aPriorityUntil);
 
     /// @return intended time for when to show results of current calculation step next time
     /// @note intended for use in stepInternal() implementations to refer to the time the current calculation will/should be shown

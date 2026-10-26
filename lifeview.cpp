@@ -84,9 +84,9 @@ void LifeView::setGenerationInterval(MLMicroSeconds aInterval)
 #define MIN_SPAWN_START 3
 
 
-MLMicroSeconds LifeView::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult LifeView::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  StepResult nextCall = inherited::stepInternal(aPriorityUntil);
   if (DEFINED_INTERVAL(mGenerationInterval)) {
     // game running
     if (stepShowTime()>=mLastGeneration+mGenerationInterval) {

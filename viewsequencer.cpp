@@ -72,12 +72,17 @@ void ViewSequencer::pushStep(P44ViewPtr aView, MLMicroSeconds aShowTime, MLMicro
 }
 
 
-MLMicroSeconds ViewSequencer::stepInternal(MLMicroSeconds aPriorityUntil)
+StepResult ViewSequencer::stepInternal(MLMicroSeconds aPriorityUntil)
 {
-  MLMicroSeconds nextCall = inherited::stepInternal(aPriorityUntil);
+  StepResult nextCall = inherited::stepInternal(aPriorityUntil);
+  auto previousStep = mCurrentStep;
+  auto previousState = animationState;
   updateNextCall(nextCall, stepAnimation(stepShowTime()), aPriorityUntil); // animation has priority
+  if (mLocalTimingPriority && (previousStep!=mCurrentStep || previousState!=animationState)) mLocalPresentationDelay = 0;
   if (mCurrentStep<mSequence.size()) {
-    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(stepShowTime(), aPriorityUntil, stepRealTime()));
+    MLMicroSeconds childPriorityUntil = DEFINED_INTERVAL(mLocalPresentationDelay) ?
+      min(aPriorityUntil,stepShowTime()+mLocalPresentationDelay) : aPriorityUntil;
+    updateNextCall(nextCall, mSequence[mCurrentStep].mView->step(stepShowTime(), childPriorityUntil, stepRealTime()));
   }
   return nextCall;
 }
@@ -187,10 +192,10 @@ void ViewSequencer::stopSequence()
 
 
 
-bool ViewSequencer::isDirty()
+bool ViewSequencer::hasDirty()
 {
-  if (inherited::isDirty()) return true; // dirty anyway (such as changing alpha)
-  return mCurrentView && reportDirtyChilds() ? mCurrentView->isDirty() : false;
+  if (inherited::hasDirty()) return true; // dirty anyway (such as changing alpha)
+  return mCurrentView && getVisible() ? mCurrentView->hasDirty() : false;
 }
 
 
