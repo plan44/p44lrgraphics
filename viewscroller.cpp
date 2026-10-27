@@ -507,9 +507,9 @@ void ContentNeededObj::registerForFilteredEvents(EventSink* aEventSink, intptr_t
 
 double ContentNeededObj::doubleValue() const
 {
-  mScroller->enter();
+  THREADED(mScroller->enter());
   bool needed = mScroller->needsContent();
-  mScroller->leave();
+  THREADED(mScroller->leave());
   return needed ? 1 : 0;
 }
 
@@ -520,9 +520,9 @@ static void empty_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   ContentNeededObj *c = new ContentNeededObj(v->scroller());
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   f->finish(c);
 }
 
@@ -532,9 +532,9 @@ static void remainingpixels_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   PixelPoint rem = v->scroller()->remainingPixelsToScroll();
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   ObjectValue* r = new ObjectValue();
   r->setMemberByName("x", rem.x==INT_MAX ? new ScriptObj() : new IntegerValue(rem.x));
   r->setMemberByName("y", rem.y==INT_MAX ? new ScriptObj() : new IntegerValue(rem.y));
@@ -547,9 +547,9 @@ static void remainingtime_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   MLMicroSeconds r = v->scroller()->remainingScrollTime();
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   f->finish(r==Infinite ? new ScriptObj : new NumericValue((double)r/Second));
 }
 
@@ -559,9 +559,9 @@ static void purge_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   v->scroller()->purgeScrolledOut();
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   f->finish(v);
 }
 
@@ -572,9 +572,9 @@ static void alertempty_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   v->scroller()->setAlertEmpty(f->arg(0)->boolValue());
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   f->finish(v);
 }
 
@@ -595,9 +595,9 @@ static void startscroll_func(BuiltinFunctionContextPtr f)
     // roundup interval for synchronized start
     starttime = ((MainLoop::now()+starttime-1)/starttime) * starttime;
   }
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   v->scroller()->startScroll(stepX, stepY, interval, roundoffsets, numsteps, starttime);
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   f->finish(v); // allow chaining
 }
 
@@ -607,9 +607,9 @@ static void stopscroll_func(BuiltinFunctionContextPtr f)
 {
   ScrollerViewObj* v = dynamic_cast<ScrollerViewObj*>(f->thisObj().get());
   assert(v);
-  v->scroller()->enter();
+  THREADED(v->scroller()->enter());
   v->scroller()->stopScroll();
-  v->scroller()->leave();
+  THREADED(v->scroller()->leave());
   f->finish(v);
 }
 

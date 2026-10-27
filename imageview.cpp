@@ -178,11 +178,11 @@ static void loadimage_func(BuiltinFunctionContextPtr f)
 {
   ImageViewObj* v = dynamic_cast<ImageViewObj*>(f->thisObj().get());
   assert(v);
-  v->image()->enter();
+  THREADED(v->image()->enter());
   // if no dx or dy is set when loading a new image, auto-enable sizeToContent
   if (v->image()->getDx()==0 && v->image()->getDy()==0) v->image()->setSizeToContent(true);
   ErrorPtr err = v->image()->loadPNG(Application::sharedApplication()->resourcePath(f->arg(0)->stringValue()));
-  v->image()->leave();
+  THREADED(v->image()->leave());
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));
     return;

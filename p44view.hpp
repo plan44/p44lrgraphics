@@ -39,6 +39,9 @@
 #endif
 #if ENABLE_THREADED_STEPPING
   #include <pthread.h>
+  #define THREADED(x) x
+#else
+  #define THREADED(x)
 #endif
 
 #if ENABLE_VIEWCONFIG && !ENABLE_P44SCRIPT && ENABLE_THREADED_STEPPING

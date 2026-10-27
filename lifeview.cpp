@@ -443,9 +443,9 @@ static void addrandom_func(BuiltinFunctionContextPtr f)
       min = max;
       max = f->arg(1)->intValue();
     }
-    v->life()->enter();
+    THREADED(v->life()->enter());
     v->life()->createRandomCells(min, max);
-    v->life()->leave();
+    THREADED(v->life()->leave());
   }
   f->finish();
 }
@@ -473,9 +473,9 @@ static void placepattern_func(BuiltinFunctionContextPtr f)
     if (f->arg(2)->defined()) y = f->arg(2)->intValue();
     int o = -1; // random orientation
     if (f->arg(3)->defined()) o = f->arg(3)->intValue();
-    v->life()->enter();
+    THREADED(v->life()->enter());
     v->life()->placePattern(pat, true, x, y, o);
-    v->life()->leave();
+    THREADED(v->life()->leave());
   }
   f->finish();
 }

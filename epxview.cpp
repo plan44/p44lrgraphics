@@ -358,9 +358,9 @@ static void loadepx_func(BuiltinFunctionContextPtr f)
     json = Application::jsonResource(f->arg(0)->stringValue(), &err, P44SCRIPT_DATA_SUBDIR, true); // prefix for data and temp
   }
   if (Error::isOK(err)) {
-    v->epx()->enter();
+    THREADED(v->epx()->enter());
     err = v->epx()->loadEpxAnimationJSON(json);
-    v->epx()->leave();
+    THREADED(v->epx()->leave());
   }
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));

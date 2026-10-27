@@ -475,9 +475,9 @@ static void event_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   EventSource* es = dynamic_cast<EventSource*>(v->blocks().get());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   assert(es);
   f->finish(new OneShotEventNullValue(es, "blocks event"));
 }
@@ -489,14 +489,14 @@ static void show_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   if (f->numArgs()==1) {
     v->blocks()->showRunningBlocks(f->arg(0)->boolValue());
   }
   else {
     v->blocks()->showBlock(f->arg(0)->boolValue(), f->arg(1)->boolValue());
   }
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -507,7 +507,7 @@ static void launch_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   int blockNo;
   if (f->arg(0)->hasType(text)) {
     string n = f->arg(0)->stringValue();
@@ -529,7 +529,7 @@ static void launch_func(BuiltinFunctionContextPtr f)
       f->arg(3)->doubleValue()*Second
     );
   }
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish(new BoolValue(launched));
 }
 
@@ -543,9 +543,9 @@ static void move_func(BuiltinFunctionContextPtr f)
   PixelPoint dist;
   dist.x = f->arg(0)->intValue();
   dist.y = f->arg(1)->intValue();
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->moveBlock(dist, f->arg(2)->intValue(), f->arg(3)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -560,9 +560,9 @@ static void position_func(BuiltinFunctionContextPtr f)
   newpos.x = f->arg(0)->defined() ? f->arg(0)->intValue() : -1;
   newpos.y = f->arg(1)->defined() ? f->arg(1)->intValue() : -1;
   int newrot = f->arg(2)->defined() ? f->arg(2)->intValue() : -1;
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->positionBlock(newpos, newrot, f->arg(3)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -573,9 +573,9 @@ static void speed_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->setBlockInterval(f->arg(0)->doubleValue()*Second, f->arg(1)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -586,9 +586,9 @@ static void drop_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->dropBlock(f->arg(0)->doubleValue()*Second, f->arg(1)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -599,9 +599,9 @@ static void setdown_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->setdownBlock(f->arg(0)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -612,9 +612,9 @@ static void recolor_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->recolorBlock(v->blocks()->getForegroundColor(), f->arg(0)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 
@@ -625,9 +625,9 @@ static void completedrow_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   int row = v->blocks()->findCompletedRow(f->arg(0)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   if (row<0) f->finish(new AnnotatedNullValue("no completed rows"));
   else f->finish(new NumericValue(row));
 }
@@ -639,9 +639,9 @@ static void removerow_func(BuiltinFunctionContextPtr f)
 {
   BlocksViewObj* v = dynamic_cast<BlocksViewObj*>(f->thisObj().get());
   assert(v);
-  v->blocks()->enter();
+  THREADED(v->blocks()->enter());
   v->blocks()->removeRow(f->arg(0)->intValue(), f->arg(1)->boolValue());
-  v->blocks()->leave();
+  THREADED(v->blocks()->leave());
   f->finish();
 }
 

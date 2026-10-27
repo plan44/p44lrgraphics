@@ -197,19 +197,15 @@ void P44View::makeRootView(bool aMakeRoot)
 
 P44View* P44View::enter()
 {
-  #if ENABLE_THREADED_STEPPING
   // only connected views need enter/leave
-  if (mViewRoot) mViewRoot->enter();
-  #endif
+  THREADED(if (mViewRoot) mViewRoot->enter());
   return this;
 }
 
 
 void P44View::leave()
 {
-  #if ENABLE_THREADED_STEPPING
-  if (mViewRoot) mViewRoot->leave();
-  #endif
+  THREADED(if (mViewRoot) mViewRoot->leave());
   return;
 }
 
@@ -1813,7 +1809,7 @@ static void findview_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   P44ViewPtr foundView = v->view()->findView(f->arg(0)->stringValue());
   ScriptObjPtr res;
   if (foundView) {
@@ -1822,7 +1818,7 @@ static void findview_func(BuiltinFunctionContextPtr f)
   else {
     res = new AnnotatedNullValue("no such view");
   }
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(res);
 }
 
@@ -1840,7 +1836,7 @@ static void addview_func(BuiltinFunctionContextPtr f)
     return;
   }
   ScriptObjPtr res;
-  v->view()->enter();
+  THREADED(v->view()->enter());
   if (v->view()->isParentOrThis(subview)) {
     res = new ErrorValue(ScriptError::Invalid, "View cannot be added to itself or to its own children");
   }
@@ -1850,7 +1846,7 @@ static void addview_func(BuiltinFunctionContextPtr f)
   else {
     res = subview->newViewObj();
   }
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(res);
 }
 
@@ -1864,12 +1860,12 @@ static void configure_func(BuiltinFunctionContextPtr f)
   ErrorPtr err;
   JsonObjectPtr viewCfgJSON = P44View::viewConfigFromScriptObj(f->arg(0), err);
   if (Error::isOK(err)) {
-    v->view()->enter();
+    THREADED(v->view()->enter());
     err = v->view()->configureView(viewCfgJSON);
     if (Error::isOK(err)) {
       v->view()->requestUpdate(); // to make sure changes are applied
     }
-    v->view()->leave();
+    THREADED(v->view()->leave());
   }
   if (Error::notOK(err)) {
     f->finish(new ErrorValue(err));
@@ -1923,9 +1919,9 @@ static void status_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   JsonObjectPtr status = v->view()->viewStatus();
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(ScriptObj::valueFromJSON(status));
 }
 
@@ -1939,11 +1935,11 @@ static void set_func(BuiltinFunctionContextPtr f)
   assert(v);
   JsonObjectPtr viewCfgJSON = JsonObject::newObj();
   viewCfgJSON->add(f->arg(0)->stringValue().c_str(), f->arg(1)->jsonValue());
-  v->view()->enter();
+  THREADED(v->view()->enter());
   if (Error::ok(v->view()->configureView(viewCfgJSON))) {
     v->view()->requestUpdate(); // to make sure changes are applied
   }
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1953,9 +1949,9 @@ static void stopanimations_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->view()->stopAnimations();
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -1965,9 +1961,9 @@ static void animations_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   ScriptObjPtr ia = v->view()->installedAnimators();
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(ia);
 }
 
@@ -1977,9 +1973,9 @@ static void remove_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   bool removed = v->view()->removeFromParent();
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(new BoolValue(removed)); // true if actually removed
 }
 
@@ -1990,9 +1986,9 @@ static void render_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->view()->requestUpdate(); // to make sure changes are applied
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -2003,7 +1999,7 @@ static void parent_func(BuiltinFunctionContextPtr f)
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
   ScriptObjPtr vo;
-  v->view()->enter();
+  THREADED(v->view()->enter());
   P44ViewPtr parent = v->view()->getParent();
   if (parent) {
     vo = parent->newViewObj();
@@ -2011,7 +2007,7 @@ static void parent_func(BuiltinFunctionContextPtr f)
   else {
     vo = new AnnotatedNullValue("no parent view");
   }
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(vo);
 }
 
@@ -2021,9 +2017,9 @@ static void clear_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->view()->clear();
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -2033,9 +2029,9 @@ static void reset_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->view()->resetTransforms();
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -2046,9 +2042,9 @@ static void fullframe_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->view()->setFullFrameContent(); // to make sure changes are applied
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // return view itself to allow chaining
 }
 
@@ -2062,9 +2058,9 @@ static void get_func(BuiltinFunctionContextPtr f)
   PixelPoint pt;
   pt.x = f->arg(0)->intValue();
   pt.y = f->arg(1)->intValue();
-  v->view()->enter();
+  THREADED(v->view()->enter());
   PixelColor pix = v->view()->colorInFrameAt(pt);
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(new StringValue(pixelToWebColor(pix, true)));
 }
 
@@ -2077,9 +2073,9 @@ static void animator_func(BuiltinFunctionContextPtr f)
 {
   P44lrgViewObj* v = dynamic_cast<P44lrgViewObj*>(f->thisObj().get());
   assert(v);
-  v->view()->enter();
+  THREADED(v->view()->enter());
   ValueAnimatorPtr animator = v->view()->animatorFor(f->arg(0)->stringValue());
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(new ValueAnimatorObj(animator));
 }
 

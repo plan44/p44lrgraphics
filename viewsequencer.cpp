@@ -380,9 +380,9 @@ static void start_func(BuiltinFunctionContextPtr f)
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
   assert(v);
   bool repeat = f->arg(0)->boolValue();
-  v->sequencer()->enter();
+  THREADED(v->sequencer()->enter());
   v->sequencer()->startSequence(repeat);
-  v->sequencer()->leave();
+  THREADED(v->sequencer()->leave());
   // TODO: maybe make awaitable
   f->finish();
 }
@@ -393,9 +393,9 @@ static void stop_func(BuiltinFunctionContextPtr f)
 {
   ViewSequencerObj* v = dynamic_cast<ViewSequencerObj*>(f->thisObj().get());
   assert(v);
-  v->sequencer()->enter();
+  THREADED(v->sequencer()->enter());
   v->sequencer()->stopSequence();
-  v->sequencer()->leave();
+  THREADED(v->sequencer()->leave());
   f->finish();
 }
 

@@ -242,9 +242,9 @@ static void dot_func(BuiltinFunctionContextPtr f)
   PixelPoint pt;
   pt.x = f->arg(0)->intValue();
   pt.y = f->arg(1)->intValue();
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->canvas()->setPixel(v->canvas()->getForegroundColor(), pt);
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // allow chaining
 }
 
@@ -260,9 +260,9 @@ static void line_func(BuiltinFunctionContextPtr f)
   start.y = f->arg(1)->intValue();
   end.x = f->arg(2)->intValue();
   end.y = f->arg(3)->intValue();
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->canvas()->drawLine(start, end);
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // allow chaining
 }
 
@@ -294,9 +294,9 @@ static void copy_func(BuiltinFunctionContextPtr f)
   dest.y = f->arg(ai++)->intValue();
   bool transparentOnly = f->arg(ai++)->boolValue();
   bool fromContent = f->arg(ai++)->boolValue();
-  v->view()->enter();
+  THREADED(v->view()->enter());
   v->canvas()->copyPixels(foreignview ? foreignview->view() : nullptr, fromContent, src, dest, transparentOnly);
-  v->view()->leave();
+  THREADED(v->view()->leave());
   f->finish(v); // allow chaining
 }
 

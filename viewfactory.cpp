@@ -76,9 +76,9 @@ ErrorPtr p44::createViewFromConfig(JsonObjectPtr aViewConfig, P44ViewPtr &aNewVi
     // Note: is an error only if no view was passed in
     return TextError::err("missing 'type'");
   }
-  if (aParentView) aParentView->enter();
+  THREADED(if (aParentView) THREADED(aParentView->enter()));
   aNewView->setParent(aParentView);
-  if (aParentView) aParentView->leave();
+  THREADED(if (aParentView) THREADED(aParentView->leave()));
   // now let view configure itself
   return aNewView->configureView(aViewConfig);
 }

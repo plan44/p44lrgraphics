@@ -547,10 +547,10 @@ static void pushview_func(BuiltinFunctionContextPtr f)
   }
   int spacing = f->arg(1)->intValue();
   bool fullframe = f->arg(2)->boolValue();
-  v->stack()->enter();
+  THREADED(v->stack()->enter());
   v->stack()->pushView(pushedview, spacing, fullframe);
   ScriptObjPtr vo = pushedview->newViewObj();
-  v->stack()->leave();
+  THREADED(v->stack()->leave());
   // return the pushed view for chaining
   f->finish(vo);
 }
@@ -565,9 +565,9 @@ static void purge_func(BuiltinFunctionContextPtr f)
   PixelCoord dx = f->arg(0)->intValue();
   PixelCoord dy = f->arg(1)->intValue();
   bool completely = f->arg(2)->boolValue();
-  v->stack()->enter();
+  THREADED(v->stack()->enter());
   v->stack()->purgeViews(dx, dy, completely);
-  v->stack()->leave();
+  THREADED(v->stack()->leave());
   f->finish();
 }
 
@@ -577,9 +577,9 @@ static void popview_func(BuiltinFunctionContextPtr f)
 {
   ViewStackObj* v = dynamic_cast<ViewStackObj*>(f->thisObj().get());
   assert(v);
-  v->stack()->enter();
+  THREADED(v->stack()->enter());
   v->stack()->popView();
-  v->stack()->leave();
+  THREADED(v->stack()->leave());
   f->finish();
 }
 
