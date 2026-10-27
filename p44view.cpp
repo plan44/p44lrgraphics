@@ -249,13 +249,9 @@ void P44View::ledRGBdata(string& aLedRGB, PixelRect aArea)
 
 void P44View::propAccessAnnounce(bool aStart)
 {
-  #if ENABLE_THREADED_STEPPING
-  if (aStart) enter();
-  #endif
+  THREADED(if (aStart) enter());
   announceChanges(aStart);
-  #if ENABLE_THREADED_STEPPING
-  if (!aStart) leave();
-  #endif
+  THREADED(if (!aStart) leave());
 }
 
 
@@ -510,7 +506,7 @@ void P44View::setRelativeContentOriginY(double aRelY, bool aCentered)
 
 void P44View::setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativeToLargerFrameDimension)
 {
-  enter();
+  THREADED(enter());
   PixelPoint sz = getFrameSize();
   orientateCoord(sz); // maybe flipped
   if (aRelativeToLargerFrameDimension) {
@@ -524,7 +520,7 @@ void P44View::setRelativeContentSize(double aRelDx, double aRelDy, bool aRelativ
   setContentDx(sz.x);
   setContentDy(sz.y);
   announceChanges(false);
-  leave();
+  THREADED(leave());
 }
 
 
@@ -637,13 +633,13 @@ void P44View::autoAdjustTo(PixelRect aReferenceRect)
 
 void P44View::clear()
 {
-  enter();
+  THREADED(enter());
   stopAnimations();
   // as the only thing a P44View can display is the content rect in foreground color, reset it here
   // Note: subclasses will not always call inherited::clear() as they might want to retain the content rectangle,
   //       and just remove the actual content data
   setContentSize({0, 0});
-  leave();
+  THREADED(leave());
 }
 
 
@@ -687,12 +683,12 @@ bool P44View::removeFromParent()
 
 void P44View::makeDirtyAndUpdate()
 {
-  enter();
+  THREADED(enter());
   // make dirty locally
   mDirty = true;
   // Ensure we get a display update
   requestUpdate();
-  leave();
+  THREADED(leave());
 }
 
 
@@ -1374,7 +1370,7 @@ JsonObjectPtr P44View::viewStatus()
   ScriptObjPtr vo = newViewObj();
   ValueIteratorPtr iter = vo->newIterator(nonebut|jsonrepresentable);
   ScriptObjPtr name;
-  enter();
+  THREADED(enter());
   while((name = iter->obtainKey(false))) {
     ScriptObjPtr m = iter->obtainValue(nonebut|jsonrepresentable);
     if (m) status->add(name->stringValue().c_str(), m->jsonValue());
@@ -1384,7 +1380,7 @@ JsonObjectPtr P44View::viewStatus()
   // there is no p44script property for this
   status->add("animations", JsonObject::newInt64(mAnimations.size()));
   #endif
-  leave();
+  THREADED(leave());
   return status;
 }
 
@@ -1721,12 +1717,12 @@ ValueAnimatorPtr P44View::animatorFor(const string aProperty)
 void P44View::stopAnimations()
 {
   #if ENABLE_ANIMATION
-  enter();
+  THREADED(enter());
   for (AnimationsList::iterator pos = mAnimations.begin(); pos!=mAnimations.end(); ++pos) {
     (*pos)->stop(false); // stop with no callback
   }
   mAnimations.clear();
-  leave();
+  THREADED(leave());
   #endif // ENABLE_ANIMATION
 }
 

@@ -413,7 +413,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     JsonObjectPtr o;
-    enter();
+    THREADED(enter());
     #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("positioningmode", o)) {
       if (o->isType(json_type_string)) {
@@ -464,7 +464,7 @@ ErrorPtr ViewStack::configureView(JsonObjectPtr aViewConfig)
     if (aViewConfig->get("pop", o)) {
       if(o->boolValue()) popView();
     }
-    leave();
+    THREADED(leave());
   }
   return err;
 }

@@ -385,15 +385,15 @@ ErrorPtr LifeView::configureView(JsonObjectPtr aViewConfig)
     #endif // !ENABLE_P44SCRIPT
     if (aViewConfig->get("addrandom", o)) {
       int c = o->int32Value();
-      enter();
+      THREADED(enter());
       createRandomCells(c/3, c);
-      leave();
+      THREADED(leave());
     }
     if (aViewConfig->get("addpattern", o)) {
       int p = o->int32Value();
-      enter();
+      THREADED(enter());
       placePattern(p);
-      leave();
+      THREADED(leave());
     }
   }
   return err;
@@ -414,7 +414,7 @@ JsonObjectPtr LifeView::viewStatus()
   return status;
 }
 
-#endif // ENABLE_VIEWSTATUS
+#endif // ENABLE_VIEWSTATUS && !ENABLE_P44SCRIPT
 
 #if ENABLE_P44SCRIPT
 

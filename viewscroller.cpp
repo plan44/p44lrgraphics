@@ -382,7 +382,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
       makeDirty();
     }
     // pseudo "properties" for starting scroll
-    enter();
+    THREADED(enter());
     double stepX = mScrollStepX;
     double stepY = mScrollStepY;
     MLMicroSeconds interval = NONZERO_INTERVAL(mScrollStepInterval) ? mScrollStepInterval : 50*MilliSecond;
@@ -413,7 +413,7 @@ ErrorPtr ViewScroller::configureView(JsonObjectPtr aViewConfig)
         purgeScrolledOut();
       }
     }
-    leave();
+    THREADED(leave());
   }
   return err;
 }

@@ -248,7 +248,7 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
   ErrorPtr err = inherited::configureView(aViewConfig);
   if (Error::isOK(err)) {
     JsonObjectPtr o;
-    enter();
+    THREADED(enter());
     if (aViewConfig->get("steps", o)) {
       for (int i=0; i<o->arrayLength(); ++i) {
         JsonObjectPtr s = o->arrayGet(i);
@@ -283,7 +283,7 @@ ErrorPtr ViewSequencer::configureView(JsonObjectPtr aViewConfig)
       doRepeat = o->boolValue();
     }
     if (doStart) startSequence(doRepeat);
-    leave();
+    THREADED(leave());
   }
   return err;
 }

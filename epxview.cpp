@@ -302,9 +302,9 @@ ErrorPtr EpxView::configureView(JsonObjectPtr aViewConfig)
   if (Error::isOK(err)) {
     JsonObjectPtr o;
     if (aViewConfig->get("epx", o)) {
-      enter();
+      THREADED(enter());
       err = loadEpxAnimationJSON(o);
-      leave();
+      THREADED(leave());
     }
     #if !ENABLE_P44SCRIPT
     if (aViewConfig->get("run", o)) {
